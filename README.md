@@ -1,4 +1,4 @@
-# capstone-tms-be
+# capstone-tms-fe
 Tạo nhánh của riêng mình rồi làm
 Thêm, xóa, sửa gì code thì chạy code check lỗi, chừng nào hết lỗi thì mới đẩy lên nhánh chính
 
