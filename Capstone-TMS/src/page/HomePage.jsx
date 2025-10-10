@@ -1,6 +1,7 @@
 import { VerticalAlignTopOutlined } from '@ant-design/icons'
 import { useEffect, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion' // eslint-disable-line no-unused-vars
+import { Link } from 'react-router-dom'
 
 const HomePage = () => {
   const [showScrollTop, setShowScrollTop] = useState(false)
@@ -42,18 +43,22 @@ const HomePage = () => {
           </nav>
 
           <div className="flex items-center gap-3">
-            <motion.button 
-              whileTap={{ scale: 0.95 }}
-              className="px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-50"
-            >
-              Đăng nhập
-            </motion.button>
-            <motion.button 
-              whileTap={{ scale: 0.95 }}
-              className="px-3 py-2 text-sm font-medium rounded-md bg-orange-500 text-white hover:bg-orange-600"
-            >
-              Đăng ký
-            </motion.button>
+            <Link to="/login">
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
+                className="px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-50"
+              >
+                Đăng nhập
+              </motion.button>
+            </Link>
+            <Link to="/register">
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
+                className="px-3 py-2 text-sm font-medium rounded-md bg-orange-500 text-white hover:bg-orange-600"
+              >
+                Đăng ký
+              </motion.button>
+            </Link>
           </div>
         </div>
       </header>
