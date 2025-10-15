@@ -1,12 +1,16 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { EyeOutlined, EyeInvisibleOutlined, ArrowLeftOutlined } from '@ant-design/icons'
+import { useAuth } from '../contexts/AuthContext'
 
 const LoginPage = ({ switchTo }) => {
+  const { login } = useAuth()
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
+    role: 'student' // Mặc định là student
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -53,10 +57,32 @@ const LoginPage = ({ switchTo }) => {
 
     setIsLoading(true)
 
-    // Simulate API call
+    // Simulate API call - trong thực tế sẽ gọi API thật
     setTimeout(() => {
+      // Mock data - trong thực tế sẽ nhận từ API
+      const mockUser = {
+        id: 1,
+        name: formData.email === 'admin@tutorlink.com' ? 'Admin User' : 
+              formData.email === 'staff@tutorlink.com' ? 'Staff User' : 'Student User',
+        email: formData.email,
+        role: formData.email === 'admin@tutorlink.com' ? 'admin' : 
+              formData.email === 'staff@tutorlink.com' ? 'staff' : 'student'
+      }
+      
+      const mockToken = 'mock-jwt-token-' + Date.now()
+      
+      login(mockUser, mockToken)
+      
+      // Redirect based on role
+      if (mockUser.role === 'admin') {
+        navigate('/admin')
+      } else if (mockUser.role === 'staff') {
+        navigate('/staff')
+      } else {
+        navigate('/')
+      }
+      
       setIsLoading(false)
-      console.log('Login data:', formData)
     }, 1000)
   }
 
@@ -133,6 +159,16 @@ const LoginPage = ({ switchTo }) => {
         <p className="text-slate-600">
           Chưa có tài khoản?{' '}<button type="button" onClick={() => switchTo('register')} className="text-blue-600 hover:text-blue-700 font-medium">Đăng ký ngay</button>
         </p>
+      </div>
+      
+      {/* Demo accounts */}
+      <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+        <h4 className="text-sm font-medium text-blue-900 mb-2">Tài khoản demo:</h4>
+        <div className="text-xs text-blue-700 space-y-1">
+          <div>Admin: admin@tutorlink.com / password123</div>
+          <div>Staff: staff@tutorlink.com / password123</div>
+          <div>Student: student@tutorlink.com / password123</div>
+        </div>
       </div>
     </div>
   )
