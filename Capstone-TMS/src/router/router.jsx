@@ -1,15 +1,23 @@
 import { createBrowserRouter } from "react-router-dom";
-import HomePage from "../page/HomePage";
-import AuthPage from "../page/AuthPage";
+import HomePage from "../pages/HomePage";
+import AuthPage from "../pages/AuthPage";
+import Centers from "../pages/Centers";
+import FindTutor from "../pages/FindTutor";
+import NewClasses from "../pages/NewClasses";
+import Contact from "../pages/Contact";
+import Recruitment from "../pages/Recruitment";
+import About from "../pages/About";
+import Blog from "../pages/Blog";
+import FAQ from "../pages/FAQ";
 import AdminLayout from "../components/AdminLayout";
 import ProtectedRoute from "../components/ProtectedRoute";
-import AdminDashboard from "../page/admin/AdminDashboard";
-import UserManagement from "../page/admin/UserManagement";
-import CenterManagement from "../page/admin/CenterManagement";
-import ClassManagement from "../page/admin/ClassManagement";
-import StaffDashboard from "../page/staff/StaffDashboard";
-import StudentManagement from "../page/staff/StudentManagement";
-import ScheduleManagement from "../page/staff/ScheduleManagement";
+import AdminDashboard from "../pages/admin/AdminDashboard";
+import UserManagement from "../pages/admin/UserManagement";
+import CenterManagement from "../pages/admin/CenterManagement";
+import ClassManagement from "../pages/admin/ClassManagement";
+import StaffDashboard from "../pages/staff/StaffDashboard";
+import StudentManagement from "../pages/staff/StudentManagement";
+import ScheduleManagement from "../pages/staff/ScheduleManagement";
 
 export const router = createBrowserRouter([
     {
@@ -117,5 +125,37 @@ export const router = createBrowserRouter([
                 </div>
             </div>
         ),
-    }
+    },
+    {
+        path: "/centers",
+        element: <Centers />,
+    },
+    {
+        path: "/find-tutor",
+        element: <FindTutor />,
+    },
+    {
+        path: "/new-classes",
+        element: <NewClasses />,
+    },
+    {
+        path: "/contact",
+        element: <Contact />,
+    },
+    {
+        path: "/recruitment",
+        element: <Recruitment />,
+    },
+    {
+        path: "/about",
+        element: <About />,
+    },
+    {
+        path: "/blog",
+        element: <Blog />,
+    },
+    {
+        path: "/faq",
+        element: <FAQ />,
+    },
 ]);
