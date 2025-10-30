@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeftOutlined } from '@ant-design/icons'
-import image1 from '../assets/image1.png'
+import image1 from '../../assets/image1.png'
 import RegisterPage from './RegisterPage'
 import LoginPage from './LoginPage'
 
@@ -68,5 +68,3 @@ const AuthPage = () => {
 }
 
 export default AuthPage
-
-

@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { Link, useNavigate } from 'react-router-dom'
 import { EyeOutlined, EyeInvisibleOutlined, ArrowLeftOutlined } from '@ant-design/icons'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../../contexts/AuthContext'
+import { authenticateUser, generateMockToken } from '../../data/mockUsers'
 
 const LoginPage = ({ switchTo }) => {
   const { login } = useAuth()
@@ -59,27 +60,43 @@ const LoginPage = ({ switchTo }) => {
 
     // Simulate API call - trong thực tế sẽ gọi API thật
     setTimeout(() => {
-      // Mock data - trong thực tế sẽ nhận từ API
-      const mockUser = {
-        id: 1,
-        name: formData.email === 'admin@tutorlink.com' ? 'Admin User' : 
-              formData.email === 'staff@tutorlink.com' ? 'Staff User' : 'Student User',
-        email: formData.email,
-        role: formData.email === 'admin@tutorlink.com' ? 'admin' : 
-              formData.email === 'staff@tutorlink.com' ? 'staff' : 'student'
-      }
+      // Authenticate với mock data
+      const authenticatedUser = authenticateUser(formData.email, formData.password)
       
-      const mockToken = 'mock-jwt-token-' + Date.now()
-      
-      login(mockUser, mockToken)
-      
-      // Redirect based on role
-      if (mockUser.role === 'admin') {
-        navigate('/admin')
-      } else if (mockUser.role === 'staff') {
-        navigate('/staff')
+      if (authenticatedUser) {
+        const mockToken = generateMockToken(authenticatedUser)
+        
+        login(authenticatedUser, mockToken)
+        
+        // Redirect based on role
+        switch (authenticatedUser.role) {
+          case 'admin':
+            navigate('/admin')
+            break
+          case 'staff':
+            navigate('/staff')
+            break
+          case 'center':
+            navigate('/center')
+            break
+          case 'teacher':
+            navigate('/teacher')
+            break
+          case 'parent':
+            navigate('/parent')
+            break
+          case 'student':
+            navigate('/student')
+            break
+          default:
+            navigate('/')
+        }
       } else {
-        navigate('/')
+        // Đăng nhập thất bại
+        setErrors({
+          email: 'Email hoặc mật khẩu không đúng',
+          password: 'Email hoặc mật khẩu không đúng'
+        })
       }
       
       setIsLoading(false)
@@ -159,16 +176,6 @@ const LoginPage = ({ switchTo }) => {
         <p className="text-slate-600">
           Chưa có tài khoản?{' '}<button type="button" onClick={() => switchTo('register')} className="text-blue-600 hover:text-blue-700 font-medium">Đăng ký ngay</button>
         </p>
-      </div>
-      
-      {/* Demo accounts */}
-      <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-        <h4 className="text-sm font-medium text-blue-900 mb-2">Tài khoản demo:</h4>
-        <div className="text-xs text-blue-700 space-y-1">
-          <div>Admin: admin@tutorlink.com / password123</div>
-          <div>Staff: staff@tutorlink.com / password123</div>
-          <div>Student: student@tutorlink.com / password123</div>
-        </div>
       </div>
     </div>
   )

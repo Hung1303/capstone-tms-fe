@@ -1,11 +1,7 @@
-import NavBar from '../components/NavBar';
-import Footer from '../components/Footer';
-import CentersMap from '../components/CentersMap';
+import CentersMap from '../../components/CentersMap';
 
 const Contact = () => (
-    <>
-        <NavBar />
-        <main className="max-w-6xl mx-auto px-4 py-12">
+    <main className="max-w-6xl mx-auto px-4 py-12">
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-extrabold text-amber-700 mb-2">Liên hệ</h1>
                 <h2 className="text-base text-amber-900/80 max-w-xl mx-auto">
@@ -45,7 +41,6 @@ const Contact = () => (
                 <CentersMap style={{ height: '350px' }} showHeader={false} />
             </div>
         </main>
-        <Footer />
-    </>
 );
+
 export default Contact;

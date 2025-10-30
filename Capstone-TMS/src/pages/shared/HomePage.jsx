@@ -2,9 +2,7 @@ import { VerticalAlignTopOutlined } from '@ant-design/icons'
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import NavBar from '../components/NavBar'
-import Footer from '../components/Footer'
-import CentersMap from '../components/CentersMap'
+import CentersMap from '../../components/CentersMap'
 
 const HomePage = () => {
     const [showScrollTop, setShowScrollTop] = useState(false)
@@ -88,8 +86,6 @@ const HomePage = () => {
 
     return (
         <div id="top" className="min-h-screen bg-gradient-to-b from-white via-orange-50 to-teal-50 text-slate-800">
-            <NavBar handleScrollToTop={handleScrollToTop} />
-
             <main>
                 {/* Hero section */}
                 <section className="max-w-6xl mx-auto px-4 py-16 sm:py-20">
@@ -223,8 +219,6 @@ const HomePage = () => {
                     </motion.button>
                 )}
             </AnimatePresence>
-
-            <Footer />
         </div>
     )
 }
