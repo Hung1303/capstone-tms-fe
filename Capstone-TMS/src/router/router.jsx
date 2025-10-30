@@ -29,6 +29,9 @@ import ClassManagement from "../pages/management/ClassManagement";
 import StudentManagement from "../pages/management/StudentManagement";
 import ScheduleManagement from "../pages/management/ScheduleManagement";
 
+// Error pages
+import NotFound from "../pages/error/NotFound";
+
 // Layouts
 import HomeLayout from "../layouts/HomeLayout";
 import AdminLayout from "../layouts/AdminLayout";
@@ -234,5 +237,11 @@ export const router = createBrowserRouter([
                 </div>
             </div>
         ),
+    },
+    
+    // 404 Not Found - Catch all routes (phải để cuối cùng)
+    {
+        path: "*",
+        element: <NotFound />,
     },
 ]);
