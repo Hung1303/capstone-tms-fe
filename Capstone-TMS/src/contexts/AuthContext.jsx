@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import api from '../config/axios'
+import { buildUserFromToken } from '../utils/jwt'
 
 const AuthContext = createContext()
 
@@ -15,33 +17,35 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Kiểm tra token trong localStorage khi khởi động
+    // Khởi động: lấy token và dựng user từ JWT
     const token = localStorage.getItem('token')
-    const userData = localStorage.getItem('user')
-    
-    if (token && userData) {
-      try {
-        const parsedUser = JSON.parse(userData)
-        setUser(parsedUser)
-      } catch (error) {
-        console.error('Error parsing user data:', error)
+    if (token) {
+      const builtUser = buildUserFromToken(token)
+      if (builtUser) {
+        setUser(builtUser)
+        api.defaults.headers.Authorization = `Bearer ${token}`
+      } else {
         localStorage.removeItem('token')
-        localStorage.removeItem('user')
       }
     }
     setLoading(false)
   }, [])
 
   const login = (userData, token) => {
-    setUser(userData)
-    localStorage.setItem('token', token)
-    localStorage.setItem('user', JSON.stringify(userData))
+    if (token) {
+      localStorage.setItem('token', token)
+      api.defaults.headers.Authorization = `Bearer ${token}`
+    }
+    // Ưu tiên lấy user từ token để đảm bảo đúng role
+    const builtUser = token ? buildUserFromToken(token) : null
+    const nextUser = builtUser || userData || null
+    setUser(nextUser)
   }
 
   const logout = () => {
     setUser(null)
     localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    delete api.defaults.headers.Authorization
   }
 
   const isAdmin = () => {

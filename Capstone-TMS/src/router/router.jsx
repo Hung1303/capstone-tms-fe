@@ -97,131 +97,97 @@ export const router = createBrowserRouter([
     // Admin routes (dùng AdminLayout)
     {
         path: "/admin",
-        element: (
-            <ProtectedRoute requiredRole="admin">
-                <AdminLayout>
-                    <AdminDashboard />
-                </AdminLayout>
-            </ProtectedRoute>
-        ),
+        element: <AdminLayout />,
+        children: [
+            {
+                index: true,
+                element: <ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>
+            },
+            {
+                path: "users",
+                element: <ProtectedRoute requiredRole="admin"><UserManagement /></ProtectedRoute>
+            },
+            {
+                path: "centers",
+                element: <ProtectedRoute requiredRole="admin"><CenterManagement /></ProtectedRoute>
+            },
+            {
+                path: "students",
+                element: <ProtectedRoute requiredRole="admin"><StudentManagement /></ProtectedRoute>
+            },
+            {
+                path: "classes",
+                element: <ProtectedRoute requiredRole="admin"><ClassManagement /></ProtectedRoute>
+            }
+        ]
     },
-    {
-        path: "/admin/users",
-        element: (
-            <ProtectedRoute requiredRole="admin">
-                <AdminLayout>
-                    <UserManagement />
-                </AdminLayout>
-            </ProtectedRoute>
-        ),
-    },
-    {
-        path: "/admin/centers",
-        element: (
-            <ProtectedRoute requiredRole="admin">
-                <AdminLayout>
-                    <CenterManagement />
-                </AdminLayout>
-            </ProtectedRoute>
-        ),
-    },
-    {
-        path: "/admin/students",
-        element: (
-            <ProtectedRoute requiredRole="admin">
-                <AdminLayout>
-                    <StudentManagement />
-                </AdminLayout>
-            </ProtectedRoute>
-        ),
-    },
-    {
-        path: "/admin/classes",
-        element: (
-            <ProtectedRoute requiredRole="admin">
-                <AdminLayout>
-                    <ClassManagement />
-                </AdminLayout>
-            </ProtectedRoute>
-        ),
-    },
+
+    // Staff routes
     {
         path: "/staff",
-        element: (
-            <ProtectedRoute requiredRole="staff">
-                <AdminLayout>
-                    <StaffDashboard />
-                </AdminLayout>
-            </ProtectedRoute>
-        ),
-    },
-    {
-        path: "/staff/students",
-        element: (
-            <ProtectedRoute requiredRole="staff">
-                <AdminLayout>
-                    <StudentManagement />
-                </AdminLayout>
-            </ProtectedRoute>
-        ),
-    },
-    {
-        path: "/staff/schedule",
-        element: (
-            <ProtectedRoute requiredRole="staff">
-                <AdminLayout>
-                    <ScheduleManagement />
-                </AdminLayout>
-            </ProtectedRoute>
-        ),
+        element: <AdminLayout />,
+        children: [
+            {
+                index: true,
+                element: <ProtectedRoute requiredRole="staff"><StaffDashboard /></ProtectedRoute>
+            },
+            {
+                path: "students",
+                element: <ProtectedRoute requiredRole="staff"><StudentManagement /></ProtectedRoute>
+            },
+            {
+                path: "schedule",
+                element: <ProtectedRoute requiredRole="staff"><ScheduleManagement /></ProtectedRoute>
+            }
+        ]
     },
     
     // Center routes
     {
         path: "/center",
-        element: (
-            <ProtectedRoute requiredRole="center">
-                <AdminLayout>
-                    <CenterDashboard />
-                </AdminLayout>
-            </ProtectedRoute>
-        ),
+        element: <AdminLayout />,
+        children: [
+            {
+                index: true,
+                element: <ProtectedRoute requiredRole="center"><CenterDashboard /></ProtectedRoute>
+            }
+        ]
     },
     
     // Teacher routes
     {
         path: "/teacher",
-        element: (
-            <ProtectedRoute requiredRole="teacher">
-                <AdminLayout>
-                    <TeacherDashboard />
-                </AdminLayout>
-            </ProtectedRoute>
-        ),
+        element: <AdminLayout />,
+        children: [
+            {
+                index: true,
+                element: <ProtectedRoute requiredRole="teacher"><TeacherDashboard /></ProtectedRoute>
+            }
+        ]
     },
     
     // Parent routes
     {
         path: "/parent",
-        element: (
-            <ProtectedRoute requiredRole="parent">
-                <AdminLayout>
-                    <ParentDashboard />
-                </AdminLayout>
-            </ProtectedRoute>
-        ),
+        element: <AdminLayout />,
+        children: [
+            {
+                index: true,
+                element: <ProtectedRoute requiredRole="parent"><ParentDashboard /></ProtectedRoute>
+            }
+        ]
     },
     
     // Student routes
     {
         path: "/student",
-        element: (
-            <ProtectedRoute requiredRole="student">
-                <AdminLayout>
-                    <StudentDashboard />
-                </AdminLayout>
-            </ProtectedRoute>
-        ),
+        element: <AdminLayout />,
+        children: [
+            {
+                index: true,
+                element: <ProtectedRoute requiredRole="student"><StudentDashboard /></ProtectedRoute>
+            }
+        ]
     },
     
     {

@@ -2,7 +2,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 const ProtectedRoute = ({ children, requiredRole, requiredPermission }) => {
-  const { user, loading } = useAuth()
+  const { user, loading, hasPermission } = useAuth()
   const location = useLocation()
 
   if (loading) {
@@ -23,7 +23,7 @@ const ProtectedRoute = ({ children, requiredRole, requiredPermission }) => {
   }
 
   // Kiểm tra permission nếu được yêu cầu
-  if (requiredPermission && !user.hasPermission?.(requiredPermission)) {
+  if (requiredPermission && !hasPermission(requiredPermission)) {
     return <Navigate to="/unauthorized" replace />
   }
 

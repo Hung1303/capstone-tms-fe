@@ -3,7 +3,8 @@ import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { Link, useNavigate } from 'react-router-dom'
 import { EyeOutlined, EyeInvisibleOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { useAuth } from '../../contexts/AuthContext'
-import { authenticateUser, generateMockToken } from '../../data/mockUsers'
+import api from '../../config/axios'
+import { getRoleFromToken } from '../../utils/jwt'
 
 const LoginPage = ({ switchTo }) => {
   const { login } = useAuth()
@@ -58,49 +59,59 @@ const LoginPage = ({ switchTo }) => {
 
     setIsLoading(true)
 
-    // Simulate API call - trong thực tế sẽ gọi API thật
-    setTimeout(() => {
-      // Authenticate với mock data
-      const authenticatedUser = authenticateUser(formData.email, formData.password)
-      
-      if (authenticatedUser) {
-        const mockToken = generateMockToken(authenticatedUser)
-        
-        login(authenticatedUser, mockToken)
-        
-        // Redirect based on role
-        switch (authenticatedUser.role) {
-          case 'admin':
-            navigate('/admin')
-            break
-          case 'staff':
-            navigate('/staff')
-            break
-          case 'center':
-            navigate('/center')
-            break
-          case 'teacher':
-            navigate('/teacher')
-            break
-          case 'parent':
-            navigate('/parent')
-            break
-          case 'student':
-            navigate('/student')
-            break
-          default:
-            navigate('/')
-        }
-      } else {
-        // Đăng nhập thất bại
-        setErrors({
-          email: 'Email hoặc mật khẩu không đúng',
-          password: 'Email hoặc mật khẩu không đúng'
-        })
+    try {
+      const { email, password } = formData
+      const url = `/Auth/Login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
+
+      // Prefer POST; if backend requires GET, it will still work if configured. Adjust if needed.
+      let response
+      try {
+        response = await api.post(url)
+        console.log('Login response (POST):', response.data);
+      } catch {
+        // fallback to GET if POST not allowed
+        response = await api.get(url)
       }
-      
+
+      // Chuẩn hoá theo cấu trúc BE: { isSuccess, code, data: { accessToken, refreshToken, expiredAt }, message }
+      const apiEnvelope = response?.data || {}
+      const token = apiEnvelope?.data?.accessToken || apiEnvelope?.accessToken || ''
+
+      // Lưu và dựng user từ token
+      login(null, token)
+
+      const role = getRoleFromToken(token)
+      console.log('Logged in user role:', role)
+      switch (role) {
+        case 'admin':
+          navigate('/admin')
+          break
+        case 'staff':
+          navigate('/staff')
+          break
+        case 'center':
+          navigate('/center')
+          break
+        case 'teacher':
+          navigate('/teacher')
+          break
+        case 'parent':
+          navigate('/parent')
+          break
+        case 'student':
+          navigate('/student')
+          break
+        default:
+          navigate('/')
+      }
+    } catch {
+      setErrors({
+        email: 'Email hoặc mật khẩu không đúng',
+        password: 'Email hoặc mật khẩu không đúng'
+      })
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
   return (
@@ -144,7 +155,7 @@ const LoginPage = ({ switchTo }) => {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
             >
               {showPassword ? <EyeOutlined /> : <EyeInvisibleOutlined />}
             </button>
@@ -167,14 +178,14 @@ const LoginPage = ({ switchTo }) => {
           type="submit"
           disabled={isLoading}
           whileTap={{ scale: 0.98 }}
-          className="w-full py-3 px-4 bg-orange-500 text-white font-medium rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="cursor-pointer w-full py-3 px-4 bg-orange-500 text-white font-medium rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </motion.button>
       </form>
       <div className="mt-8 text-center">
         <p className="text-slate-600">
-          Chưa có tài khoản?{' '}<button type="button" onClick={() => switchTo('register')} className="text-blue-600 hover:text-blue-700 font-medium">Đăng ký ngay</button>
+          Chưa có tài khoản?{' '}<button type="button" onClick={() => switchTo('register')} className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium">Đăng ký ngay</button>
         </p>
       </div>
     </div>
