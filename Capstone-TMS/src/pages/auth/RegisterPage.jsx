@@ -2,16 +2,21 @@ import { useState } from "react"
 import { motion } from "framer-motion" // eslint-disable-line no-unused-vars
 import { Link } from "react-router-dom"
 import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons"
+import api from "../../config/axios"
+import { toast } from "react-toastify"
 
 const RegisterPage = ({ switchTo }) => {
-  const [formData, setFormData] = useState({
+  const initialFormData = {
     fullName: "",
     email: "",
-    phone: "",
+    userName: "",
     password: "",
-    confirmPassword: "",
-    userType: "student"
-  })
+    phoneNumber: "",
+    phoneSecondary: "",
+    address: ""
+  }
+
+  const [formData, setFormData] = useState(initialFormData)
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState({})
@@ -35,6 +40,8 @@ const RegisterPage = ({ switchTo }) => {
 
     if (!formData.fullName.trim()) {
       newErrors.fullName = "Vui lòng nhập họ tên"
+    } else if (formData.fullName.length < 2) {
+      newErrors.fullName = "Họ tên phải có ít nhất 2 ký tự"
     }
 
     if (!formData.email.trim()) {
@@ -43,10 +50,26 @@ const RegisterPage = ({ switchTo }) => {
       newErrors.email = "Email không hợp lệ"
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Vui lòng nhập số điện thoại"
-    } else if (!/^[0-9]{10,11}$/.test(formData.phone.replace(/\s/g, ""))) {
-      newErrors.phone = "Số điện thoại không hợp lệ"
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = "Vui lòng nhập số điện thoại"
+    } else if (!/^[0-9]{10,11}$/.test(formData.phoneNumber.replace(/\s/g, ""))) {
+      newErrors.phoneNumber = "Số điện thoại không hợp lệ"
+    }
+
+    if (!formData.phoneSecondary.trim()) {
+      newErrors.phoneSecondary = "Vui lòng nhập số điện thoại"
+    } else if (!/^[0-9]{10,11}$/.test(formData.phoneSecondary.replace(/\s/g, ""))) {
+      newErrors.phoneSecondary = "Số điện thoại không hợp lệ"
+    } else if (formData.phoneSecondary === formData.phoneNumber) {
+      newErrors.phoneSecondary = "Không được trùng với số điện thoại chính"
+    }
+
+    if (!formData.userName.trim()) {
+      newErrors.userName = "Vui lòng nhập tên tài khoản"
+    } else if (formData.userName.length < 6) {
+      newErrors.userName = "Tên tài khoản phải có ít nhất 6 ký tự"
+    } else if (/\s/.test(formData.userName)) {
+      newErrors.userName = "Tên tài khoản không được chứa khoảng trắng"
     }
 
     if (!formData.password) {
@@ -68,56 +91,58 @@ const RegisterPage = ({ switchTo }) => {
 
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
+    console.log("formData:", formData)
+
+    // API register for parent
+    try {
+      const registerParent = await api.post("/Users/Parent", formData)
+      toast.success("Tạo tài khoản thành công! Vui lòng đăng nhập.")
+      switchTo("login")
+      setFormData(initialFormData)
+      console.log("API Call registerParent: ", registerParent)
+    } catch (error) {
+      console.error("Error registering parent:", error)
+
+      if (error.response && error.response.data) {
+        const message = error.response.data;
+
+        if (message.includes("the full name")) {
+          setErrors((prevErrors) => ({
+            ...prevErrors,
+            fullName: "Phải viết hoa chữ cái đầu mỗi từ"
+          }))
+        }
+        else if (message.includes("Duplicate email")) {
+          setErrors((prevErrors) => ({
+            ...prevErrors,
+            email: "Email đã được sử dụng"
+          }))
+        }
+        else if (message.includes("Duplicate Username")) {
+          setErrors((prevErrors) => ({
+            ...prevErrors,
+            userName: "Tên tài khoản đã được sử dụng"
+          }))
+        }
+        else if (message.includes("Duplicate Phonenumber")) {
+          setErrors((prevErrors) => ({
+            ...prevErrors,
+            phoneNumber: "Số điện thoại đã được sử dụng"
+          }))
+        }
+      }
+    } finally {
       setIsLoading(false)
-      console.log("Register data:", formData)
-    }, 1000)
+    }
   }
-
-  const optionRole = [
-    { value: "student", label: "Học sinh", icon: "🎓" },
-    { value: "parent", label: "Phụ huynh", icon: "👨‍👩‍👧‍👦" },
-  ];
-
 
   return (
     <div className="p-8 md:p-10 h-full flex flex-col md:overflow-y-auto">
       <div className="text-center mb-8">
         <div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-orange-500 text-white font-bold text-xl mb-4">T</div>
         <h2 className="text-2xl font-bold text-slate-900">Đăng ký tài khoản</h2>
-        <p className="text-slate-600 mt-2">Tạo tài khoản để bắt đầu học tập</p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-3">Bạn là:</label>
-          <div className="grid grid-cols-2 gap-3">
-            {optionRole.map((role) => {
-              const isActive = formData.userType === role.value;
-
-              return (
-                <motion.label
-                  key={role.value}
-                  whileTap={{ scale: 0.97 }}
-                  animate={isActive ? { scale: 1.05 } : { scale: 1 }}
-                  transition={{ type: "spring" }}
-                  className={`relative cursor-pointer rounded-lg border-2 p-4 text-cente ${isActive ? "border-orange-500 bg-orange-50" : "border-slate-200 hover:border-slate-300"}`}
-                >
-                  <input
-                    type="radio"
-                    name="userType"
-                    value={role.value}
-                    checked={isActive}
-                    onChange={handleChange}
-                    className="sr-only"
-                  />
-                  <div className="text-2xl mb-2">{role.icon}</div>
-                  <div className="font-medium text-slate-900">{role.label}</div>
-                </motion.label>
-              )
-            })}
-          </div>
-        </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">Họ và tên</label>
           <motion.input 
@@ -156,17 +181,51 @@ const RegisterPage = ({ switchTo }) => {
           <label className="block text-sm font-medium text-slate-700 mb-2">Số điện thoại</label>
           <motion.input 
             whileFocus={{ scale: 1.02, boxShadow: "0 0 6px rgba(249,115,22,0.4)", borderColor: "#fdba74" }}
-            animate={{ x: errors.phone ? [0, -5, 5, -5, 5, 0] : 0, borderColor: errors.phone ? "#fca5a5" : "#d1d5db" }}
+            animate={{ x: errors.phoneNumber ? [0, -5, 5, -5, 5, 0] : 0, borderColor: errors.phoneNumber ? "#fca5a5" : "#d1d5db" }}
             transition={{ duration: 0.4 }}
-            name="phone" 
+            name="phoneNumber" 
             type="tel" 
-            value={formData.phone} 
+            value={formData.phoneNumber} 
             onChange={handleChange} 
             className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none"
             placeholder="Nhập số điện thoại" 
           />
-          {errors.phone && 
-            <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+          {errors.phoneNumber && 
+            <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
+          }
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Số điện thoại khác</label>
+          <motion.input 
+            whileFocus={{ scale: 1.02, boxShadow: "0 0 6px rgba(249,115,22,0.4)", borderColor: "#fdba74" }}
+            animate={{ x: errors.phoneSecondary ? [0, -5, 5, -5, 5, 0] : 0, borderColor: errors.phoneSecondary ? "#fca5a5" : "#d1d5db" }}
+            transition={{ duration: 0.4 }}
+            name="phoneSecondary" 
+            type="tel" 
+            value={formData.phoneSecondary} 
+            onChange={handleChange} 
+            className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none"
+            placeholder="Nhập số điện thoại" 
+          />
+          {errors.phoneSecondary && 
+            <p className="mt-1 text-sm text-red-600">{errors.phoneSecondary}</p>
+          }
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Tên tài khoản</label>
+          <motion.input 
+            whileFocus={{ scale: 1.02, boxShadow: "0 0 6px rgba(249,115,22,0.4)", borderColor: "#fdba74" }}
+            animate={{ x: errors.userName ? [0, -5, 5, -5, 5, 0] : 0, borderColor: errors.userName ? "#fca5a5" : "#d1d5db" }}
+            transition={{ duration: 0.4 }}
+            name="userName" 
+            type="text"
+            value={formData.userName} 
+            onChange={handleChange} 
+            className="w-full px-4 py-3 border-2 rounded-lg focus:outline-none"
+            placeholder="Nhập tên tài khoản" 
+          />
+          {errors.userName && 
+            <p className="mt-1 text-sm text-red-600">{errors.userName}</p>
           }
         </div>
         <div>
@@ -186,7 +245,7 @@ const RegisterPage = ({ switchTo }) => {
             <button 
               type="button" 
               onClick={() => setShowPassword(!showPassword)} 
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
             >
               {showPassword ? <EyeOutlined /> : <EyeInvisibleOutlined />}
             </button>
@@ -209,7 +268,7 @@ const RegisterPage = ({ switchTo }) => {
           type="submit"
           disabled={isLoading}
           whileTap={{ scale: 0.98 }}
-          className="w-full py-3 px-4 bg-orange-500 text-white font-medium rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="cursor-pointer w-full py-3 px-4 bg-orange-500 text-white font-medium rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isLoading ? "Đang tạo tài khoản..." : "Đăng ký"}
         </motion.button>
