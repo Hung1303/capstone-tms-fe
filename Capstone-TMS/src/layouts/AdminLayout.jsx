@@ -22,7 +22,7 @@ import {
 
 // Menu configuration cho từng role
 const ROLE_MENUS = {
-  admin: [
+  Admin: [
     {
       key: '/admin',
       icon: <DashboardOutlined />,
@@ -72,7 +72,7 @@ const ROLE_MENUS = {
       path: '/admin/settings'
     }
   ],
-  staff: [
+  Staff: [
     {
       key: '/staff',
       icon: <DashboardOutlined />,
@@ -110,7 +110,7 @@ const ROLE_MENUS = {
       path: '/staff/reports'
     }
   ],
-  center: [
+  Center: [
     {
       key: '/center',
       icon: <DashboardOutlined />,
@@ -154,7 +154,7 @@ const ROLE_MENUS = {
       path: '/center/subscription'
     }
   ],
-  teacher: [
+  Teacher: [
     {
       key: '/teacher',
       icon: <DashboardOutlined />,
@@ -198,7 +198,7 @@ const ROLE_MENUS = {
       path: '/teacher/materials'
     }
   ],
-  parent: [
+  Parent: [
     {
       key: '/parent',
       icon: <DashboardOutlined />,
@@ -242,7 +242,7 @@ const ROLE_MENUS = {
       path: '/parent/notifications'
     }
   ],
-  student: [
+  Student: [
     {
       key: '/student',
       icon: <DashboardOutlined />,
@@ -342,12 +342,12 @@ const AdminLayout = () => {
           <div className="flex items-center gap-3 mb-3">
             <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
               <span className="text-white text-sm font-medium">
-                {user?.name?.charAt(0) || 'U'}
+                {user?.fullName?.charAt(0) || 'U'}
               </span>
             </div>
 
             <div>
-              <p className="text-sm font-medium text-gray-800">{user?.name}</p>
+              <p className="text-sm font-medium text-gray-800">{user?.fullName}</p>
               <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
             </div>
           </div>

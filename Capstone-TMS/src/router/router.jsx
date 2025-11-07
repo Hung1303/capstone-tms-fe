@@ -101,23 +101,23 @@ export const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: <ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>
+                element: <ProtectedRoute requiredRole="Admin"><AdminDashboard /></ProtectedRoute>
             },
             {
                 path: "users",
-                element: <ProtectedRoute requiredRole="admin"><UserManagement /></ProtectedRoute>
+                element: <ProtectedRoute requiredRole="Admin"><UserManagement /></ProtectedRoute>
             },
             {
                 path: "centers",
-                element: <ProtectedRoute requiredRole="admin"><CenterManagement /></ProtectedRoute>
+                element: <ProtectedRoute requiredRole="Admin"><CenterManagement /></ProtectedRoute>
             },
             {
                 path: "students",
-                element: <ProtectedRoute requiredRole="admin"><StudentManagement /></ProtectedRoute>
+                element: <ProtectedRoute requiredRole="Admin"><StudentManagement /></ProtectedRoute>
             },
             {
                 path: "classes",
-                element: <ProtectedRoute requiredRole="admin"><ClassManagement /></ProtectedRoute>
+                element: <ProtectedRoute requiredRole="Admin"><ClassManagement /></ProtectedRoute>
             }
         ]
     },
@@ -129,15 +129,15 @@ export const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: <ProtectedRoute requiredRole="staff"><StaffDashboard /></ProtectedRoute>
+                element: <ProtectedRoute requiredRole="Staff"><StaffDashboard /></ProtectedRoute>
             },
             {
                 path: "students",
-                element: <ProtectedRoute requiredRole="staff"><StudentManagement /></ProtectedRoute>
+                element: <ProtectedRoute requiredRole="Staff"><StudentManagement /></ProtectedRoute>
             },
             {
                 path: "schedule",
-                element: <ProtectedRoute requiredRole="staff"><ScheduleManagement /></ProtectedRoute>
+                element: <ProtectedRoute requiredRole="Staff"><ScheduleManagement /></ProtectedRoute>
             }
         ]
     },
@@ -149,7 +149,7 @@ export const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: <ProtectedRoute requiredRole="center"><CenterDashboard /></ProtectedRoute>
+                element: <ProtectedRoute requiredRole="Center"><CenterDashboard /></ProtectedRoute>
             }
         ]
     },
@@ -161,7 +161,7 @@ export const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: <ProtectedRoute requiredRole="teacher"><TeacherDashboard /></ProtectedRoute>
+                element: <ProtectedRoute requiredRole="Teacher"><TeacherDashboard /></ProtectedRoute>
             }
         ]
     },
@@ -173,7 +173,7 @@ export const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: <ProtectedRoute requiredRole="parent"><ParentDashboard /></ProtectedRoute>
+                element: <ProtectedRoute requiredRole="Parent"><ParentDashboard /></ProtectedRoute>
             }
         ]
     },
@@ -185,7 +185,7 @@ export const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: <ProtectedRoute requiredRole="student"><StudentDashboard /></ProtectedRoute>
+                element: <ProtectedRoute requiredRole="Student"><StudentDashboard /></ProtectedRoute>
             }
         ]
     },

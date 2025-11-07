@@ -4,7 +4,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { EyeOutlined, EyeInvisibleOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../config/axios'
-import { getRoleFromToken } from '../../utils/jwt'
+import { toast } from 'react-toastify'
+import { jwtDecode } from 'jwt-decode'
 
 const LoginPage = ({ switchTo }) => {
   const { login } = useAuth()
@@ -12,7 +13,6 @@ const LoginPage = ({ switchTo }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    role: 'student' // Mặc định là student
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -61,54 +61,40 @@ const LoginPage = ({ switchTo }) => {
 
     try {
       const { email, password } = formData
-      const url = `/Auth/Login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
+      
+      const response = await api.post(`/Auth/Login?email=${email}&password=${password}`)
+      console.log("Login response: ", response)
+      const token = response?.data?.data?.accessToken || response?.data?.accessToken || ''
 
-      // Prefer POST; if backend requires GET, it will still work if configured. Adjust if needed.
-      let response
-      try {
-        response = await api.post(url)
-        console.log('Login response (POST):', response.data);
-      } catch {
-        // fallback to GET if POST not allowed
-        response = await api.get(url)
+      if (!token) throw new Error('No token returned');
+
+      const { Email, FullName, PhoneNumber, Role, UserId, UserName  } = jwtDecode(token)
+      console.log("Decoded token payload:", jwtDecode(token))
+
+      const userData = {
+        userId: UserId,
+        fullName: FullName,
+        email: Email,
+        phoneNumber: PhoneNumber,
+        role: Role,
+        userName: UserName
       }
 
-      // Chuẩn hoá theo cấu trúc BE: { isSuccess, code, data: { accessToken, refreshToken, expiredAt }, message }
-      const apiEnvelope = response?.data || {}
-      const token = apiEnvelope?.data?.accessToken || apiEnvelope?.accessToken || ''
+      login(userData, token)
 
-      // Lưu và dựng user từ token
-      login(null, token)
-
-      const role = getRoleFromToken(token)
-      console.log('Logged in user role:', role)
-      switch (role) {
-        case 'admin':
-          navigate('/admin')
-          break
-        case 'staff':
-          navigate('/staff')
-          break
-        case 'center':
-          navigate('/center')
-          break
-        case 'teacher':
-          navigate('/teacher')
-          break
-        case 'parent':
-          navigate('/parent')
-          break
-        case 'student':
-          navigate('/student')
-          break
-        default:
-          navigate('/')
+      const roleRoutes = {
+        Admin: '/admin',
+        Staff: '/staff',
+        Center: '/center',
+        Teacher: '/teacher',
+        Parent: '/parent',
+        Student: '/student'
       }
-    } catch {
-      setErrors({
-        email: 'Email hoặc mật khẩu không đúng',
-        password: 'Email hoặc mật khẩu không đúng'
-      })
+
+      navigate(roleRoutes[Role] || '/')
+    } catch (error) {
+      console.error('Login error:', error)
+      toast.error(error.response?.data?.message)
     } finally {
       setIsLoading(false)
     }
@@ -160,7 +146,7 @@ const LoginPage = ({ switchTo }) => {
               {showPassword ? <EyeOutlined /> : <EyeInvisibleOutlined />}
             </button>
           </div>
-          {errors.email &&
+          {errors.password &&
             <p className="mt-1 text-sm text-red-600">{errors.password}</p>
           }
         </div>
