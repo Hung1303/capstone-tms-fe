@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Tạm thời dùng baseURL rỗng để tránh lỗi khi chưa có API backend
 const api = axios.create({
-    baseURL: "https://localhost:7181/api",
+    baseURL: "http://localhost:8080/api",
     timeout: 10000,
     headers: {
         'Content-Type': 'application/json',

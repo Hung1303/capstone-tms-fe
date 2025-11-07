@@ -6,14 +6,14 @@ import {
   DeleteOutlined,
   UserOutlined,
   TeamOutlined,
-  BookOutlined
 } from '@ant-design/icons'
 import { PiChalkboardTeacherLight, PiStudentLight } from 'react-icons/pi'
-import { Card, Space, Table, Tooltip, Select, message } from 'antd'
+import { Card, Space, Table, Tooltip, Select } from 'antd'
 import api from '../../config/axios'
 import { RiAdminLine } from 'react-icons/ri'
 import { TfiLayoutCtaCenter } from 'react-icons/tfi'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
+import { toast } from 'react-toastify'
 
 const UserManagement = () => {
   const [users, setUsers] = useState([])
@@ -21,9 +21,7 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState('all')
   const [selectedUsers, setSelectedUsers] = useState([])
-  const [toggling, setToggling] = useState({})
-  const STATUS_TO_VALUE = { Pending: 0, Active: 1, Suspended: 2, Deactivated: 3 }
-  const VALUE_TO_STATUS = { 0: 'Pending', 1: 'Active', 2: 'Suspended', 3: 'Deactivated' }
+  const STATUS_LIST = [ 'Pending', 'Active', 'Suspended', 'Deactivated' ]
   const [pagination, setPagination] = useState({
     pageNumber: 1,
     pageSize: 5,
@@ -90,15 +88,14 @@ const UserManagement = () => {
       key: 'updateStatus',
       width: 240,
       render: (_, record) => {
-        const value = typeof record.status === 'number' ? VALUE_TO_STATUS[record.status] : record.status
+
         return (
           <Select
-            value={value}
+            value={record.status}
             onChange={(val) => handleChangeStatus(record.key, val)}
-            disabled={!!toggling[record.key]}
             style={{ width: 200 }}
             options={[
-              { value: 'Pending', label: 'Chờ duyệt' },
+              { value: 'Pending', label: 'Chờ duyệt', disabled: true },
               { value: 'Active', label: 'Hoạt động' },
               { value: 'Suspended', label: 'Tạm khóa' },
               { value: 'Deactivated', label: 'Ngừng hoạt động' },
@@ -168,22 +165,21 @@ const UserManagement = () => {
   }, [])
 
   const handleChangeStatus = async (userId, newStatus) => {
-    setToggling(prev => ({ ...prev, [userId]: true }))
+    setLoading(true)
 
-    const previousUsers = users
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u))
 
     try {
-      const statusValue = typeof newStatus === 'number' ? newStatus : STATUS_TO_VALUE[newStatus]
+      const statusValue = STATUS_LIST.indexOf(newStatus)
       const apiResponse = await api.put(`/Users/Status/${userId}?status=${statusValue}`)
       console.log('Change status response:', apiResponse.data)
-      message.success('Cập nhật trạng thái thành công')
+      toast.success('Cập nhật trạng thái thành công')
     } catch (error) {
       console.error('Change status failed:', error)
-      setUsers(previousUsers)
-      message.error('Cập nhật trạng thái thất bại')
+      toast.error('Cập nhật trạng thái thất bại')
     } finally {
-      setToggling(prev => ({ ...prev, [userId]: false }))
+      fetchUsers(pagination.pageNumber, pagination.pageSize)
+      setLoading(false)
     }
   }
 
@@ -214,8 +210,7 @@ const UserManagement = () => {
   }
 
   const getStatusBadge = (status) => {
-    const normalized = typeof status === 'number' ? VALUE_TO_STATUS[status] : status
-    switch (normalized) {
+    switch (status) {
       case 'Active':
         return <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Hoạt động</span>
       case 'Pending':
@@ -289,7 +284,7 @@ const UserManagement = () => {
           }}
           columns={columns}
           dataSource={data}
-          rowKey="id"
+          rowKey="key"
           loading={loading}
           pagination={{
             current: pagination.pageNumber,
@@ -303,97 +298,7 @@ const UserManagement = () => {
           scroll={{ y: 75 * 5}}
         />
       </Card>
-
-
     </Space>
-
-    // <div className="space-y-6">
-      
-
-    
-
-    //   {/* Users table */}
-    //   <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-    //     <div className="overflow-x-auto">
-    //       <table className="w-full">
-    //         <thead className="bg-gray-50">
-    //           <tr>
-    //             <th className="px-6 py-3 text-left">
-    //               <input
-    //                 type="checkbox"
-    //                 checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
-    //                 onChange={handleSelectAll}
-    //                 className="rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-    //               />
-    //             </th>
-    //             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-    //               Người dùng
-    //             </th>
-    //             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-    //               Vai trò
-    //             </th>
-    //             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-    //               Trạng thái
-    //             </th>
-    //             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-    //               Trung tâm
-    //             </th>
-    //             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-    //               Đăng nhập cuối
-    //             </th>
-    //             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-    //               Thao tác
-    //             </th>
-    //           </tr>
-    //         </thead>
-    //         <tbody className="bg-white divide-y divide-gray-200">
-    //           {filteredUsers.map((user) => (
-    //             <tr key={user.id} className="hover:bg-gray-50">
-    //               <td className="px-6 py-4">
-    //                 <input
-    //                   type="checkbox"
-    //                   checked={selectedUsers.includes(user.id)}
-    //                   onChange={() => handleSelectUser(user.id)}
-    //                   className="rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-    //                 />
-    //               </td>
-    //               <td className="px-6 py-4">
-                    
-    //               </td>
-                  
-    //               <td className="px-6 py-4">
-    //                 {getStatusBadge(user.status)}
-    //               </td>
-    //               <td className="px-6 py-4 text-sm text-gray-900">
-    //                 {user.center}
-    //               </td>
-    //               <td className="px-6 py-4 text-sm text-gray-500">
-    //                 {user.lastLogin}
-    //               </td>
-    //               
-    //             </tr>
-    //           ))}
-    //         </tbody>
-    //       </table>
-    //     </div>
-    //   </div>
-
-    //   {/* Pagination */}
-    //   <div className="flex items-center justify-between">
-    //     <div className="text-sm text-gray-700">
-    //       Hiển thị {filteredUsers.length} trong tổng số {users.length} người dùng
-    //     </div>
-    //     <div className="flex items-center gap-2">
-    //       <button className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50">
-    //         Trước
-    //       </button>
-    //       <span className="px-3 py-1 bg-orange-500 text-white rounded text-sm">1</span>
-    //       <button className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50">
-    //         Sau
-    //       </button>
-    //     </div>
-    //   </div>
-    // </div>
   )
 }
 

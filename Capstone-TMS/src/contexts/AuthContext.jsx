@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import api from '../config/axios'
-import { buildUserFromToken } from '../utils/jwt'
+import { jwtDecode } from 'jwt-decode'
 
 const AuthContext = createContext()
 
@@ -17,10 +17,19 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Khởi động: lấy token và dựng user từ JWT
     const token = localStorage.getItem('token')
     if (token) {
-      const builtUser = buildUserFromToken(token)
+      const { Email, FullName, PhoneNumber, Role, UserId, UserName  } = jwtDecode(token)
+
+      const builtUser = {
+        userId: UserId,
+        fullName: FullName,
+        email: Email,
+        phoneNumber: PhoneNumber,
+        role: Role,
+        userName: UserName
+      }
+
       if (builtUser) {
         setUser(builtUser)
         api.defaults.headers.Authorization = `Bearer ${token}`
@@ -36,10 +45,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', token)
       api.defaults.headers.Authorization = `Bearer ${token}`
     }
-    // Ưu tiên lấy user từ token để đảm bảo đúng role
-    const builtUser = token ? buildUserFromToken(token) : null
-    const nextUser = builtUser || userData || null
-    setUser(nextUser)
+    setUser(userData)
   }
 
   const logout = () => {
