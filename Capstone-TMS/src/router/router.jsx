@@ -13,6 +13,7 @@ import Recruitment from "../pages/shared/Recruitment";
 import About from "../pages/shared/About";
 import Blog from "../pages/shared/Blog";
 import FAQ from "../pages/shared/FAQ";
+import RegisterCenter from "../pages/shared/RegisterCenter";
 
 // Dashboard pages
 import AdminDashboard from "../pages/dashboard/AdminDashboard";
@@ -38,6 +39,7 @@ import AdminLayout from "../layouts/AdminLayout";
 
 // Components
 import ProtectedRoute from "../components/ProtectedRoute";
+import ChildrenManagement from "../pages/management/ChildrenManagement";
 
 export const router = createBrowserRouter([
     // Auth routes (không dùng layout)
@@ -78,6 +80,10 @@ export const router = createBrowserRouter([
             {
                 path: "recruitment",
                 element: <Recruitment />,
+            },
+            {
+                path: "register-center",
+                element: <RegisterCenter />,
             },
             {
                 path: "about",
@@ -174,6 +180,10 @@ export const router = createBrowserRouter([
             {
                 index: true,
                 element: <ProtectedRoute requiredRole="Parent"><ParentDashboard /></ProtectedRoute>
+            },
+            {
+                path: "children",
+                element: <ProtectedRoute requiredRole="Parent"><ChildrenManagement /></ProtectedRoute>
             }
         ]
     },

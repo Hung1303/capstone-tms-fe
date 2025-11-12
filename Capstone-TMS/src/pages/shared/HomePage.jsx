@@ -61,7 +61,7 @@ const HomePage = () => {
                 "Thanh toán phí nền tảng sau 35 ngày",
                 "Chính sách Sử dụng Nền tảng rõ ràng, minh bạch",
             ],
-            buttonText: "Đăng ký Trung tâm",
+            buttonText: "Đăng ký học",
             buttonLink: "/register-center",
             color: "text-teal-700",
             buttonStyle: "bg-teal-600 hover:bg-teal-700",
@@ -155,7 +155,7 @@ const HomePage = () => {
                         </p>
 
                         <motion.div
-                            className="mt-12 grid md:grid-cols-3 gap-8"
+                            className="mt-12 grid md:grid-cols-3 gap-8" 
                             variants={containerVariants}
                             initial="hidden"
                             whileInView="visible"
@@ -164,7 +164,7 @@ const HomePage = () => {
                             {cardData.map((card, index) => (
                                 <motion.div
                                     key={index}
-                                    className="bg-white p-8 rounded-xl shadow-lg border border-orange-100/70 flex flex-col items-center hover:shadow-xl transition-shadow"
+                                    className="bg-gradient-to-r from-white via-teal-50 to-orange-50 p-8 rounded-xl flex flex-col items-center"
                                     variants={cardVariants}
                                 >
                                     <h3 className={`text-xl font-bold ${card.color} mb-6`}>
