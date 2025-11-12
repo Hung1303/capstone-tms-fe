@@ -182,7 +182,7 @@ const Recruitment = () => {
 										<motion.button
 											whileHover={{ scale: 1.04 }}
 											whileTap={{ scale: 0.98 }}
-											className="mt-6 w-full px-6 py-3 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700"
+											className="cursor-pointer mt-6 w-full px-6 py-3 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700"
 											onClick={() => navigate('/register-center')}
 										>
 											Ứng tuyển trung tâm
@@ -225,7 +225,7 @@ const Recruitment = () => {
 										<motion.button
 											whileHover={{ scale: 1.04 }}
 											whileTap={{ scale: 0.98 }}
-											className="mt-6 w-full px-6 py-3 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700"
+											className="cursor-pointer mt-6 w-full px-6 py-3 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700"
 										>
 											Ứng tuyển giáo viên
 										</motion.button>
