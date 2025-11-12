@@ -251,7 +251,7 @@ const CentersMap = () => {
 
   return (
     <Fragment>
-      <div style={{ display: "flex", height: "90vh", position: "relative" }}>
+      <div style={{ display: "flex", height: "90vh", position: "relative", zIndex: 0 }}>
         {/* Nút Toggle */}
         <Button
           type="primary"

@@ -182,7 +182,7 @@ const NavBar = ({ handleScrollToTop }) => {
                                                                 transition={{ duration: 0.2 }}
                                                                 className="absolute left-full -top-2 bg-white rounded shadow-xl border border-gray-100 min-w-[180px] z-30 py-1"
                                                             >
-                                                                {sub.children.map((item, idx) => (
+                                                                {sub.children.map((item) => (
                                                                     <Link to={`/search?subject_id=${item.subject_id}`} key={item.subject_id} className="block w-full text-left px-4 py-2 hover:bg-orange-50">
                                                                         {item.name}
                                                                     </Link>
@@ -235,16 +235,18 @@ const NavBar = ({ handleScrollToTop }) => {
                 <div className="flex items-center gap-3">
                     <Link to="/login">
                         <motion.button
+                            whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-50"
+                            className="cursor-pointer px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-50"
                         >
                             Đăng nhập
                         </motion.button>
                     </Link>
                     <Link to="/register">
                         <motion.button
+                            whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="px-3 py-2 text-sm font-medium rounded-md bg-orange-500 text-white hover:bg-orange-600"
+                            className="cursor-pointer px-3 py-2 text-sm font-medium rounded-md bg-orange-500 text-white hover:bg-orange-600"
                         >
                             Đăng ký
                         </motion.button>

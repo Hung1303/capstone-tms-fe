@@ -1,6 +1,6 @@
 import { VerticalAlignTopOutlined } from '@ant-design/icons'
 import { useEffect, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { Link } from 'react-router-dom'
 import CentersMap from '../../components/CentersMap'
 
@@ -34,7 +34,7 @@ const HomePage = () => {
                 "Báo cáo Tiến độ Học tập từ Trung tâm chi tiết",
             ],
             buttonText: "Tìm Khóa học",
-            buttonLink: "/search-courses",
+            buttonLink: "/centers",
             color: "text-orange-600",
             buttonStyle: "bg-orange-500 hover:bg-orange-600",
         },
@@ -61,8 +61,8 @@ const HomePage = () => {
                 "Thanh toán phí nền tảng sau 35 ngày",
                 "Chính sách Sử dụng Nền tảng rõ ràng, minh bạch",
             ],
-            buttonText: "Đăng ký học",
-            buttonLink: "/register-center",
+            buttonText: "Đăng ký",
+            buttonLink: "/recruitment",
             color: "text-teal-700",
             buttonStyle: "bg-teal-600 hover:bg-teal-700",
         },
@@ -186,7 +186,7 @@ const HomePage = () => {
                                         <motion.button
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
-                                            className={`w-full px-6 py-3 text-white font-semibold rounded-lg transition ${card.buttonStyle}`}
+                                            className={`cursor-pointer w-full px-6 py-3 text-white font-semibold rounded-lg transition ${card.buttonStyle}`}
                                         >
                                             {card.buttonText} &rarr;
                                         </motion.button>
