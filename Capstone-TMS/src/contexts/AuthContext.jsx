@@ -18,8 +18,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    if (token) {
-      const { Email, FullName, PhoneNumber, Role, UserId, UserName  } = jwtDecode(token)
+    if (token && token.split('.').length === 3) {
+      const { Email, FullName, PhoneNumber, Role, UserId, UserName, ParentProfileId  } = jwtDecode(token)
 
       const builtUser = {
         userId: UserId,
@@ -27,7 +27,8 @@ export const AuthProvider = ({ children }) => {
         email: Email,
         phoneNumber: PhoneNumber,
         role: Role,
-        userName: UserName
+        userName: UserName,
+        parentProfileId: ParentProfileId
       }
 
       if (builtUser) {
@@ -36,6 +37,8 @@ export const AuthProvider = ({ children }) => {
       } else {
         localStorage.removeItem('token')
       }
+    } else {
+      setUser(null)
     }
     setLoading(false)
   }, [])

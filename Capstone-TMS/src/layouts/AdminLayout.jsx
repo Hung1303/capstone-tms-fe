@@ -1,9 +1,6 @@
-import { useState } from 'react'
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { AuthProvider, useAuth } from '../contexts/AuthContext'
 import { 
-  MenuFoldOutlined, 
-  MenuUnfoldOutlined,
   DashboardOutlined,
   UserOutlined,
   TeamOutlined,
@@ -12,7 +9,6 @@ import {
   BarChartOutlined,
   SettingOutlined,
   LogoutOutlined,
-  HomeOutlined,
   CheckCircleOutlined,
   FileTextOutlined,
   DollarOutlined,
@@ -363,36 +359,10 @@ const AdminLayout = () => {
 
       {/* Main content */}
       <div className="transition-all duration-300 ml-64">
-        {/* Header */}
-        {/* <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setCollapsed(!collapsed)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              </button>
-              <h1 className="text-xl font-semibold text-gray-800">
-                {menuItems.find(item => item.path === location.pathname)?.label || 'Dashboard'}
-              </h1>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <Link
-                to="/"
-                className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-blue-600 transition-colors"
-              >
-                <HomeOutlined />
-                <span>Về trang chủ</span>
-              </Link>
-            </div>
-          </div>
-        </header> */}
-
-        {/* Page content */}
         <main className="p-6">
-          <Outlet />
+          <AuthProvider>
+            <Outlet />
+          </AuthProvider>
         </main>
       </div>
     </div>
