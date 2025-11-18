@@ -29,6 +29,12 @@ import CenterManagement from "../pages/management/CenterManagement";
 import ClassManagement from "../pages/management/ClassManagement";
 import StudentManagement from "../pages/management/StudentManagement";
 import ScheduleManagement from "../pages/management/ScheduleManagement";
+import SubjectManagement from "../pages/management/SubjectManagement";
+import CourseManagement from "../pages/management/CourseManagement";
+import TeacherCourseApproval from "../pages/management/TeacherCourseApproval";
+import StaffCourseConfirmation from "../pages/management/StaffCourseConfirmation";
+import SubscriptionManagement from "../pages/management/SubscriptionManagement";
+import CenterSubscription from "../pages/management/CenterSubscription";
 
 // Error pages
 import NotFound from "../pages/error/NotFound";
@@ -124,6 +130,14 @@ export const router = createBrowserRouter([
             {
                 path: "classes",
                 element: <ProtectedRoute requiredRole="Admin"><ClassManagement /></ProtectedRoute>
+            },
+            {
+                path: "subjects",
+                element: <ProtectedRoute requiredRole="Admin"><SubjectManagement /></ProtectedRoute>
+            },
+            {
+                path: "subscriptions",
+                element: <ProtectedRoute requiredRole="Admin"><SubscriptionManagement /></ProtectedRoute>
             }
         ]
     },
@@ -144,6 +158,10 @@ export const router = createBrowserRouter([
             {
                 path: "schedule",
                 element: <ProtectedRoute requiredRole="Staff"><ScheduleManagement /></ProtectedRoute>
+            },
+            {
+                path: "course-confirmation",
+                element: <ProtectedRoute requiredRole="Staff"><StaffCourseConfirmation /></ProtectedRoute>
             }
         ]
     },
@@ -156,6 +174,14 @@ export const router = createBrowserRouter([
             {
                 index: true,
                 element: <ProtectedRoute requiredRole="Center"><CenterDashboard /></ProtectedRoute>
+            },
+            {
+                path: "courses",
+                element: <ProtectedRoute requiredRole="Center"><CourseManagement /></ProtectedRoute>
+            },
+            {
+                path: "subscription",
+                element: <ProtectedRoute requiredRole="Center"><CenterSubscription /></ProtectedRoute>
             }
         ]
     },
@@ -168,6 +194,10 @@ export const router = createBrowserRouter([
             {
                 index: true,
                 element: <ProtectedRoute requiredRole="Teacher"><TeacherDashboard /></ProtectedRoute>
+            },
+            {
+                path: "course-approval",
+                element: <ProtectedRoute requiredRole="Teacher"><TeacherCourseApproval /></ProtectedRoute>
             }
         ]
     },

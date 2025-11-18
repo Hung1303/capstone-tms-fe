@@ -13,7 +13,8 @@ import {
   FileTextOutlined,
   DollarOutlined,
   BellOutlined,
-  StarOutlined
+  StarOutlined,
+  GiftOutlined
 } from '@ant-design/icons'
 
 // Menu configuration cho từng role
@@ -50,6 +51,18 @@ const ROLE_MENUS = {
       path: '/admin/classes'
     },
     {
+      key: '/admin/subjects',
+      icon: <BookOutlined />,
+      label: 'Quản lý môn học',
+      path: '/admin/subjects'
+    },
+    {
+      key: '/admin/subscriptions',
+      icon: <GiftOutlined />,
+      label: 'Quản lý gói',
+      path: '/admin/subscriptions'
+    },
+    {
       key: '/admin/schedule',
       icon: <CalendarOutlined />,
       label: 'Lịch học',
@@ -82,10 +95,10 @@ const ROLE_MENUS = {
       path: '/staff/centers'
     },
     {
-      key: '/staff/courses',
-      icon: <BookOutlined />,
+      key: '/staff/course-confirmation',
+      icon: <CheckCircleOutlined />,
       label: 'Xác thực khóa học',
-      path: '/staff/courses'
+      path: '/staff/course-confirmation'
     },
     {
       key: '/staff/students',
@@ -120,6 +133,12 @@ const ROLE_MENUS = {
       path: '/center/courses'
     },
     {
+      key: '/center/subscription',
+      icon: <GiftOutlined />,
+      label: 'Gói dịch vụ',
+      path: '/center/subscription'
+    },
+    {
       key: '/center/teachers',
       icon: <TeamOutlined />,
       label: 'Quản lý giáo viên',
@@ -142,12 +161,6 @@ const ROLE_MENUS = {
       icon: <DollarOutlined />,
       label: 'Doanh thu',
       path: '/center/revenue'
-    },
-    {
-      key: '/center/subscription',
-      icon: <StarOutlined />,
-      label: 'Gói đăng ký',
-      path: '/center/subscription'
     }
   ],
   Teacher: [
@@ -156,6 +169,12 @@ const ROLE_MENUS = {
       icon: <DashboardOutlined />,
       label: 'Dashboard',
       path: '/teacher'
+    },
+    {
+      key: '/teacher/course-approval',
+      icon: <CheckCircleOutlined />,
+      label: 'Xét duyệt khóa học',
+      path: '/teacher/course-approval'
     },
     {
       key: '/teacher/courses',
