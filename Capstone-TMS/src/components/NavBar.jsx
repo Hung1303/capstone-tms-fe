@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { Link } from 'react-router-dom'
 
 // ... (menuData và moreMenu giữ nguyên) ...
@@ -102,7 +102,7 @@ const moreMenu = [
     { label: 'Hỏi đáp', path: '/faq' },
 ]
 
-const NavBar = ({ handleScrollToTop }) => {
+const NavBar = () => {
     const [openMenu, setOpenMenu] = useState(null)
     const [openSubMenu, setOpenSubMenu] = useState(null)
 

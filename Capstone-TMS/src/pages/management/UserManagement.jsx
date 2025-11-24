@@ -1,12 +1,6 @@
 import { useState, useEffect } from 'react'
-import { 
-  SearchOutlined, 
-  PlusOutlined, 
-  EditOutlined, 
-  DeleteOutlined,
-  UserOutlined,
-  TeamOutlined,
-} from '@ant-design/icons'
+import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, TeamOutlined, ClockCircleOutlined, CheckCircleOutlined, 
+         WarningOutlined, StopOutlined } from '@ant-design/icons'
 import { PiChalkboardTeacherLight, PiStudentLight } from 'react-icons/pi'
 import { Card, Space, Table, Tooltip, Select } from 'antd'
 import api from '../../config/axios'
@@ -61,7 +55,8 @@ const UserManagement = () => {
           Teacher: 'bg-green-100',
           Student: 'bg-gray-100',
           Parent: 'bg-yellow-100',
-          Center: 'bg-purple-100'
+          Center: 'bg-purple-100',
+          Inspector: 'bg-orange-100'
         }
 
         return (
@@ -81,19 +76,21 @@ const UserManagement = () => {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
+      width: 165,
       render: (status) => getStatusBadge(status)
     },
     {
       title: 'Cập nhật trạng thái',
       key: 'updateStatus',
-      width: 240,
+      width: 200,
       render: (_, record) => {
-
+        console.log("record", record)
         return (
           <Select
             value={record.status}
             onChange={(val) => handleChangeStatus(record.key, val)}
-            style={{ width: 200 }}
+            style={{ width: 155, textAlign: "center" }}
+            disabled={record.role === "Center" ? true : false}
             options={[
               { value: 'Pending', label: 'Chờ duyệt', disabled: true },
               { value: 'Active', label: 'Hoạt động' },
@@ -107,6 +104,7 @@ const UserManagement = () => {
     {
       title: 'Thao tác',
       key: 'actions',
+      width: 100,
       render: () => (
         <div className="flex items-center gap-2">
           <Tooltip title="Chỉnh sửa">
@@ -183,16 +181,15 @@ const UserManagement = () => {
     }
   }
 
-  
-
   const getRoleIcon = (role) => {
     switch (role) {
-      case 'admin': return <RiAdminLine className="text-red-500" />
-      case 'staff': return <TeamOutlined className="text-blue-500" />
-      case 'teacher': return <PiChalkboardTeacherLight className="text-green-500" />
-      case 'student': return <PiStudentLight  className="text-gray-500" />
+      case 'Admin': return <RiAdminLine className="text-lg" />
+      case 'Staff': return <TeamOutlined className="text-blue-500" />
+      case 'Teacher': return <PiChalkboardTeacherLight className="text-lg" />
+      case 'Student': return <PiStudentLight  className="text-lg" />
       case 'Parent': return <UserOutlined className="text-[15px]" />
       case 'Center': return <TfiLayoutCtaCenter  className="text-lg" />
+      case 'Inspector': return <TeamOutlined className="text-[15px]" />
       default: return <UserOutlined />
     }
   }
@@ -204,24 +201,43 @@ const UserManagement = () => {
       Teacher: 'Giáo viên',
       Student: 'Học sinh',
       Parent: 'Phụ huynh',
-      Center: 'Trung tâm'
+      Center: 'Trung tâm',
+      Inspector: 'Giám định viên'
     }
     return labels[role] || role
   }
 
   const getStatusBadge = (status) => {
-    switch (status) {
-      case 'Active':
-        return <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Hoạt động</span>
-      case 'Pending':
-        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Chờ duyệt</span>
-      case 'Suspended':
-        return <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">Tạm khóa</span>
-      case 'Deactivated':
-        return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">Ngừng hoạt động</span>
-      default:
-        return <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">Không xác định</span>
+    const statusConfig = {
+      Active: {
+        label: "Hoạt động", 
+        className: "bg-green-100 text-green-800",
+        icon: <CheckCircleOutlined />
+      },
+      Pending: {
+        label: "Chờ duyệt", 
+        className: "bg-yellow-100 text-yellow-800",
+        icon: <ClockCircleOutlined />
+      },
+      Suspended: {
+        label: "Tạm khóa", 
+        className: "bg-orange-100 text-orange-800",
+        icon: <WarningOutlined />
+      },
+      Deactivated: {
+        label: "Ngừng hoạt động", 
+        className: "bg-red-100 text-red-800",
+        icon: <StopOutlined />
+      }
     }
+
+    const config = statusConfig[status]
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.className}`}>
+        {config.icon}
+        {config.label}
+      </span>
+    )
   }
 
   
@@ -295,7 +311,7 @@ const UserManagement = () => {
             showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`,
             onChange: (page, pageSize) => fetchUsers(page, pageSize),
           }}
-          scroll={{ y: 75 * 5}}
+          scroll={{ x: "max-content", y: pagination.pageSize === 5 ? undefined : 75 * 5 }}
         />
       </Card>
     </Space>

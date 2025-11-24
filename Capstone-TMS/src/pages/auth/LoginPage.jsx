@@ -89,13 +89,18 @@ const LoginPage = ({ switchTo }) => {
         Center: '/center',
         Teacher: '/teacher',
         Parent: '/parent',
-        Student: '/student'
+        Student: '/student',
+        Inspector: '/inspector'
       }
 
       navigate(roleRoutes[Role] || '/')
     } catch (error) {
       console.error('Login error:', error)
-      toast.error(error.response?.data?.message)
+      if (error.response) {
+        toast.error(error.response?.data?.message)
+      } else {
+        toast.error(error.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.')
+      }
     } finally {
       setIsLoading(false)
     }
