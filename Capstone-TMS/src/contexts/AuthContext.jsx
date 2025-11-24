@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import api from '../config/axios'
 import { jwtDecode } from 'jwt-decode'
+import { useNavigate } from 'react-router-dom'
 
 const AuthContext = createContext()
 
@@ -13,12 +14,43 @@ export const useAuth = () => {
 }
 
 export const AuthProvider = ({ children }) => {
+  const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  const logout = () => {
+    setUser(null)
+    localStorage.removeItem('token')
+    navigate("/login");
+    delete api.defaults.headers.Authorization
+  }
+
+  const login = (userData, token) => {
+    if (token) {
+      localStorage.setItem('token', token)
+      api.defaults.headers.Authorization = `Bearer ${token}`
+    }
+    setUser(userData)
+  }
+
+  const isTokenExpired = (token) => {
+    try {
+      const decoded = jwtDecode(token)
+      return decoded.exp * 1000 < Date.now()
+    } catch {
+      return true
+    }
+  }
 
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token && token.split('.').length === 3) {
+      if (isTokenExpired(token)) {
+        logout()
+        setLoading(false)
+        return
+      }
+
       const { Email, FullName, PhoneNumber, Role, UserId, UserName, ParentProfileId, CenterProfileId } = jwtDecode(token)
 
       const builtUser = {
@@ -32,31 +64,28 @@ export const AuthProvider = ({ children }) => {
         centerProfileId: CenterProfileId
       }
 
-      if (builtUser) {
-        setUser(builtUser)
-        api.defaults.headers.Authorization = `Bearer ${token}`
-      } else {
-        localStorage.removeItem('token')
-      }
+      setUser(builtUser)
+      api.defaults.headers.Authorization = `Bearer ${token}`
     } else {
-      setUser(null)
+      logout();
     }
+
     setLoading(false)
   }, [])
 
-  const login = (userData, token) => {
-    if (token) {
-      localStorage.setItem('token', token)
-      api.defaults.headers.Authorization = `Bearer ${token}`
-    }
-    setUser(userData)
-  }
+  useEffect(() => {
+    const interceptor = api.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          logout();
+        }
+        return Promise.reject(error);
+      }
+    );
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem('token')
-    delete api.defaults.headers.Authorization
-  }
+    return () => api.interceptors.response.eject(interceptor);
+  }, []);
 
   const isAdmin = () => {
     return user?.role === 'admin'

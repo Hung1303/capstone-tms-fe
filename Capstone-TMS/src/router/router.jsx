@@ -46,22 +46,24 @@ import AdminLayout from "../layouts/AdminLayout";
 // Components
 import ProtectedRoute from "../components/ProtectedRoute";
 import ChildrenManagement from "../pages/management/ChildrenManagement";
+import CenterInspectionManagement from "../pages/management/CenterInspectionManagement";
+import { AuthProvider } from "../contexts/AuthContext";
 
 export const router = createBrowserRouter([
     // Auth routes (không dùng layout)
     {
         path: "/login",
-        element: <AuthPage />,
+        element: <AuthProvider><AuthPage /></AuthProvider>,
     },
     {
         path: "/register",
-        element: <AuthPage />,
+        element: <AuthProvider><AuthPage /></AuthProvider>,
     },
     
     // Public routes (dùng HomeLayout)
     {
         path: "/",
-        element: <HomeLayout />,
+        element: <AuthProvider><HomeLayout /></AuthProvider>,
         children: [
             {
                 index: true,
@@ -109,7 +111,7 @@ export const router = createBrowserRouter([
     // Admin routes (dùng AdminLayout)
     {
         path: "/admin",
-        element: <AdminLayout />,
+        element: <AuthProvider><AdminLayout /></AuthProvider>,
         children: [
             {
                 index: true,
@@ -145,7 +147,7 @@ export const router = createBrowserRouter([
     // Staff routes
     {
         path: "/staff",
-        element: <AdminLayout />,
+        element: <AuthProvider><AdminLayout /></AuthProvider>,
         children: [
             {
                 index: true,
@@ -165,11 +167,27 @@ export const router = createBrowserRouter([
             }
         ]
     },
+
+    // Inspector routes
+    {
+        path: "/inspector",
+        element: <AuthProvider><AdminLayout /></AuthProvider>,
+        children: [
+            {
+                index: true,
+                element: <ProtectedRoute requiredRole="Inspector"><StaffDashboard /></ProtectedRoute>
+            },
+            {
+                path: "center",
+                element: <ProtectedRoute requiredRole="Inspector"><CenterInspectionManagement /></ProtectedRoute>
+            }
+        ]
+    },
     
     // Center routes
     {
         path: "/center",
-        element: <AdminLayout />,
+        element: <AuthProvider><AdminLayout /></AuthProvider>,
         children: [
             {
                 index: true,
@@ -189,7 +207,7 @@ export const router = createBrowserRouter([
     // Teacher routes
     {
         path: "/teacher",
-        element: <AdminLayout />,
+        element: <AuthProvider><AdminLayout /></AuthProvider>,
         children: [
             {
                 index: true,
@@ -205,7 +223,7 @@ export const router = createBrowserRouter([
     // Parent routes
     {
         path: "/parent",
-        element: <AdminLayout />,
+        element: <AuthProvider><AdminLayout /></AuthProvider>,
         children: [
             {
                 index: true,
@@ -221,7 +239,7 @@ export const router = createBrowserRouter([
     // Student routes
     {
         path: "/student",
-        element: <AdminLayout />,
+        element: <AuthProvider><AdminLayout /></AuthProvider>,
         children: [
             {
                 index: true,
@@ -248,6 +266,6 @@ export const router = createBrowserRouter([
     // 404 Not Found - Catch all routes (phải để cuối cùng)
     {
         path: "*",
-        element: <NotFound />,
+        element: <AuthProvider><NotFound /></AuthProvider>,
     },
 ]);

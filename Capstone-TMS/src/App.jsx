@@ -6,10 +6,10 @@ import { ToastContainer } from 'react-toastify';
 function App() {
 
   return (
-    <AuthProvider>
+    <>
       <ToastContainer />
       <RouterProvider router={router}/>
-    </AuthProvider>
+    </>
   )
 }
 

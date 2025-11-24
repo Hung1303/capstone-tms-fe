@@ -29,7 +29,7 @@ const ROLE_MENUS = {
     {
       key: '/admin/users',
       icon: <UserOutlined />,
-      label: 'Quản lý người dùng',
+      label: 'Quản lý tài khoản',
       path: '/admin/users'
     },
     {
@@ -117,6 +117,20 @@ const ROLE_MENUS = {
       icon: <BarChartOutlined />,
       label: 'Báo cáo',
       path: '/staff/reports'
+    }
+  ],
+  Inspector: [
+    {
+      key: '/inspector',
+      icon: <DashboardOutlined />,
+      label: 'Dashboard',
+      path: '/inspector'
+    },
+    {
+      key: '/inspector/center',
+      icon: <TeamOutlined />,
+      label: 'Xác thực trung tâm',
+      path: '/inspector/center'
     }
   ],
   Center: [
@@ -379,9 +393,7 @@ const AdminLayout = () => {
       {/* Main content */}
       <div className="transition-all duration-300 ml-64">
         <main className="p-6">
-          <AuthProvider>
-            <Outlet />
-          </AuthProvider>
+          <Outlet />
         </main>
       </div>
     </div>
