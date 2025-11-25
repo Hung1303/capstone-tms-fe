@@ -268,7 +268,7 @@ const CenterManagement = () => {
       render: (status) => getStatusBadge(centerStatus[status])
     },
     {
-      title: "Ngày hoàn thành giám định",
+      title: "Ngày đưa ra quyết định",
       dataIndex: "verificationCompletedAt",
       key: "verificationCompletedAt",
       width: 140,
@@ -1001,7 +1001,7 @@ const CenterManagement = () => {
                     {getVerificationStatusBadge(verificationStatus[formViewData.status])}
                   </div>
                   <div className="text-sm text-gray-600">
-                    <span className="font-medium">Ngày tạo: </span>
+                    <span className="font-medium">Ngày tạo giám định: </span>
                     <span>{dayjs(formViewData.createdAt).format("DD/MM/YYYY HH:mm")}</span>
                   </div>
                 </div>
