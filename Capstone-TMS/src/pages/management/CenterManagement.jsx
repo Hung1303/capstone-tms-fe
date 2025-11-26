@@ -13,12 +13,87 @@ import { useAuth } from '../../contexts/AuthContext'
 
 dayjs.extend(utc);
 
+
+const generateEmailBody = ({ center, inspectorName, scheduledDate }) => {
+  const inspectorDisplay = inspectorName || "Đang cập nhật";
+  const scheduleDisplay = scheduledDate ? dayjs(scheduledDate).format("DD/MM/YYYY") : "Đang cập nhật";
+  const centerName = center?.centerName || "Trung tâm";
+  const ownerName = center?.ownerName;
+  const greetingTarget = ownerName || (centerName ? `đại diện trung tâm ${centerName}` : "quý trung tâm");
+
+  return (
+    `
+      <div style="max-width: 600px; margin: auto; padding: 20px;
+              font-family: Arial, sans-serif; color: #333;
+              border: 1px solid #e6e6e6; border-radius: 10px;">
+
+        <!-- Logo -->
+        <div style="text-align: center; margin-bottom: 20px;">
+          <img src="https://your-domain.com/logo.png"
+              alt="TutorLink Logo"
+              style="max-width: 140px; margin-bottom: 10px;">
+          <h2 style="color: #4c6ef5; margin: 0;">Thông Báo Lịch Giám Định</h2>
+          <p style="margin: 5px 0 0 0; color: #666;">Hệ thống TutorLink</p>
+        </div>
+
+        <!-- Greeting -->
+        <p style="font-size: 15px; line-height: 1.6;">
+          Kính gửi <strong>${greetingTarget}</strong>,
+        </p>
+
+        <!-- Message -->
+        <p style="font-size: 15px; line-height: 1.6;">
+          Chúng tôi xin thông báo lịch giám định mới cho 
+          <strong>${centerName}</strong>.
+        </p>
+
+        <!-- Info Box -->
+        <div style="
+          background: #f8f9ff;
+          padding: 15px;
+          border-left: 4px solid #4c6ef5;
+          margin: 20px 0;
+          border-radius: 6px;
+        ">
+          <p style="margin: 0; font-size: 15px; line-height: 1.8;">
+            <strong>Người giám định:</strong> ${inspectorDisplay}<br>
+            <strong>Ngày giám định:</strong> ${scheduleDisplay}
+          </p>
+        </div>
+
+        <!-- Footer Text -->
+        <p style="font-size: 15px; line-height: 1.6;">
+          Vui lòng chuẩn bị đầy đủ hồ sơ, cơ sở vật chất và phản hồi ngay 
+          nếu cần điều chỉnh lịch.
+        </p>
+
+        <p style="font-size: 15px; margin-top: 25px; line-height: 1.6;">
+          Trân trọng,<br>
+          <strong>TutorLink</strong>
+        </p>
+
+        <!-- Optional Footer -->
+        <div style="text-align: center; margin-top: 25px; color: #888; font-size: 12px;">
+          © ${new Date().getFullYear()} TutorLink – Hệ thống quản lý trung tâm & giám định.
+        </div>
+
+      </div>  
+    `
+  )
+}
+
 const CenterManagement = () => {
   const { user, logout, loading: authLoading } = useAuth()
   const initialFormData = {
     centerProfileId: "",
     inspectorId: null,
     scheduledDate: ""
+  }
+
+  const initialFormEmail = {
+    subject: "",
+    body: "",
+    centerIds: []
   }
 
   const createInitialPagination = () => ({
@@ -46,6 +121,10 @@ const CenterManagement = () => {
   const [errors, setErrors] = useState({})
   const [formData, setFormData] = useState(initialFormData)
   const [formViewData, setFormViewData] = useState()
+  const [formEmailData, setFormEmailData] = useState(initialFormEmail)
+  const [selectedCenters, setSelectedCenters] = useState([])
+  const [pendingSelectedRowKeys, setPendingSelectedRowKeys] = useState([])
+  const [pendingSelectedCenters, setPendingSelectedCenters] = useState([])
 
   const [centersPagination, setCentersPagination] = useState(createInitialPagination)
   const [activePagination, setActivePagination] = useState(createInitialPagination)
@@ -204,11 +283,11 @@ const CenterManagement = () => {
       width: 250,
       render: (center) => (
         <div className="flex items-center gap-2">
-          <Tooltip title="Chỉnh sửa">
+          <Tooltip title="Xem chi tiết">
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              className="p-1 text-lg text-blue-600 hover:bg-blue-50 rounded"
+              className="p-1 text-lg text-blue-600 hover:bg-blue-50 rounded cursor-pointer"
               onClick={() => handleViewAppraisal(center)}
             >
               <EyeOutlined />
@@ -218,15 +297,12 @@ const CenterManagement = () => {
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              className="p-1 text-lg text-blue-600 hover:bg-blue-50 rounded"
+              className="p-1 text-lg text-blue-600 hover:bg-blue-50 rounded cursor-pointer"
               onClick={() => handleCreateAppraisal(center)}
             >
               <EditOutlined />
             </motion.button>
           </Tooltip>
-          <button className="p-1 text-red-600 hover:bg-red-50 rounded">
-            <DeleteOutlined />
-          </button>
         </div>
       )
     }
@@ -400,8 +476,35 @@ const CenterManagement = () => {
     centerInfo: { centerName: center.centerName, address: center.address, licenseNumber: center.licenseNumber },
     informtion: { contactEmail: center.contactEmail, contactPhone: center.contactPhone, ownerName: center.ownerName },
     status: center.status,
-    action: { status: center.status, centerId: center.centerId, verificationId: center.verificationId }
+    centerDetails: {
+      centerId: center.centerId,
+      centerName: center.centerName,
+      ownerName: center.ownerName,
+      contactEmail: center.contactEmail
+    },
+    action: {
+      status: center.status,
+      centerId: center.centerId,
+      verificationId: center.verificationId,
+      centerName: center.centerName,
+      ownerName: center.ownerName,
+      contactEmail: center.contactEmail
+    }
   }))
+
+  const pendingRowSelection = {
+    selectedRowKeys: pendingSelectedRowKeys,
+    onChange: (selectedRowKeys, selectedRows) => {
+      setPendingSelectedRowKeys(selectedRowKeys)
+      const centers = selectedRows
+        .map(row => row.centerDetails)
+        .filter(Boolean)
+      setPendingSelectedCenters(centers)
+      if (errors.centerSelection) {
+        setErrors(prev => ({ ...prev, centerSelection: "" }))
+      }
+    }
+  }
 
   console.log("activeCenters", activeCenters)
   const activeTableData = activeCenters.map(center => ({
@@ -410,7 +513,14 @@ const CenterManagement = () => {
     informtion: { contactEmail: center.contactEmail, contactPhone: center.contactPhone, ownerName: center.ownerName },
     status: center.status,
     verificationCompletedAt: center.verificationCompletedAt,
-    action: { status: center.status, centerId: center.centerId, verificationId: center.verificationId }
+    action: {
+      status: center.status,
+      centerId: center.centerId,
+      verificationId: center.verificationId,
+      centerName: center.centerName,
+      ownerName: center.ownerName,
+      contactEmail: center.contactEmail
+    }
   }))
 
   console.log("rejectedCenters", rejectedCenters)
@@ -420,7 +530,14 @@ const CenterManagement = () => {
     informtion: { contactEmail: center.contactEmail, contactPhone: center.contactPhone, ownerName: center.ownerName },
     status: center.status,
     reason: center.rejectionReason,
-    action: { status: center.status, centerId: center.centerId, verificationId: center.verificationId }
+    action: {
+      status: center.status,
+      centerId: center.centerId,
+      verificationId: center.verificationId,
+      centerName: center.centerName,
+      ownerName: center.ownerName,
+      contactEmail: center.contactEmail
+    }
   }))
 
   const fetchCenters = useCallback(async (pageNumber, pageSize) => {
@@ -510,6 +627,24 @@ const CenterManagement = () => {
   useEffect(() => {
     fetchCentersWithStatus(4, activePagination.pageNumber, activePagination.pageSize);
   }, [fetchCentersWithStatus, activePagination.pageNumber, activePagination.pageSize])
+
+  useEffect(() => {
+    if (!selectedCenters.length) {
+      return
+    }
+
+    const inspectorName = inspectors.find((inspector) => inspector.id === formData.inspectorId)?.fullName || ""
+    const firstCenter = selectedCenters[0] || {}
+    setFormEmailData({
+      subject: `Thông báo lịch giám định - ${firstCenter.centerName || "Trung tâm"}`,
+      body: generateEmailBody({
+        center: firstCenter,
+        inspectorName,
+        scheduledDate: formData.scheduledDate
+      }),
+      centerIds: [firstCenter.centerId].filter(Boolean)
+    })
+  }, [formData.inspectorId, formData.scheduledDate, inspectors, selectedCenters])
 
   const getUsersByRole = async (role, pageSize) => {
     const allUsers = [];
@@ -646,15 +781,33 @@ const CenterManagement = () => {
     setOpenModeViewlAppraisal(true)
     } catch (error) {
       console.error("error in ViewAppraisal:", error)
+      if (error.code === 'ERR_NETWORK') {
+        logout();
+      } else {
+        toast.error("Trung tâm này chưa tạo giám định.")
+      }
     }
   }
 
-  const handleCreateAppraisal = async (center) => {
-    console.log('center:', center);
+  const handleCreateAppraisal = async (centers) => {
+    const normalizedCenters = Array.isArray(centers) ? centers.filter(Boolean) : [centers].filter(Boolean)
+    if (!normalizedCenters.length) {
+      toast.warning("Vui lòng chọn ít nhất một trung tâm.")
+      return
+    }
+
     setFormData(prev => ({
       ...prev,
-      centerProfileId: center.id
+      centerProfileId: normalizedCenters.length === 1 ? normalizedCenters[0].centerId : ""
     }))
+    setSelectedCenters(normalizedCenters)
+    setErrors(prev => ({
+      ...prev,
+      centerSelection: ""
+    }))
+    setPendingSelectedCenters(normalizedCenters)
+    setPendingSelectedRowKeys(normalizedCenters.map(center => center.centerId))
+    setFormEmailData(initialFormEmail)
     setOpenModelAppraisal(true)
     const inspectorList = await getUsersByRole("Inspector", 20)
     console.log('Inspector List:', inspectorList);
@@ -667,27 +820,82 @@ const CenterManagement = () => {
       return
     }
 
+    if (!selectedCenters.length) {
+      toast.error("Chưa chọn trung tâm nào để tạo lịch.")
+      return
+    }
+
     setModalLoading(true)
     console.log("formData:", formData)
     const token = localStorage.getItem('token')
     console.log("token", token)
 
     try {
-      const apiResponse = await api.post("/CenterVerification/request", formData)
-      console.log("apiResponse", apiResponse)
-      toast.success("Bạn đã tạo thành công.")
+      const inspectorName = inspectors.find((inspector) => inspector.id === formData.inspectorId)?.fullName || ""
+      
+      const createRequests = selectedCenters.map(center => {
+        const payload = {
+          centerProfileId: center.centerId,
+          inspectorId: formData.inspectorId,
+          scheduledDate: formData.scheduledDate
+        }
+        return api.post("/CenterVerification/request", payload)
+      })
+
+      let createResults;
+
+      try {
+        createResults = await Promise.all(createRequests)
+        console.log("Create success:", createResults);
+      } catch (createError) {
+        console.error("Error creating appraisals:", createError);
+
+        if (createError.response && createError.response.data) {
+          const message = createError.response.data.message;
+          if (message.includes("Center is not in pending status for verification")) {
+            toast.error("Trung tâm này đã được tạo lịch giám định")
+          } else if (message.includes("Center not found")) {
+            toast.error("Không tìm thấy trung tâm")
+          }
+        }
+
+        return;
+      }
+      
+      // Gửi email riêng cho từng trung tâm
+      const emailRequests = selectedCenters.map(center => {
+        const emailBody = generateEmailBody({
+          center,
+          inspectorName,
+          scheduledDate: formData.scheduledDate
+        })
+
+        const emailPayload = {
+          subject: `Thông báo lịch giám định - ${center.centerName || "Trung tâm"}`,
+          body: emailBody,
+          centerIds: [center.centerId].filter(Boolean)
+        }
+        return api.post("/Email/send-to-centers", emailPayload)
+      })
+
+      try {
+        const emailResults = await Promise.all(emailRequests)
+        console.log("apiRes sendEmail:", emailResults )
+      } catch (emailError) {
+        console.error("Email sending error:", emailError)
+        toast.warning("Đã tạo lịch giám định, nhưng một số email gửi thất bại.")
+      }
+      
+      toast.success(`Đã tạo lịch giám định cho ${selectedCenters.length} trung tâm.`)
       setOpenModelAppraisal(false)
       setFormData(initialFormData)
+      setFormEmailData(initialFormEmail)
+      setSelectedCenters([])
+      setPendingSelectedRowKeys([])
+      setPendingSelectedCenters([])
     } catch (error) {
-      console.log("error apiResponse", error)
-
-      if (error.response && error.response.data) {
-        const message = error.response.data.message;
-        console.log("message:", message)
-        if (message.includes("Center is not in pending status for verification")) {
-          toast.error("Trung tâm này đã được tạo lịch giám định")
-        }
-      }
+      console.log("Unexpected error:", error);
+      toast.error("Đã xảy ra lỗi không mong muốn."); 
     } finally {
       setModalLoading(false)
       await fetchPendingCenters(1, DEFAULT_PENDING_PAGE_SIZE)
@@ -697,6 +905,10 @@ const CenterManagement = () => {
   const handleCancel = () => {
     setOpenModelAppraisal(false)
     setFormData(initialFormData)
+    setFormEmailData(initialFormEmail)
+    setSelectedCenters([])
+    setPendingSelectedRowKeys([])
+    setPendingSelectedCenters([])
     setErrors({})
   }
 
@@ -724,15 +936,22 @@ const CenterManagement = () => {
     console.log("verificationId", formViewData.verificationId)
     console.log("dataTran:", dataTran)
     try {
-      const apiResponse = api.put(`/CenterVerification/request/${formViewData.verificationId}/decision`, dataTran)
+      const apiResponse = await api.put(`/CenterVerification/request/${formViewData.verificationId}/decision`, dataTran)
       console.log("apiResponse decision:", apiResponse)
       toast.success("Bạn đã duyệt thành công.")
     } catch (error) {
       console.error("error decision:", error)
+      const message = error.response.data.message;
+      if (message.includes("Verification request is not ready for admin decision")) {
+        toast.error("Tạm thời chưa thể quyết định.")
+      }
     } finally {
       setOpenModeViewlAppraisal(false)
       setModalLoading(false)
       await fetchPendingCenters(1, DEFAULT_PENDING_PAGE_SIZE)
+      await fetchCenters(centersPagination.pageNumber, centersPagination.pageSize)
+      await fetchCentersWithStatus(3, rejectedPagination.pageNumber, rejectedPagination.pageSize)
+      await fetchCentersWithStatus(4, activePagination.pageNumber, activePagination.pageSize)
     }
   }
 
@@ -745,6 +964,10 @@ const CenterManagement = () => {
 
     if (!formData.scheduledDate) {
       errors.scheduledDate = "Vui lòng chọn ngày"
+    }
+
+    if (!selectedCenters.length) {
+      errors.centerSelection = "Vui lòng chọn ít nhất một trung tâm"
     }
 
     setErrors(errors)
@@ -808,7 +1031,7 @@ const CenterManagement = () => {
               onClick={() => handleFilterByStatus("all")}
               className="bg-white text-left rounded-lg shadow-sm border border-gray-200 p-4 cursor-pointer"
             >
-              <div className="text-2xl font-bold text-gray-900">{centers.length}</div>
+              <div className="text-2xl font-bold text-gray-900">{centersPagination.total}</div>
               <div className="text-sm text-gray-600">Tổng trung tâm</div>
             </motion.button>
             <motion.button 
@@ -889,12 +1112,32 @@ const CenterManagement = () => {
               }
               
               {filterStatus === "pending" &&
-                <Table
-                  columns={pendingTableColumns}
-                  dataSource={pendingTableData}
-                  rowKey="key"
-                  loading={loadingStates.pending}
-                />
+                <>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                    <span className="text-sm text-gray-600">
+                      {pendingSelectedRowKeys.length ? `${pendingSelectedRowKeys.length} trung tâm đã chọn` : "Chưa chọn trung tâm nào"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCreateAppraisal(pendingSelectedCenters)}
+                      disabled={!pendingSelectedCenters.length}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        pendingSelectedCenters.length
+                          ? "bg-orange-500 text-white hover:bg-orange-600 cursor-pointer"
+                          : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      }`}
+                    >
+                      Tạo giám định cho lựa chọn
+                    </button>
+                  </div>
+                  <Table
+                    columns={pendingTableColumns}
+                    dataSource={pendingTableData}
+                    rowKey="key"
+                    loading={loadingStates.pending}
+                    rowSelection={pendingRowSelection}
+                  />
+                </>
               }
 
               {filterStatus === "active" &&
@@ -936,6 +1179,7 @@ const CenterManagement = () => {
               }            
           </Card>
 
+          {console.log("formData before modal:", formData)}
           <Modal
             title={"Tạo thời gian giám định"}
             open={openModelAppraisal}
@@ -947,6 +1191,32 @@ const CenterManagement = () => {
           >
             {console.log("inspectors:", inspectors)}
             <div className="flex flex-col gap-4 py-3">
+              <div className="bg-white border border-slate-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold text-slate-700">
+                    Đang tạo lịch cho {selectedCenters.length} trung tâm
+                  </p>
+                  <span className="text-xs text-slate-500">
+                    {selectedCenters.length ? "Vui lòng kiểm tra danh sách" : "Chưa có trung tâm nào"}
+                  </span>
+                </div>
+                <div className="max-h-32 overflow-y-auto text-sm text-slate-700 space-y-1">
+                  {selectedCenters.length ? (
+                    selectedCenters.map((center, index) => (
+                      <div key={center.centerId || index} className="flex justify-between gap-2">
+                        <span className="font-medium">{center.centerName || "Trung tâm"}</span>
+                        <span className="text-slate-500">{center.ownerName}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="italic text-slate-500">Vui lòng quay lại danh sách và chọn trung tâm.</p>
+                  )}
+                </div>
+                {errors.centerSelection &&
+                  <p className="mt-2 text-sm text-red-600">{errors.centerSelection}</p>
+                }
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Người giám định :</label>
                 <Select
@@ -975,10 +1245,44 @@ const CenterManagement = () => {
                   }}
                   placeholder="DD-MM-YYYY"
                   format="DD-MM-YYYY"
+                  disabledDate={(current) => current && current < dayjs().startOf("day")}
                 />
                 {errors.scheduledDate &&
                   <p className="mt-1 text-sm text-red-600">{errors.scheduledDate}</p>
                 }
+              </div>
+
+              <Divider className="my-1" />
+
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <p className="text-sm font-semibold text-slate-700 mb-3">
+                  Email thông báo sẽ được gửi riêng cho từng trung tâm
+                  {selectedCenters.length > 1 && (
+                    <span className="text-xs font-normal text-slate-500 ml-2">
+                      (Hiển thị mẫu email cho trung tâm đầu tiên)
+                    </span>
+                  )}
+                </p>
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Tiêu đề email</label>
+                  <Input
+                    value={formEmailData.subject}
+                    readOnly
+                    placeholder="Tiêu đề sẽ tự động tạo khi chọn trung tâm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Nội dung email</label>
+                  <Input.TextArea
+                    rows={6}
+                    value={formEmailData.body}
+                    readOnly
+                    placeholder="Nội dung sẽ hiển thị khi bạn chọn lịch giám định"
+                  />
+                  <p className="text-xs text-slate-500 mt-2">
+                    Mỗi trung tâm sẽ nhận email riêng với nội dung tương ứng. Nội dung đã bao gồm thông tin Người giám định và Ngày giám định.
+                  </p>
+                </div>
               </div>
             </div>
           </Modal>
