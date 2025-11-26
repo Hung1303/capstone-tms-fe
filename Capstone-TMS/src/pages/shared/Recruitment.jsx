@@ -76,6 +76,13 @@ const Recruitment = () => {
 		}
 	]
 
+	const handleClick = (id) => {
+		const element = document.getElementById(id);
+		if (element) {
+			element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		}
+	}
+
 	return (
 		<div id="top" className="min-h-screen bg-gradient-to-b from-white via-orange-50 to-teal-50 text-slate-800">
 			<main>
@@ -106,16 +113,10 @@ const Recruitment = () => {
 									<motion.button
 										whileHover={{ scale: 1.04 }}
 										whileTap={{ scale: 0.98 }}
-										className="px-6 py-3 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700"
+										className="cursor-pointer px-6 py-3 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700"
+										onClick={() => handleClick("application-steps")}
 									>
 										Ứng tuyển ngay
-									</motion.button>
-									<motion.button
-										whileHover={{ scale: 1.04 }}
-										whileTap={{ scale: 0.98 }}
-										className="px-6 py-3 rounded-md border border-white/40 text-white font-semibold hover:bg-white/10"
-									>
-										Tải brochure
 									</motion.button>
 								</div>
 							</motion.div>
@@ -141,6 +142,7 @@ const Recruitment = () => {
 					</motion.div>
 					
 					<motion.div
+						id="application-steps"
 						className="max-w-6xl mx-auto"
 						variants={containerVariants}
 						initial="hidden"
