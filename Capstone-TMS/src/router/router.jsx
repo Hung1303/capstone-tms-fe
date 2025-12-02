@@ -47,6 +47,9 @@ import AdminLayout from "../layouts/AdminLayout";
 import ProtectedRoute from "../components/ProtectedRoute";
 import ChildrenManagement from "../pages/management/ChildrenManagement";
 import CenterInspectionManagement from "../pages/management/CenterInspectionManagement";
+import ParentCenters from "../pages/dashboard/ParentCenters";
+import ParentCourses from "../pages/dashboard/ParentCourses";
+import ParentCentersMap from "../pages/dashboard/ParentCentersMap";
 import { AuthProvider } from "../contexts/AuthContext";
 
 export const router = createBrowserRouter([
@@ -232,6 +235,14 @@ export const router = createBrowserRouter([
             {
                 path: "children",
                 element: <ProtectedRoute requiredRole="Parent"><ChildrenManagement /></ProtectedRoute>
+            },
+            {
+                path: "centers",
+                element: <ProtectedRoute requiredRole="Parent"><ParentCenters /></ProtectedRoute>
+            },
+            {
+                path: "courses",
+                element: <ProtectedRoute requiredRole="Parent"><ParentCourses /></ProtectedRoute>
             }
         ]
     },

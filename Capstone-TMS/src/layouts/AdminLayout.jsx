@@ -14,7 +14,8 @@ import {
   DollarOutlined,
   BellOutlined,
   StarOutlined,
-  GiftOutlined
+  GiftOutlined,
+  EnvironmentOutlined
 } from '@ant-design/icons'
 
 // Menu configuration cho từng role
@@ -241,9 +242,15 @@ const ROLE_MENUS = {
       path: '/parent/children'
     },
     {
+      key: '/parent/centers',
+      icon: <TeamOutlined />,
+      label: 'Danh sách trung tâm',
+      path: '/parent/centers'
+    },
+    {
       key: '/parent/courses',
       icon: <BookOutlined />,
-      label: 'Đăng ký khóa học',
+      label: 'Danh sách khóa học',
       path: '/parent/courses'
     },
     {

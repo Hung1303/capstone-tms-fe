@@ -23,6 +23,7 @@ const CourseManagement = () => {
   const [editingId, setEditingId] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
+  
   const [formData, setFormData] = useState({
     title: '',
     subject: '',
@@ -34,7 +35,8 @@ const CourseManagement = () => {
     teachingMethod: 1,
     tuitionFee: 0,
     capacity: 30,
-    gradeLevel: 10
+    gradeLevel: 10,
+    teacherProfileId: null // [QUAN TRỌNG] Mặc định là null
   })
   const [errors, setErrors] = useState({})
 
@@ -78,21 +80,12 @@ const CourseManagement = () => {
     const newErrors = {}
     const today = getTodayDate()
 
-    if (!formData.title.trim()) {
-      newErrors.title = 'Vui lòng nhập tên khóa học'
-    }
-
-    if (!formData.subject.trim()) {
-      newErrors.subject = 'Vui lòng chọn môn học'
-    }
-
-    if (!formData.description.trim()) {
-      newErrors.description = 'Vui lòng nhập mô tả'
-    }
-
-    if (!formData.location.trim()) {
-      newErrors.location = 'Vui lòng nhập địa điểm'
-    }
+    if (!formData.title.trim()) newErrors.title = 'Vui lòng nhập tên khóa học'
+    if (!formData.subject.trim()) newErrors.subject = 'Vui lòng chọn môn học'
+    // [ĐÃ XÓA] Không bắt buộc chọn teacherProfileId nữa
+    
+    if (!formData.description.trim()) newErrors.description = 'Vui lòng nhập mô tả'
+    if (!formData.location.trim()) newErrors.location = 'Vui lòng nhập địa điểm'
 
     if (!formData.startDate) {
       newErrors.startDate = 'Vui lòng chọn ngày bắt đầu'
@@ -106,13 +99,8 @@ const CourseManagement = () => {
       newErrors.endDate = 'Ngày kết thúc phải sau ngày bắt đầu'
     }
 
-    if (formData.tuitionFee < 0) {
-      newErrors.tuitionFee = 'Học phí không được âm'
-    }
-
-    if (formData.capacity < 1) {
-      newErrors.capacity = 'Sức chứa phải ≥ 1'
-    }
+    if (formData.tuitionFee < 0) newErrors.tuitionFee = 'Học phí không được âm'
+    if (formData.capacity < 1) newErrors.capacity = 'Sức chứa phải ≥ 1'
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -127,12 +115,13 @@ const CourseManagement = () => {
         description: course.description || '',
         location: course.location || '',
         semester: course.semester || 1,
-        startDate: course.startDate || '',
-        endDate: course.endDate || '',
+        startDate: course.startDate ? course.startDate.split('T')[0] : '',
+        endDate: course.endDate ? course.endDate.split('T')[0] : '',
         teachingMethod: course.teachingMethod || 1,
         tuitionFee: course.tuitionFee || 0,
         capacity: course.capacity || 30,
-        gradeLevel: course.gradeLevel || 10
+        gradeLevel: course.gradeLevel || 10,
+        teacherProfileId: course.teacherProfileId || null // Giữ nguyên giáo viên nếu đang edit
       })
     } else {
       setEditingId(null)
@@ -147,7 +136,8 @@ const CourseManagement = () => {
         teachingMethod: 1,
         tuitionFee: 0,
         capacity: 30,
-        gradeLevel: 10
+        gradeLevel: 10,
+        teacherProfileId: null // Reset về null
       })
     }
     setErrors({})
@@ -168,7 +158,8 @@ const CourseManagement = () => {
       teachingMethod: 1,
       tuitionFee: 0,
       capacity: 30,
-      gradeLevel: 10
+      gradeLevel: 10,
+      teacherProfileId: null
     })
     setErrors({})
   }
@@ -182,10 +173,7 @@ const CourseManagement = () => {
         : value
     }))
     if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }))
+      setErrors(prev => ({ ...prev, [name]: '' }))
     }
   }
 
@@ -198,17 +186,22 @@ const CourseManagement = () => {
 
     setLoading(true)
     try {
+      // [QUAN TRỌNG] Payload gửi lên server
       const payload = {
         ...formData,
-        centerProfileId: user?.userId
+        centerProfileId: user?.userId,
+        // Nếu editingId có teacher thì giữ nguyên, nếu tạo mới thì null
+        teacherProfileId: formData.teacherProfileId || null 
       }
+      
+      console.log('Payload:', payload)
 
       if (editingId) {
         await api.put(`/Course/${editingId}`, payload)
         toast.success('Cập nhật khóa học thành công!')
       } else {
         await api.post('/Course', payload)
-        toast.success('Tạo khóa học thành công! Chờ giáo viên ký.')
+        toast.success('Tạo khóa học thành công! (Trạng thái: Pending)')
       }
       await fetchCourses()
       handleCloseModal()
@@ -259,17 +252,17 @@ const CourseManagement = () => {
 
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.subject?.toLowerCase().includes(searchTerm.toLowerCase())
+                          course.subject?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = filterStatus === 'all' || course.status === filterStatus
     return matchesSearch && matchesStatus
   })
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      PENDING: { label: 'Chờ ký', className: 'bg-yellow-100 text-yellow-800' },
-      ASSIGNED: { label: 'Đã ký', className: 'bg-blue-100 text-blue-800' },
-      CONFIRMED: { label: 'Đã xác nhận', className: 'bg-purple-100 text-purple-800' },
-      PUBLISHED: { label: 'Đã đăng', className: 'bg-green-100 text-green-800' },
+      PENDING: { label: 'Chờ giáo viên', className: 'bg-yellow-100 text-yellow-800' },
+      ASSIGNED: { label: 'Đã có GV', className: 'bg-blue-100 text-blue-800' }, // Giáo viên đã ký
+      CONFIRMED: { label: 'Đã duyệt', className: 'bg-purple-100 text-purple-800' }, // Staff đã duyệt
+      PUBLISHED: { label: 'Đã đăng', className: 'bg-green-100 text-green-800' }, // Center đã đăng
       CANCELLED: { label: 'Đã hủy', className: 'bg-red-100 text-red-800' },
       COMPLETED: { label: 'Đã kết thúc', className: 'bg-gray-100 text-gray-800' }
     }
@@ -279,12 +272,6 @@ const CourseManagement = () => {
         {config.label}
       </span>
     )
-  }
-
-  const getTeacherName = (teacherId) => {
-    if (!teacherId) return 'Chưa có'
-    // Nếu có API lấy teacher info, có thể gọi ở đây
-    return 'Chờ giáo viên ký'
   }
 
   const teachingMethods = [
@@ -315,8 +302,8 @@ const CourseManagement = () => {
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+       {/* Stats */}
+       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="text-2xl font-bold text-gray-900">{courses.length}</div>
           <div className="text-sm text-gray-600">Tổng khóa học</div>
@@ -325,7 +312,7 @@ const CourseManagement = () => {
           <div className="text-2xl font-bold text-yellow-600">
             {courses.filter(c => c.status === 'PENDING').length}
           </div>
-          <div className="text-sm text-gray-600">Chờ ký</div>
+          <div className="text-sm text-gray-600">Chờ giáo viên</div>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="text-2xl font-bold text-purple-600">
@@ -362,9 +349,9 @@ const CourseManagement = () => {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           >
             <option value="all">Tất cả trạng thái</option>
-            <option value="PENDING">Chờ ký</option>
-            <option value="ASSIGNED">Đã ký</option>
-            <option value="CONFIRMED">Đã xác nhận</option>
+            <option value="PENDING">Chờ giáo viên</option>
+            <option value="ASSIGNED">Đã có GV</option>
+            <option value="CONFIRMED">Đã duyệt</option>
             <option value="PUBLISHED">Đã đăng</option>
             <option value="CANCELLED">Đã hủy</option>
             <option value="COMPLETED">Đã kết thúc</option>
@@ -404,13 +391,19 @@ const CourseManagement = () => {
                   <tr key={course.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-gray-900">{course.title}</div>
+                      {/* Hiển thị giáo viên nếu đã có */}
+                      {course.teacherProfileId ? (
+                         <div className="text-xs text-blue-600 mt-1">GV: {course.teacherName || 'Đã nhận lớp'}</div>
+                      ) : (
+                         <div className="text-xs text-gray-400 mt-1 italic">Chưa có GV</div>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-600">{course.subject}</div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">
-                        {course.startDate} - {course.endDate}
+                        {course.startDate ? course.startDate.split('T')[0] : ''} - {course.endDate ? course.endDate.split('T')[0] : ''}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -423,6 +416,7 @@ const CourseManagement = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
+                        {/* Chỉ hiện nút Đăng (Publish) nếu Staff đã Confirm */}
                         {course.status === 'CONFIRMED' && (
                           <button 
                             onClick={() => handlePublishCourse(course.id)}
@@ -432,23 +426,24 @@ const CourseManagement = () => {
                             <CheckCircleOutlined />
                           </button>
                         )}
+                        {/* Cho phép sửa/xóa khi còn Pending */}
                         {course.status === 'PENDING' && (
-                          <button 
-                            onClick={() => handleOpenModal(course)}
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                            title="Chỉnh sửa"
-                          >
-                            <EditOutlined />
-                          </button>
-                        )}
-                        {course.status === 'PENDING' && (
-                          <button 
-                            onClick={() => handleDeleteClick(course.id)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded"
-                            title="Xóa"
-                          >
-                            <DeleteOutlined />
-                          </button>
+                          <>
+                            <button 
+                              onClick={() => handleOpenModal(course)}
+                              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                              title="Chỉnh sửa"
+                            >
+                              <EditOutlined />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteClick(course.id)}
+                              className="p-1 text-red-600 hover:bg-red-50 rounded"
+                              title="Xóa"
+                            >
+                              <DeleteOutlined />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -466,7 +461,7 @@ const CourseManagement = () => {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal Form */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
@@ -537,7 +532,7 @@ const CourseManagement = () => {
                 </div>
               </div>
 
-              {/* Row 2: Mô tả */}
+              {/* Row 2: Mô tả (Bỏ chọn giáo viên ở đây) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Mô tả *
@@ -740,7 +735,7 @@ const CourseManagement = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Modal (Giữ nguyên) */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg max-w-sm w-full">
