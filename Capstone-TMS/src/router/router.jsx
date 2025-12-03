@@ -53,7 +53,6 @@ import CourseApprovalManagement from "../pages/management/CourseApprovalManageme
 import ParentCenters from "../pages/dashboard/ParentCenters";
 import ParentCourses from "../pages/dashboard/ParentCourses";
 import ParentCentersMap from "../pages/dashboard/ParentCentersMap";
-import TeacherManagement from "../pages/management/TeacherManagement";
 import { AuthProvider } from "../contexts/AuthContext";
 
 export const router = createBrowserRouter([

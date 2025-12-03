@@ -277,13 +277,13 @@ const CenterScheduleAssignment = () => {
     setEditingEvent(null)
   }
 
-  // Màu sắc cho từng giáo viên
   const getEventColor = (subject) => {
     // const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
     const colors = {
       'Toán Học': '#3b82f6',
       'Văn Học': '#10b981',
       'Tiếng Anh': '#f59e0b',
+      'Vật Lý': '#ef4444',
     }
     return colors[subject] || '#6b7280' 
   }
@@ -353,6 +353,16 @@ const CenterScheduleAssignment = () => {
     );
   }
 
+  const getUniqueSubjects = () => {
+    const subjects = new Set()
+    teachers.forEach(teacher => {
+      if (teacher.subject) {
+        subjects.add(teacher.subject)
+      }
+    })
+    return Array.from(subjects).sort()
+  }
+
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
       {loading ? (
@@ -384,9 +394,9 @@ const CenterScheduleAssignment = () => {
               </motion.button>
 
               <div className="flex gap-2">
-                {teachers.map(teacher => (
-                  <Tag key={teacher.id} color={getEventColor(teacher.subject)}>
-                    <UserOutlined /> {teacher.subject}
+                {getUniqueSubjects().map(subject => (
+                  <Tag key={subject} color={getEventColor(subject)}>
+                    <BookOutlined /> {subject}
                   </Tag>
                 ))}
               </div>
