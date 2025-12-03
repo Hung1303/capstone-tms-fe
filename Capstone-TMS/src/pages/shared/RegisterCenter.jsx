@@ -279,6 +279,7 @@ const RegisterCenter = () => {
 								<Input
 									name="phoneNumber"
 									type="text"
+									maxLength={10}
 									value={formData.phoneNumber}
 									onChange={(e) => handleChange("phoneNumber", e.target.value)}
 									className="!w-full !px-4 !py-3 !border-2"
