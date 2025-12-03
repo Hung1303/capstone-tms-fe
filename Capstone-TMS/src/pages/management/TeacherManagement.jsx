@@ -1,349 +1,637 @@
 import { useState, useEffect, useCallback } from 'react'
-import {
-  SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined,
-  CheckCircleOutlined, ClockCircleOutlined, WarningOutlined, StopOutlined
-} from '@ant-design/icons'
-import { Card, Input, Modal, Select, Space, Table, Tooltip, Form, Button, message, Popconfirm } from 'antd'
-import { motion } from 'framer-motion'
+import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, UserOutlined, PhoneOutlined, MailOutlined, StarOutlined,
+         UploadOutlined, FileExcelOutlined } from '@ant-design/icons'
+import { Modal, Button, Tag, Popconfirm, Form, Input, InputNumber, Progress, Upload, Table, Space, Tooltip, Card } from 'antd'
 import { toast } from 'react-toastify'
+import * as XLSX from 'xlsx'
+import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
-import * as teacherService from '../../services/teacherService'
+
+const { TextArea } = Input
 
 const TeacherManagement = () => {
   const { user, logout } = useAuth()
   const [teachers, setTeachers] = useState([])
-  const [subjects, setSubjects] = useState([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [filterSubject, setFilterSubject] = useState('all')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [selectedTeacher, setSelectedTeacher] = useState(null)
+  const [viewModalVisible, setViewModalVisible] = useState(false)
+  const [addModalVisible, setAddModalVisible] = useState(false)
+  const [editModalVisible, setEditModalVisible] = useState(false)
+  const [uploadModalVisible, setUploadModalVisible] = useState(false)
+  const [form] = Form.useForm()
+  const [editForm] = Form.useForm()
+  const [submitting, setSubmitting] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadResults, setUploadResults] = useState({ success: 0, failed: 0, errors: [] })
   const [pagination, setPagination] = useState({
     pageNumber: 1,
-    pageSize: 10,
+    pageSize: 5,
     total: 0
   })
-  const [modalVisible, setModalVisible] = useState(false)
-  const [editingTeacher, setEditingTeacher] = useState(null)
-  const [form] = Form.useForm()
-  const [submitting, setSubmitting] = useState(false)
 
-  // Lấy centerId từ AuthContext
-  const centerId = user?.centerProfileId
-
-  // Fetch danh sách giáo viên
-  const fetchTeachers = useCallback(async (pageNumber = 1, pageSize = 10) => {
-    if (!centerId) {
-      toast.error('Không tìm thấy ID trung tâm')
-      return
-    }
+  const fetchTeachers = useCallback(async (pageNumber, pageSize) => {
+    if (!user?.centerProfileId) return
 
     setLoading(true)
     try {
-      const response = await teacherService.getTeachersByCenter(centerId, pageNumber, pageSize)
-      console.log('Teachers response:', response)
-      setTeachers(response.teachers || [])
+      const apiResponse = await api.get(`/Users/${user.centerProfileId}/Teachers?pageNumber=${pageNumber}&pageSize=${pageSize}`)
+      console.log('API Response:', apiResponse.data)
+      setTeachers(apiResponse.data.teachers)
       setPagination(prev => ({
         ...prev,
-        pageNumber,
-        pageSize,
-        total: response.totalCount || response.teachers?.length || 0
+        total: apiResponse.data.totalCount
       }))
     } catch (error) {
       console.error('Error fetching teachers:', error)
+
       if (error.code === 'ERR_NETWORK') {
-        logout()
-      } else {
-        toast.error('Lỗi khi tải danh sách giáo viên')
+        logout();
       }
+
+      toast.error('Lỗi khi tải danh sách giáo viên')
+      setTeachers([])
     } finally {
       setLoading(false)
     }
-  }, [centerId, logout])
-
-  // Fetch danh sách môn học
-  const fetchSubjects = useCallback(async () => {
-    try {
-      const response = await teacherService.getSubjects()
-      console.log('Subjects response:', response)
-      // Xử lý response - có thể là array hoặc object với property subjects
-      let subjectsList = []
-      if (Array.isArray(response)) {
-        subjectsList = response
-      } else if (response.subjects && Array.isArray(response.subjects)) {
-        subjectsList = response.subjects
-      } else if (response.data && Array.isArray(response.data)) {
-        subjectsList = response.data
-      }
-      setSubjects(subjectsList)
-    } catch (error) {
-      console.error('Error fetching subjects:', error)
-      toast.error('Lỗi khi tải danh sách môn học')
-    }
-  }, [])
+  }, [user, logout])
 
   useEffect(() => {
-    fetchTeachers(pagination.pageNumber, pagination.pageSize)
-    fetchSubjects()
-  }, [])
+      fetchTeachers(pagination.pageNumber, pagination.pageSize)
+  }, [fetchTeachers, pagination.pageNumber, pagination.pageSize])
 
-  // Mở modal thêm giáo viên
-  const handleAddTeacher = () => {
-    setEditingTeacher(null)
-    form.resetFields()
-    setModalVisible(true)
-  }
-
-  // Mở modal sửa giáo viên
-  const handleEditTeacher = (teacher) => {
-    setEditingTeacher(teacher)
-    form.setFieldsValue({
-      fullName: teacher.fullName,
-      yearOfExperience: teacher.yearOfExperience,
-      qualification: teacher.qualification,
-      subject: teacher.subject,
-      status: teacher.status
+  // Lấy danh sách môn học duy nhất từ danh sách giáo viên
+  const getUniqueSubjects = () => {
+    const subjects = new Set()
+    teachers.forEach(teacher => {
+      if (teacher.subject) {
+        subjects.add(teacher.subject)
+      }
     })
-    setModalVisible(true)
+    return Array.from(subjects).sort()
   }
 
-  // Xóa giáo viên
+  const filteredTeachers = teachers.filter(teacher => {
+    const matchesSearch =
+      teacher.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      teacher.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      teacher.phoneNumber?.includes(searchTerm) ||
+      teacher.subject?.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesSubject = filterSubject === 'all' || teacher.subject === filterSubject
+    const matchesStatus = filterStatus === 'all' || teacher.status === filterStatus
+
+    return matchesSearch && matchesSubject && matchesStatus
+  })
+
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      'Active': { color: 'green', text: 'Hoạt động' },
+      'Inactive': { color: 'red', text: 'Không hoạt động' },
+      'Pending': { color: 'orange', text: 'Chờ duyệt' },
+      'Suspended': { color: 'red', text: 'Tạm khóa' }
+    }
+
+    const statusInfo = statusMap[status] || { color: 'default', text: status }
+    return (
+      <Tag color={statusInfo.color}>
+        {statusInfo.text}
+      </Tag>
+    )
+  }
+
+  const handleViewTeacher = (teacher) => {
+    setSelectedTeacher(teacher)
+    setViewModalVisible(true)
+  }
+
   const handleDeleteTeacher = async (teacherId) => {
     try {
-      setSubmitting(true)
-      await teacherService.deleteTeacher(teacherId)
-      toast.success('Xóa giáo viên thành công')
-      fetchTeachers(pagination.pageNumber, pagination.pageSize)
+      await api.delete(`/Users/${teacherId}`)
+      toast.success('Đã xóa giáo viên')
+      fetchTeachers()
     } catch (error) {
       console.error('Error deleting teacher:', error)
-      toast.error('Lỗi khi xóa giáo viên')
-    } finally {
-      setSubmitting(false)
+      toast.error('Không thể xóa giáo viên, vui lòng thử lại')
     }
   }
 
-  // Submit form
-  const handleSubmit = async (values) => {
+  const handleEditTeacher = (teacher) => {
+    console.log('Editing teacher:', teacher)
+    setSelectedTeacher(teacher)
+    editForm.setFieldsValue({
+      email: teacher.email || '',
+      phoneNumber: teacher.phoneNumber || '',
+      subjects: teacher.subject || teacher.subjects || '',
+      bio: teacher.bio || ''
+    })
+    setEditModalVisible(true)
+  }
+
+  const handleCancelEdit = () => {
+    setEditModalVisible(false)
+    editForm.resetFields()
+    setSelectedTeacher(null)
+  }
+
+  const handleSubmitEdit = async () => {
     try {
-      setSubmitting(true)
-      const teacherData = {
-        fullName: values.fullName,
-        yearOfExperience: values.yearOfExperience,
-        qualification: values.qualification,
-        subject: values.subject,
-        status: values.status || 'Active',
-        centerProfileId: centerId
+      const values = await editForm.validateFields()
+      setEditing(true)
+
+      const userId = selectedTeacher?.id
+      if (!userId) {
+        toast.error('Không tìm thấy ID giáo viên')
+        setEditing(false)
+        return
       }
 
-      if (editingTeacher) {
-        // Cập nhật giáo viên
-        await teacherService.updateTeacher(editingTeacher.id, teacherData)
-        toast.success('Cập nhật giáo viên thành công')
-      } else {
-        // Thêm giáo viên mới
-        await teacherService.createTeacher(teacherData)
-        toast.success('Thêm giáo viên thành công')
+      const payload = {
+        email: values.email,
+        phoneNumber: values.phoneNumber,
+        subjects: values.subjects,
+        bio: values.bio || ''
       }
 
-      setModalVisible(false)
-      form.resetFields()
-      setEditingTeacher(null)
+      console.log('Updating teacher with payload:', payload)
+      console.log('Teacher ID:', userId)
+
+      await api.put(`/Users/Teacher/${userId}`, payload)
+
+      toast.success('Đã cập nhật thông tin giáo viên thành công')
+      setEditModalVisible(false)
+      editForm.resetFields()
+      setSelectedTeacher(null)
       fetchTeachers(pagination.pageNumber, pagination.pageSize)
     } catch (error) {
-      console.error('Error submitting teacher:', error)
-      const errorMessage = error.response?.data?.message || 'Lỗi khi lưu giáo viên'
-      toast.error(errorMessage)
+      console.error('Error updating teacher:', error)
+
+      const errorResponse = error.response?.data
+      let errorMessage = ""
+
+      if (errorResponse) {
+        if (typeof errorResponse === 'string') {
+          if (errorResponse.includes("Duplicate email")) {
+            errorMessage = "Email đã được sử dụng"
+            editForm.setFields([{ name: 'email', errors: [errorMessage] }])
+          } else if (errorResponse.includes("Duplicate Phonenumber")) {
+            errorMessage = "Số điện thoại đã được sử dụng"
+            editForm.setFields([{ name: 'phoneNumber', errors: [errorMessage] }])
+          } else {
+            errorMessage = errorResponse
+          }
+        } else if (errorResponse.message) {
+          errorMessage = errorResponse.message
+        }
+      }
+
+      if (errorMessage) {
+        toast.error(errorMessage)
+      } else {
+        toast.error('Không thể cập nhật giáo viên, vui lòng thử lại')
+      }
+    } finally {
+      setEditing(false)
+    }
+  }
+
+  const handleAddTeacher = () => {
+    form.resetFields()
+    setAddModalVisible(true)
+  }
+
+  const handleCancelAdd = () => {
+    setAddModalVisible(false)
+    form.resetFields()
+  }
+
+  const handleSubmitAdd = async () => {
+    try {
+      const values = await form.validateFields()
+      setSubmitting(true)
+
+      const payload = {
+        email: values.email,
+        userName: values.userName,
+        password: values.password,
+        fullName: values.fullName,
+        phoneNumber: values.phoneNumber,
+        yearOfExperience: values.yearOfExperience || 0,
+        qualifications: values.qualifications || '',
+        licenseNumber: values.licenseNumber || '',
+        subjects: values.subjects || '',
+        bio: values.bio || '',
+        teachingAtSchool: values.teachingAtSchool || '',
+        teachAtClasses: values.teachAtClasses || ''
+      }
+
+      console.log('Creating teacher with payload:', payload)
+
+      const centerOwnerId = user?.userId
+      await api.post(`/Users/Center${centerOwnerId}/Teacher`, payload)
+
+      toast.success('Đã thêm giáo viên thành công')
+      setAddModalVisible(false)
+      form.resetFields()
+      fetchTeachers()
+    } catch (error) {
+      console.error('Error creating teacher:', error)
+
+      const errorResponse = error.response.data
+      let errorMessage = ""
+
+      if (errorResponse.includes("the full name")) {
+        errorMessage = "Phải viết hoa chữ cái đầu mỗi từ"
+        form.setFields([
+          { name: 'fullName', errors: [errorMessage] }
+        ])
+      }
+      else if (errorResponse.includes("Duplicate email")) {
+        errorMessage = "Email đã được sử dụng"
+        form.setFields([
+          { name: 'email', errors: [errorMessage] }
+        ])
+      }
+      else if (errorResponse.includes("Duplicate Username")) {
+        errorMessage = "Tên tài khoản đã được sử dụng"
+        form.setFields([
+          { name: 'userName', errors: [errorMessage] }
+        ])
+      }
+      else if (errorResponse.includes("Duplicate Phonenumber")) {
+        errorMessage = "Số điện thoại đã được sử dụng"
+        form.setFields([
+          { name: 'phoneNumber', errors: [errorMessage] }
+        ])
+      }
+
+      if (error.response?.data) {
+        toast.error(error.response.data.message || 'Không thể thêm giáo viên, vui lòng thử lại')
+      } else {
+        toast.error('Không thể thêm giáo viên, vui lòng thử lại')
+      }
+
+      setUploadResults(prev => ({
+        ...prev,
+        errors: [...prev.errors, { error: errorMessage }]
+      }))
     } finally {
       setSubmitting(false)
     }
   }
 
-  // Lọc giáo viên theo tìm kiếm
-  const filteredTeachers = teachers.filter(teacher =>
-    teacher.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    teacher.subject?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const handleUploadExcel = () => {
+    setUploadModalVisible(true)
+    setUploadResults({ success: 0, failed: 0, errors: [] })
+    setUploadProgress(0)
+  }
 
-  // Cấu hình cột bảng
+  const handleCancelUpload = () => {
+    setUploadModalVisible(false)
+    setUploadResults({ success: 0, failed: 0, errors: [] })
+    setUploadProgress(0)
+  }
+
+  const parseExcelFile = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result)
+          const workbook = XLSX.read(data, { type: 'array' })
+          const firstSheetName = workbook.SheetNames[0]
+          const worksheet = workbook.Sheets[firstSheetName]
+          const jsonData = XLSX.utils.sheet_to_json(worksheet)
+
+          // Map dữ liệu từ Excel sang format API
+          const teachers = jsonData.map((row, index) => {
+            return {
+              email: row['Email'] || row['email'] || '',
+              userName: row['Tên đăng nhập'] || row['UserName'] || row['userName'] || row['Tên tài khoản'] || '',
+              password: String(row['Mật khẩu'] || row['Password'] || row['password'] || 'Default123!'),
+              fullName: row['Họ và tên'] || row['FullName'] || row['fullName'] || row['Tên'] || '',
+              phoneNumber: String(row['Số điện thoại'] || row['PhoneNumber'] || row['phoneNumber'] || row['SĐT'] || '').replace(/\s/g, ''),
+              yearOfExperience: parseInt(row['Số năm kinh nghiệm'] || row['YearOfExperience'] || row['yearOfExperience'] || row['Kinh nghiệm'] || 0) || 0,
+              qualifications: row['Bằng cấp'] || row['Qualifications'] || row['qualifications'] || row['Chứng chỉ'] || '',
+              licenseNumber: row['Số giấy phép'] || row['LicenseNumber'] || row['licenseNumber'] || '',
+              subjects: row['Môn học'] || row['Subjects'] || row['subjects'] || '',
+              bio: row['Giới thiệu'] || row['Bio'] || row['bio'] || row['Mô tả'] || '',
+              teachingAtSchool: row['Trường đang dạy'] || row['TeachingAtSchool'] || row['teachingAtSchool'] || row['Trường'] || '',
+              teachAtClasses: row['Dạy các lớp'] || row['TeachAtClasses'] || row['teachAtClasses'] || row['Lớp'] || '',
+              rowNumber: index + 2 // +2 vì có header và index bắt đầu từ 0
+            }
+          }).filter(teacher => teacher.email && teacher.fullName) // Lọc bỏ các dòng trống
+
+          resolve(teachers)
+        } catch (error) {
+          reject(new Error('Không thể đọc file Excel: ' + error.message))
+        }
+      }
+
+      reader.onerror = () => {
+        reject(new Error('Lỗi khi đọc file'))
+      }
+
+      reader.readAsArrayBuffer(file)
+    })
+  }
+
+  const handleFileUpload = async (file) => {
+    setUploading(true)
+    setUploadProgress(0)
+    setUploadResults({ success: 0, failed: 0, errors: [] })
+
+    try {
+      // Parse file Excel
+      const teachers = await parseExcelFile(file)
+
+      if (teachers.length === 0) {
+        toast.error('Không tìm thấy dữ liệu giáo viên trong file Excel')
+        setUploading(false)
+        return
+      }
+
+      const centerOwnerId = user?.userId
+      if (!centerOwnerId) {
+        toast.error('Không tìm thấy thông tin trung tâm')
+        setUploading(false)
+        return
+      }
+
+      const results = { success: 0, failed: 0, errors: [] }
+
+      // Gửi từng giáo viên đến API
+      for (let i = 0; i < teachers.length; i++) {
+        const teacher = teachers[i]
+        try {
+          await api.post(`/Users/Center${centerOwnerId}/Teacher`, teacher)
+          results.success++
+        } catch (error) {
+          results.failed++
+          console.error("lỗi tạo giáo viên file:", error)
+          const errorResponse = error.response.data
+          let errorMessage = ""
+
+          if (errorResponse.includes("the full name")) {
+            errorMessage = "Phải viết hoa chữ cái đầu mỗi từ"
+          }
+          else if (errorResponse.includes("Duplicate email")) {
+            errorMessage = "Email đã được sử dụng"
+          }
+          else if (errorResponse.includes("Duplicate Username")) {
+            errorMessage = "Tên tài khoản đã được sử dụng"
+          }
+          else if (errorResponse.includes("Duplicate Phonenumber")) {
+            errorMessage = "Số điện thoại đã được sử dụng"
+          }
+
+          results.errors.push({
+            row: teacher.rowNumber,
+            name: teacher.fullName,
+            email: teacher.email,
+            error: errorMessage
+          })
+        }
+
+        // Cập nhật progress
+        const progress = Math.round(((i + 1) / teachers.length) * 100)
+        setUploadProgress(progress)
+      }
+
+      setUploadResults(results)
+
+      if (results.success > 0) {
+        toast.success(`Đã thêm thành công ${results.success} giáo viên`)
+        fetchTeachers()
+      }
+
+      if (results.failed > 0) {
+        toast.warning(`${results.failed} giáo viên không thể thêm`)
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error)
+      toast.error('Lỗi khi xử lý file Excel: ' + error.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const beforeUpload = (file) => {
+    const isExcel = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      file.type === 'application/vnd.ms-excel' ||
+      file.name.endsWith('.xlsx') ||
+      file.name.endsWith('.xls')
+
+    if (!isExcel) {
+      toast.error('Chỉ chấp nhận file Excel (.xlsx, .xls)')
+      return false
+    }
+
+    handleFileUpload(file)
+    return false // Ngăn upload tự động
+  }
+
+  // Tính toán thống kê
+  const stats = {
+    total: teachers.length,
+    active: teachers.filter(t => t.status === 'Active').length,
+    totalCourses: teachers.reduce((sum, t) => sum + (t.totalCourses || 0), 0),
+    averageRating: teachers.length > 0
+      ? (teachers.reduce((sum, t) => sum + (t.rating || 0), 0) / teachers.length).toFixed(1)
+      : 0
+  }
+
+  const normalizeFullName = (name) => {
+    return name
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  const formatSchoolName = (name) => {
+    if (!name) return '';
+
+    const upperWords = ['THPT', 'THCS'];
+
+    const words = name
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .map(w => {
+        const upper = w.toUpperCase();
+        if (upperWords.includes(upper)) return upper; // giữ nguyên dạng viết hoa đặc biệt
+        return w.charAt(0).toUpperCase() + w.slice(1); // viết hoa chữ đầu
+      });
+
+    if (words[0] !== "Trường") {
+      words.unshift("Trường");
+    }
+
+    return words.join(' ');
+  };
+
+  // columns cho Table
   const columns = [
     {
-      title: 'Họ tên',
-      dataIndex: 'fullName',
-      key: 'fullName',
-      width: 200,
-      // Đã sửa: Chỉ hiển thị tên, bỏ phần hiển thị ID bên dưới
-      render: (text) => (
-        <div className="text-sm font-medium text-gray-900">{text}</div>
-      )
+      title: 'Giáo viên',
+      key: 'teacher',
+      render: (_, teacher) => (
+        <div className="flex items-center">
+          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
+            <span className="text-white text-sm font-medium">
+              {teacher.fullName?.charAt(0) || 'T'}
+            </span>
+          </div>
+          <div>
+            <div className="text-sm font-medium text-gray-900">{teacher.fullName}</div>
+            {teacher.teacherId && (
+              <div className="text-xs text-gray-500">ID: {teacher.teacherId}</div>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Thông tin liên hệ',
+      key: 'contact',
+      render: (_, teacher) => (
+        <div className="text-sm text-gray-900">
+          <div className="flex items-center gap-2 mb-1">
+            <MailOutlined className="text-gray-400" />
+            <span>{teacher.email || 'N/A'}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <PhoneOutlined className="text-gray-400" />
+            <span>{teacher.phoneNumber || 'N/A'}</span>
+          </div>
+        </div>
+      ),
     },
     {
       title: 'Môn học',
       dataIndex: 'subject',
       key: 'subject',
-      width: 150,
-      render: (text) => (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          {text}
-        </span>
-      )
-    },
-    {
-      title: 'Kinh nghiệm (năm)',
-      dataIndex: 'yearOfExperience',
-      key: 'yearOfExperience',
-      width: 120,
-      render: (text) => <span className="font-medium">{text}</span>
-    },
-    {
-      title: 'Bằng cấp',
-      dataIndex: 'qualification',
-      key: 'qualification',
-      width: 150,
-      render: (text) => <span className="text-sm text-gray-700">{text}</span>
-    },
-    {
-      title: 'Dạy tại',
-      dataIndex: 'teachingAtSchool',
-      key: 'teachingAtSchool',
-      width: 150,
-      render: (text) => <span className="text-sm text-gray-700">{text || 'N/A'}</span>
-    },
-    {
-      title: 'Lớp dạy',
-      dataIndex: 'teachAtClasses',
-      key: 'teachAtClasses',
-      width: 120,
-      render: (text) => <span className="text-sm text-gray-700">{text || 'N/A'}</span>
+      render: (subject) => <Tag color="blue">{subject || 'N/A'}</Tag>,
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
-      render: (status) => {
-        const statusConfig = {
-          Active: {
-            label: 'Hoạt động',
-            className: 'bg-green-100 text-green-800',
-            icon: <CheckCircleOutlined />
-          },
-          Inactive: {
-            label: 'Không hoạt động',
-            className: 'bg-gray-100 text-gray-800',
-            icon: <StopOutlined />
-          },
-          Suspended: {
-            label: 'Tạm khóa',
-            className: 'bg-orange-100 text-orange-800',
-            icon: <WarningOutlined />
-          }
-        }
-        const config = statusConfig[status] || statusConfig.Inactive
-        return (
-          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.className}`}>
-            {config.icon}
-            {config.label}
+      render: (status) => getStatusBadge(status),
+    },
+    {
+      title: 'Khóa học',
+      key: 'courses',
+      render: (_, teacher) => (
+        <div className="text-sm text-gray-900">
+          {teacher.totalCourses || 0} khóa học
+        </div>
+      ),
+    },
+    {
+      title: 'Đánh giá',
+      key: 'rating',
+      render: (_, teacher) => (
+        <div className="flex items-center gap-1">
+          <StarOutlined className="text-yellow-400" />
+          <span className="text-sm font-medium text-gray-900">
+            {teacher.rating ? teacher.rating.toFixed(1) : 'N/A'}
           </span>
-        )
-      }
+        </div>
+      ),
     },
     {
       title: 'Thao tác',
-      key: 'action',
-      width: 150,
-      fixed: 'right',
-      render: (_, record) => (
-        <div className="flex items-center gap-2">
+      key: 'actions',
+      render: (_, teacher) => (
+        <Space size="small">
+          <Tooltip title="Xem chi tiết">
+            <Button
+              type="link"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewTeacher(teacher)}
+            />
+          </Tooltip>
           <Tooltip title="Chỉnh sửa">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleEditTeacher(record)}
-              className="p-1 text-lg text-blue-600 hover:bg-blue-50 rounded"
-            >
-              <EditOutlined />
-            </motion.button>
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => handleEditTeacher(teacher)}
+            />
           </Tooltip>
-          <Tooltip title="Xóa">
-            <Popconfirm
-              title="Xóa giáo viên"
-              description="Bạn có chắc chắn muốn xóa giáo viên này?"
-              onConfirm={() => handleDeleteTeacher(record.id)}
-              okText="Xóa"
-              cancelText="Hủy"
-              okButtonProps={{ danger: true }}
-            >
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="p-1 text-lg text-red-600 hover:bg-red-50 rounded"
-              >
-                <DeleteOutlined />
-              </motion.button>
-            </Popconfirm>
-          </Tooltip>
-        </div>
-      )
-    }
-  ]
-
-  const tableData = filteredTeachers.map(teacher => ({
-    key: teacher.id,
-    ...teacher
-  }))
-
-  const handlePaginationChange = (page, pageSize) => {
-    fetchTeachers(page, pageSize)
-  }
+          {/* <Popconfirm
+            title="Bạn có chắc chắn muốn xóa giáo viên này?"
+            onConfirm={() => handleDeleteTeacher(teacher.id)}
+            okText="Xóa"
+            cancelText="Hủy"
+            okButtonProps={{ danger: true }}
+          >
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+              title="Xóa"
+            />
+          </Popconfirm> */}
+        </Space>
+      ),
+    },
+  ];
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }}>
+    <div className="space-y-6">
       {/* Header */}
-      <Card>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Quản lý giáo viên</h2>
-            <p className="text-gray-600">Quản lý danh sách giáo viên trong trung tâm</p>
-          </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Quản lý giáo viên</h2>
+          <p className="text-gray-600">Quản lý thông tin giáo viên và khóa học</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            onClick={handleUploadExcel}
+          >
+            <FileExcelOutlined />
+            <span>Tải lên Excel</span>
+          </button>
+          <button
+            className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
             onClick={handleAddTeacher}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
           >
             <PlusOutlined />
             <span>Thêm giáo viên</span>
-          </motion.button>
+          </button>
         </div>
-      </Card>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          className="bg-white rounded-lg shadow-sm border border-gray-200 p-4"
-        >
-          <div className="text-2xl font-bold text-gray-900">{pagination.total}</div>
-          <div className="text-sm text-gray-600">Tổng giáo viên</div>
-        </motion.div>
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          className="bg-green-100 rounded-lg shadow-sm border border-gray-200 p-4"
-        >
-          <div className="text-2xl font-bold text-green-600">
-            {teachers.filter(t => t.status === 'Active').length}
-          </div>
-          <div className="text-sm text-gray-600">Đang hoạt động</div>
-        </motion.div>
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          className="bg-orange-100 rounded-lg shadow-sm border border-gray-200 p-4"
-        >
-          <div className="text-2xl font-bold text-orange-600">
-            {teachers.filter(t => t.status !== 'Active').length}
-          </div>
-          <div className="text-sm text-gray-600">Không hoạt động</div>
-        </motion.div>
       </div>
 
-      {/* Search */}
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+          <div className="text-sm text-gray-600">Tổng giáo viên</div>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="text-2xl font-bold text-green-600">{stats.active}</div>
+          <div className="text-sm text-gray-600">Đang hoạt động</div>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="text-2xl font-bold text-blue-600">{stats.totalCourses}</div>
+          <div className="text-sm text-gray-600">Tổng khóa học</div>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="text-2xl font-bold text-purple-600">{stats.averageRating}</div>
+          <div className="text-sm text-gray-600">Đánh giá trung bình</div>
+        </div>
+      </div>
+
+      {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
@@ -351,130 +639,540 @@ const TeacherManagement = () => {
               <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Tìm kiếm theo tên hoặc môn học..."
+                placeholder="Tìm kiếm theo tên, email, số điện thoại hoặc môn học..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
             </div>
           </div>
+          <select
+            value={filterSubject}
+            onChange={(e) => setFilterSubject(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+          >
+            <option value="all">Tất cả môn học</option>
+            {getUniqueSubjects().map(subject => (
+              <option key={subject} value={subject}>{subject}</option>
+            ))}
+          </select>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value="Active">Hoạt động</option>
+            <option value="Inactive">Không hoạt động</option>
+            <option value="Pending">Chờ duyệt</option>
+            <option value="Suspended">Tạm khóa</option>
+          </select>
         </div>
       </div>
 
-      {/* Table */}
+      {/* Teachers table */}
       <Card>
         <Table
           columns={columns}
-          dataSource={tableData}
-          rowKey="key"
+          dataSource={
+            searchTerm || filterSubject !== 'all' || filterStatus !== 'all'
+              ? filteredTeachers.slice(
+                  (pagination.pageNumber - 1) * pagination.pageSize,
+                  pagination.pageNumber * pagination.pageSize
+                )
+              : filteredTeachers
+          }
           loading={loading}
-          pagination={{
-            current: pagination.pageNumber,
-            pageSize: pagination.pageSize,
-            total: pagination.total,
-            showSizeChanger: true,
-            pageSizeOptions: ['5', '10', '20', '50'],
-            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} giáo viên`,
-            onChange: handlePaginationChange
+          rowKey={(record) => record.profileId || record.id}
+          pagination={
+            searchTerm || filterSubject !== 'all' || filterStatus !== 'all'
+              ? {
+                  current: pagination.pageNumber,
+                  pageSize: pagination.pageSize,
+                  total: filteredTeachers.length,
+                  showSizeChanger: true,
+                  showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} giáo viên`,
+                  onChange: (page, pageSize) => {
+                    setPagination(prev => ({
+                      ...prev,
+                      pageNumber: page,
+                      pageSize: pageSize
+                    }))
+                  },
+                  onShowSizeChange: (current, size) => {
+                    setPagination(prev => ({
+                      ...prev,
+                      pageNumber: 1,
+                      pageSize: size
+                    }))
+                  }
+                }
+              : {
+                  current: pagination.pageNumber,
+                  pageSize: pagination.pageSize,
+                  total: pagination.total,
+                  showSizeChanger: true,
+                  showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} giáo viên`,
+                  onChange: (page, pageSize) => {
+                    setPagination(prev => ({
+                      ...prev,
+                      pageNumber: page,
+                      pageSize: pageSize
+                    }))
+                    fetchTeachers(page, pageSize)
+                  },
+                  onShowSizeChange: (current, size) => {
+                    setPagination(prev => ({
+                      ...prev,
+                      pageNumber: 1,
+                      pageSize: size
+                    }))
+                    fetchTeachers(1, size)
+                  }
+                }
+          }
+          scroll={{ x: "max-content", y: pagination.pageSize === 5 ? undefined : 75 * 5 }}
+          locale={{
+            emptyText: 'Không tìm thấy giáo viên nào'
           }}
-          scroll={{ x: 'max-content' }}
         />
       </Card>
 
-      {/* Modal thêm/sửa giáo viên */}
+      {/* View Teacher Modal */}
       <Modal
-        title={editingTeacher ? 'Chỉnh sửa giáo viên' : 'Thêm giáo viên mới'}
-        open={modalVisible}
-        onCancel={() => {
-          setModalVisible(false)
-          form.resetFields()
-          setEditingTeacher(null)
-        }}
-        footer={null}
+        title={
+          <div className="flex items-center gap-2">
+            <UserOutlined />
+            <span>Chi tiết giáo viên</span>
+          </div>
+        }
+        open={viewModalVisible}
+        onCancel={() => setViewModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setViewModalVisible(false)}>
+            Đóng
+          </Button>
+        ]}
         width={600}
+      >
+        {selectedTeacher && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-4 pb-4 border-b">
+              <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-2xl font-medium">
+                  {selectedTeacher.fullName?.charAt(0) || 'T'}
+                </span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">{selectedTeacher.fullName}</h3>
+                <p className="text-gray-600">{selectedTeacher.subject}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500">Email</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <MailOutlined className="text-gray-400" />
+                  <span className="text-gray-900">{selectedTeacher.email || 'N/A'}</span>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Số điện thoại</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <PhoneOutlined className="text-gray-400" />
+                  <span className="text-gray-900">{selectedTeacher.phoneNumber || 'N/A'}</span>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Môn học</label>
+                <div className="mt-1">
+                  <Tag color="blue">{selectedTeacher.subject || 'N/A'}</Tag>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Trạng thái</label>
+                <div className="mt-1">
+                  {getStatusBadge(selectedTeacher.status)}
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Số khóa học</label>
+                <div className="mt-1 text-gray-900">{selectedTeacher.totalCourses || 0}</div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Đánh giá</label>
+                <div className="flex items-center gap-1 mt-1">
+                  <StarOutlined className="text-yellow-400" />
+                  <span className="text-gray-900">
+                    {selectedTeacher.rating ? selectedTeacher.rating.toFixed(1) : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-500">Bằng cấp</label>
+              <p className="mt-1 text-gray-900">{selectedTeacher.qualification || 'N/A'}</p>
+            </div>
+
+            {selectedTeacher.description && (
+              <div>
+                <label className="text-sm font-medium text-gray-500">Mô tả</label>
+                <p className="mt-1 text-gray-900">{selectedTeacher.description}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Add Teacher Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <PlusOutlined />
+            <span>Thêm giáo viên mới</span>
+          </div>
+        }
+        open={addModalVisible}
+        onCancel={handleCancelAdd}
+        footer={[
+          <Button key="cancel" onClick={handleCancelAdd}>
+            Hủy
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            onClick={handleSubmitAdd}
+            loading={submitting}
+          >
+            Thêm giáo viên
+          </Button>
+        ]}
+        width={700}
       >
         <Form
           form={form}
           layout="vertical"
-          onFinish={handleSubmit}
           className="mt-4"
         >
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item
+              label="Email"
+              name="email"
+              rules={[
+                { required: true, message: 'Vui lòng nhập email' },
+                { type: 'email', message: 'Email không hợp lệ' }
+              ]}
+            >
+              <Input placeholder="user@example.com" />
+            </Form.Item>
+
+            <Form.Item
+              label="Tên đăng nhập"
+              name="userName"
+              rules={[
+                { required: true, message: 'Vui lòng nhập tên đăng nhập' },
+                { min: 6, message: 'Tên đăng nhập phải có ít nhất 6 ký tự' },
+                { pattern: /^\S+$/, message: 'Tên đăng nhập không được chứa khoảng trắng' }
+              ]}
+            >
+              <Input placeholder="username" />
+            </Form.Item>
+
+            <Form.Item
+              label="Mật khẩu"
+              name="password"
+              rules={[
+                { required: true, message: 'Vui lòng nhập mật khẩu' },
+                { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' }
+              ]}
+            >
+              <Input.Password placeholder="Nhập mật khẩu" />
+            </Form.Item>
+
+            <Form.Item
+              label="Họ và tên"
+              name="fullName"
+              rules={[
+                { required: true, message: 'Vui lòng nhập họ và tên' },
+                { min: 2, message: 'Họ và tên phải có ít nhất 2 ký tự' }
+              ]}
+            >
+              <Input 
+                placeholder="Nguyễn Văn A" 
+                onBlur={(e) => {
+                  const value = e.target.value;
+                  form.setFieldsValue({ fullName: normalizeFullName(value) });
+                }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Số điện thoại"
+              name="phoneNumber"
+              rules={[
+                { required: true, message: 'Vui lòng nhập số điện thoại' },
+                { pattern: /^[0-9]{10}$/, message: 'Số điện thoại không hợp lệ' }
+              ]}
+            >
+              <Input placeholder="0123456789" />
+            </Form.Item>
+
+            <Form.Item
+              label="Số năm kinh nghiệm"
+              name="yearOfExperience"
+              rules={[
+                { required: true, message: 'Vui lòng nhập số năm kinh nghiệm' },
+                { type: 'number', min: 0, max: 50, message: 'Số năm kinh nghiệm phải từ 0 đến 50' }
+              ]}
+            >
+              <InputNumber
+                className="w-full"
+                placeholder="0"
+                min={0}
+                max={50}
+              />
+            </Form.Item>
+          </div>
+
           <Form.Item
-            label="Họ tên"
-            name="fullName"
-            rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
+            label="Bằng cấp/Chứng chỉ"
+            name="qualifications"
           >
-            <Input placeholder="Nhập họ tên giáo viên" />
+            <TextArea
+              rows={2}
+              placeholder="Ví dụ: Thạc sĩ Toán học, Chứng chỉ IELTS 8.5..."
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Số giấy phép"
+            name="licenseNumber"
+          >
+            <Input placeholder="Số giấy phép giảng dạy (nếu có)" />
           </Form.Item>
 
           <Form.Item
             label="Môn học"
-            name="subject"
-            rules={[{ required: true, message: 'Vui lòng chọn môn học' }]}
+            name="subjects"
+            rules={[
+              { required: true, message: 'Vui lòng nhập môn học' }
+            ]}
           >
-            <Select
-              placeholder="Chọn môn học"
-              options={subjects.map(subject => ({
-                value: subject.name || subject,
-                label: subject.name || subject
-              }))}
+            <Input 
+              placeholder="Ví dụ: Toán, Vật Lý, Tiếng Anh..." 
+              onBlur={e => {
+                const value = e.target.value
+                form.setFieldsValue({ subjects: normalizeFullName(value) })
+              }}  
             />
           </Form.Item>
 
           <Form.Item
-            label="Kinh nghiệm (năm)"
-            name="yearOfExperience"
-            rules={[{ required: true, message: 'Vui lòng nhập kinh nghiệm' }]}
+            label="Giới thiệu"
+            name="bio"
           >
-            <Input type="number" placeholder="Nhập số năm kinh nghiệm" min={0} />
-          </Form.Item>
-
-          <Form.Item
-            label="Bằng cấp"
-            name="qualification"
-            rules={[{ required: true, message: 'Vui lòng nhập bằng cấp' }]}
-          >
-            <Input placeholder="Nhập bằng cấp (VD: Đại học, Thạc sĩ)" />
-          </Form.Item>
-
-          <Form.Item
-            label="Trạng thái"
-            name="status"
-            initialValue="Active"
-            rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
-          >
-            <Select
-              options={[
-                { value: 'Active', label: 'Hoạt động' },
-                { value: 'Inactive', label: 'Không hoạt động' },
-                { value: 'Suspended', label: 'Tạm khóa' }
-              ]}
+            <TextArea
+              rows={3}
+              placeholder="Giới thiệu về giáo viên..."
             />
           </Form.Item>
 
-          <Form.Item>
-            <div className="flex gap-2 justify-end">
-              <Button onClick={() => {
-                setModalVisible(false)
-                form.resetFields()
-                setEditingTeacher(null)
-              }}>
-                Hủy
-              </Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={submitting}
-                className="bg-orange-500 hover:bg-orange-600"
-              >
-                {editingTeacher ? 'Cập nhật' : 'Thêm'}
-              </Button>
-            </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item
+              label="Đang giảng dạy tại trường"
+              name="teachingAtSchool"
+            >
+              <Input 
+                placeholder="Tên trường (nếu có)" 
+                onBlur={(e) => {
+                  const value = e.target.value;
+                  form.setFieldsValue({ teachingAtSchool: formatSchoolName(value) });
+                }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Dạy các lớp"
+              name="teachAtClasses"
+            >
+              <Input placeholder="Ví dụ: Lớp 10, 11, 12..." />
+            </Form.Item>
+          </div>
+        </Form>
+      </Modal>
+
+      {/* Edit Teacher Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <EditOutlined />
+            <span>Chỉnh sửa thông tin giáo viên</span>
+          </div>
+        }
+        open={editModalVisible}
+        onCancel={handleCancelEdit}
+        footer={[
+          <Button key="cancel" onClick={handleCancelEdit}>
+            Hủy
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            onClick={handleSubmitEdit}
+            loading={editing}
+          >
+            Cập nhật
+          </Button>
+        ]}
+        width={700}
+      >
+        <Form
+          form={editForm}
+          layout="vertical"
+          className="mt-4"
+        >
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[
+              { required: true, message: 'Vui lòng nhập email' },
+              { type: 'email', message: 'Email không hợp lệ' }
+            ]}
+          >
+            <Input placeholder="user@example.com" />
+          </Form.Item>
+
+          <Form.Item
+            label="Số điện thoại"
+            name="phoneNumber"
+            rules={[
+              { required: true, message: 'Vui lòng nhập số điện thoại' },
+              { pattern: /^[0-9]{10}$/, message: 'Số điện thoại không hợp lệ' }
+            ]}
+          >
+            <Input placeholder="0123456789" />
+          </Form.Item>
+
+          <Form.Item
+            label="Môn học"
+            name="subjects"
+            rules={[
+              { required: true, message: 'Vui lòng nhập môn học' }
+            ]}
+          >
+            <Input 
+              placeholder="Ví dụ: Toán, Vật Lý, Tiếng Anh..." 
+              onBlur={e => {
+                const value = e.target.value
+                editForm.setFieldsValue({ subjects: normalizeFullName(value) })
+              }}  
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Giới thiệu"
+            name="bio"
+          >
+            <TextArea
+              rows={4}
+              placeholder="Giới thiệu về giáo viên..."
+            />
           </Form.Item>
         </Form>
       </Modal>
-    </Space>
+
+      {/* Upload Excel Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <FileExcelOutlined />
+            <span>Tải lên danh sách giáo viên từ Excel</span>
+          </div>
+        }
+        open={uploadModalVisible}
+        onCancel={handleCancelUpload}
+        footer={[
+          <Button key="close" onClick={handleCancelUpload} disabled={uploading}>
+            {uploading ? 'Đang xử lý...' : 'Đóng'}
+          </Button>
+        ]}
+        width={700}
+      >
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-semibold text-blue-900 mb-2">Hướng dẫn:</h4>
+            <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+              <li>File Excel phải có định dạng .xlsx hoặc .xls</li>
+              <li>Các cột bắt buộc: Email, Họ và tên (hoặc FullName), Tên đăng nhập (hoặc UserName)</li>
+              <li>Các cột tùy chọn: Số điện thoại, Môn học, Số năm kinh nghiệm, Bằng cấp, v.v.</li>
+              <li>Nếu không có mật khẩu, hệ thống sẽ tự động tạo mật khẩu mặc định</li>
+            </ul>
+          </div>
+
+          <Upload
+            beforeUpload={beforeUpload}
+            accept=".xlsx,.xls"
+            showUploadList={false}
+            disabled={uploading}
+          >
+            <Button
+              icon={<UploadOutlined />}
+              size="large"
+              block
+              disabled={uploading}
+              className="h-12"
+            >
+              {uploading ? 'Đang xử lý...' : 'Chọn file Excel'}
+            </Button>
+          </Upload>
+
+          {uploading && (
+            <div className="space-y-2">
+              <Progress percent={uploadProgress} status="active" />
+              <p className="text-sm text-gray-600 text-center">
+                Đang xử lý file... {uploadProgress}%
+              </p>
+            </div>
+          )}
+
+          {(uploadResults.success > 0 || uploadResults.failed > 0) && (
+            <div className="space-y-3 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <div className="text-2xl font-bold text-green-600">
+                    {uploadResults.success}
+                  </div>
+                  <div className="text-sm text-green-700">Thành công</div>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div className="text-2xl font-bold text-red-600">
+                    {uploadResults.failed}
+                  </div>
+                  <div className="text-sm text-red-700">Thất bại</div>
+                </div>
+              </div>
+
+              {uploadResults.errors.length > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <h4 className="font-semibold text-yellow-900 mb-2">Chi tiết lỗi:</h4>
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {uploadResults.errors.map((error, index) => (
+                      <div key={index} className="text-sm text-yellow-800">
+                        <strong>Dòng {error.row}:</strong> {error.name} ({error.email}) - {error.error}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </Modal>
+    </div>
   )
 }
 
 export default TeacherManagement
+
