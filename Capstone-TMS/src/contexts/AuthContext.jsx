@@ -60,8 +60,8 @@ export const AuthProvider = ({ children }) => {
         phoneNumber: PhoneNumber,
         role: Role,
         userName: UserName,
-        parentProfileId: ParentProfileId,
-        centerProfileId: CenterProfileId
+        ...(ParentProfileId && { parentProfileId: ParentProfileId }),
+        ...(CenterProfileId && { centerProfileId: CenterProfileId })
       }
 
       setUser(builtUser)
