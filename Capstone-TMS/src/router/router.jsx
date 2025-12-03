@@ -47,9 +47,11 @@ import AdminLayout from "../layouts/AdminLayout";
 import ProtectedRoute from "../components/ProtectedRoute";
 import ChildrenManagement from "../pages/management/ChildrenManagement";
 import CenterInspectionManagement from "../pages/management/CenterInspectionManagement";
+import CourseApprovalManagement from "../pages/management/CourseApprovalManagement";
 import ParentCenters from "../pages/dashboard/ParentCenters";
 import ParentCourses from "../pages/dashboard/ParentCourses";
 import ParentCentersMap from "../pages/dashboard/ParentCentersMap";
+import TeacherManagement from "../pages/management/TeacherManagement";
 import { AuthProvider } from "../contexts/AuthContext";
 
 export const router = createBrowserRouter([
@@ -143,6 +145,10 @@ export const router = createBrowserRouter([
             {
                 path: "subscriptions",
                 element: <ProtectedRoute requiredRole="Admin"><SubscriptionManagement /></ProtectedRoute>
+            },
+            {
+                path: "course-approval",
+                element: <ProtectedRoute requiredRole="Admin"><CourseApprovalManagement /></ProtectedRoute>
             }
         ]
     },
@@ -183,6 +189,10 @@ export const router = createBrowserRouter([
             {
                 path: "center",
                 element: <ProtectedRoute requiredRole="Inspector"><CenterInspectionManagement /></ProtectedRoute>
+            },
+            {
+                path: "course-approval",
+                element: <ProtectedRoute requiredRole="Inspector"><CourseApprovalManagement /></ProtectedRoute>
             }
         ]
     },
@@ -203,6 +213,10 @@ export const router = createBrowserRouter([
             {
                 path: "subscription",
                 element: <ProtectedRoute requiredRole="Center"><CenterSubscription /></ProtectedRoute>
+            },
+            {
+                path: "teachers",
+                element: <ProtectedRoute requiredRole="Center"><TeacherManagement /></ProtectedRoute>
             }
         ]
     },
@@ -215,10 +229,6 @@ export const router = createBrowserRouter([
             {
                 index: true,
                 element: <ProtectedRoute requiredRole="Teacher"><TeacherDashboard /></ProtectedRoute>
-            },
-            {
-                path: "course-approval",
-                element: <ProtectedRoute requiredRole="Teacher"><TeacherCourseApproval /></ProtectedRoute>
             }
         ]
     },

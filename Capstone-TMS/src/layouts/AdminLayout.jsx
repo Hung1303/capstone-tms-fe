@@ -76,6 +76,12 @@ const ROLE_MENUS = {
       path: '/admin/reports'
     },
     {
+      key: '/admin/course-approval',
+      icon: <CheckCircleOutlined />,
+      label: 'Duyệt khóa học',
+      path: '/admin/course-approval'
+    },
+    {
       key: '/admin/settings',
       icon: <SettingOutlined />,
       label: 'Cài đặt',
@@ -132,6 +138,12 @@ const ROLE_MENUS = {
       icon: <TeamOutlined />,
       label: 'Xác thực trung tâm',
       path: '/inspector/center'
+    },
+    {
+      key: '/inspector/course-approval',
+      icon: <CheckCircleOutlined />,
+      label: 'Duyệt khóa học',
+      path: '/inspector/course-approval'
     }
   ],
   Center: [
@@ -184,12 +196,6 @@ const ROLE_MENUS = {
       icon: <DashboardOutlined />,
       label: 'Dashboard',
       path: '/teacher'
-    },
-    {
-      key: '/teacher/course-approval',
-      icon: <CheckCircleOutlined />,
-      label: 'Xét duyệt khóa học',
-      path: '/teacher/course-approval'
     },
     {
       key: '/teacher/courses',

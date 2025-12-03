@@ -6,24 +6,37 @@ import {
   DeleteOutlined,
   CloseOutlined,
   ExclamationCircleOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  StopOutlined,
+  FileSyncOutlined,
+  ClockCircleOutlined,
+  SendOutlined // [MỚI] Icon gửi duyệt
 } from '@ant-design/icons'
 import { toast } from 'react-toastify'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
+import * as teacherService from '../../services/teacherService'
 
 const CourseManagement = () => {
   const { user } = useAuth()
   const [courses, setCourses] = useState([])
   const [subjects, setSubjects] = useState([])
+  const [teachers, setTeachers] = useState([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
+  
+  // Modal states
   const [showModal, setShowModal] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
   
+  // [MỚI] State cho modal gửi yêu cầu duyệt
+  const [showRequestModal, setShowRequestModal] = useState(false)
+  const [requestCourseId, setRequestCourseId] = useState(null)
+  const [requestNote, setRequestNote] = useState('')
+
   const [formData, setFormData] = useState({
     title: '',
     subject: '',
@@ -36,14 +49,23 @@ const CourseManagement = () => {
     tuitionFee: 0,
     capacity: 30,
     gradeLevel: 10,
-    teacherProfileId: null // [QUAN TRỌNG] Mặc định là null
+    teacherProfileId: null 
   })
   const [errors, setErrors] = useState({})
+
+  // Lấy centerId chuẩn
+  const centerId = user?.centerProfileId || user?.userId
 
   useEffect(() => {
     fetchCourses()
     fetchSubjects()
   }, [])
+
+  useEffect(() => {
+    if (centerId) {
+      fetchTeachers()
+    }
+  }, [centerId])
 
   const fetchCourses = async () => {
     setLoading(true)
@@ -71,6 +93,17 @@ const CourseManagement = () => {
     }
   }
 
+  const fetchTeachers = async () => {
+    if (!centerId) return
+    try {
+      const response = await teacherService.getTeachersByCenter(centerId, 1, 100)
+      const teacherList = response.teachers || []
+      setTeachers(Array.isArray(teacherList) ? teacherList : [])
+    } catch (error) {
+      console.error('Error fetching teachers:', error)
+    }
+  }
+
   const getTodayDate = () => {
     const today = new Date()
     return today.toISOString().split('T')[0]
@@ -82,7 +115,9 @@ const CourseManagement = () => {
 
     if (!formData.title.trim()) newErrors.title = 'Vui lòng nhập tên khóa học'
     if (!formData.subject.trim()) newErrors.subject = 'Vui lòng chọn môn học'
-    // [ĐÃ XÓA] Không bắt buộc chọn teacherProfileId nữa
+    
+    // Gắn giáo viên: Tùy logic nghiệp vụ mà có bắt buộc hay không
+    // if (!formData.teacherProfileId) newErrors.teacherProfileId = 'Vui lòng chọn giáo viên'
     
     if (!formData.description.trim()) newErrors.description = 'Vui lòng nhập mô tả'
     if (!formData.location.trim()) newErrors.location = 'Vui lòng nhập địa điểm'
@@ -106,6 +141,7 @@ const CourseManagement = () => {
     return Object.keys(newErrors).length === 0
   }
 
+  // --- Handlers cho Modal Tạo/Sửa ---
   const handleOpenModal = (course = null) => {
     if (course) {
       setEditingId(course.id)
@@ -121,7 +157,7 @@ const CourseManagement = () => {
         tuitionFee: course.tuitionFee || 0,
         capacity: course.capacity || 30,
         gradeLevel: course.gradeLevel || 10,
-        teacherProfileId: course.teacherProfileId || null // Giữ nguyên giáo viên nếu đang edit
+        teacherProfileId: course.teacherProfileId || null 
       })
     } else {
       setEditingId(null)
@@ -137,7 +173,7 @@ const CourseManagement = () => {
         tuitionFee: 0,
         capacity: 30,
         gradeLevel: 10,
-        teacherProfileId: null // Reset về null
+        teacherProfileId: null
       })
     }
     setErrors({})
@@ -147,20 +183,6 @@ const CourseManagement = () => {
   const handleCloseModal = () => {
     setShowModal(false)
     setEditingId(null)
-    setFormData({
-      title: '',
-      subject: '',
-      description: '',
-      location: '',
-      semester: 1,
-      startDate: '',
-      endDate: '',
-      teachingMethod: 1,
-      tuitionFee: 0,
-      capacity: 30,
-      gradeLevel: 10,
-      teacherProfileId: null
-    })
     setErrors({})
   }
 
@@ -179,42 +201,36 @@ const CourseManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-
-    if (!validateForm()) {
-      return
-    }
+    if (!validateForm()) return
 
     setLoading(true)
     try {
-      // [QUAN TRỌNG] Payload gửi lên server
       const payload = {
         ...formData,
-        centerProfileId: user?.userId,
-        // Nếu editingId có teacher thì giữ nguyên, nếu tạo mới thì null
+        centerProfileId: centerId,
         teacherProfileId: formData.teacherProfileId || null 
       }
       
-      console.log('Payload:', payload)
-
       if (editingId) {
+        // [API PUT] Sửa khóa học
         await api.put(`/Course/${editingId}`, payload)
         toast.success('Cập nhật khóa học thành công!')
       } else {
+        // [API POST] Tạo khóa học (Mặc định sẽ là Draft)
         await api.post('/Course', payload)
-        toast.success('Tạo khóa học thành công! (Trạng thái: Pending)')
+        toast.success('Tạo bản nháp thành công! Vui lòng gửi duyệt.')
       }
       await fetchCourses()
       handleCloseModal()
     } catch (error) {
       console.error('Error saving course:', error)
-      const errorMsg = error.response?.data?.message || 'Lỗi khi lưu khóa học'
-      setErrors({ submit: errorMsg })
-      toast.error(errorMsg)
+      toast.error(error.response?.data?.message || 'Lỗi khi lưu khóa học')
     } finally {
       setLoading(false)
     }
   }
 
+  // --- Handlers cho Xóa ---
   const handleDeleteClick = (id) => {
     setDeleteId(id)
     setShowDeleteConfirm(true)
@@ -223,6 +239,7 @@ const CourseManagement = () => {
   const handleConfirmDelete = async () => {
     setLoading(true)
     try {
+      // [API DELETE] Xóa khóa học
       await api.delete(`/Course/${deleteId}`)
       await fetchCourses()
       setShowDeleteConfirm(false)
@@ -236,42 +253,95 @@ const CourseManagement = () => {
     }
   }
 
-  const handlePublishCourse = async (courseId) => {
+  // --- [MỚI] Handlers cho Gửi Duyệt ---
+  const handleRequestApprovalClick = (courseId) => {
+    setRequestCourseId(courseId)
+    setRequestNote('') // Reset ghi chú
+    setShowRequestModal(true)
+  }
+
+  const handleConfirmRequest = async () => {
+    if (!requestCourseId) return
+
     setLoading(true)
     try {
-      await api.put(`/Course/${courseId}/publish`, { status: 'PUBLISHED' })
-      await fetchCourses()
-      toast.success('Đăng khóa học thành công!')
+      // [API POST] Gửi yêu cầu duyệt
+      // Endpoint: /api/ApprovalRequests/Course/{courseId}?requestedByUserId={userId}
+      const url = `/ApprovalRequests/Course/${requestCourseId}?requestedByUserId=${user.userId}`
+      
+      // Body là string JSON
+      await api.post(url, JSON.stringify(requestNote), {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      toast.success('Đã gửi yêu cầu duyệt thành công!')
+      await fetchCourses() // Load lại để cập nhật trạng thái sang PendingApproval
+      setShowRequestModal(false)
+      setRequestCourseId(null)
     } catch (error) {
-      console.error('Error publishing course:', error)
-      toast.error('Lỗi khi đăng khóa học')
+      console.error('Error requesting approval:', error)
+      toast.error(error.response?.data?.message || 'Lỗi khi gửi yêu cầu duyệt')
     } finally {
       setLoading(false)
     }
   }
 
+  // --- Helpers ---
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           course.subject?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = filterStatus === 'all' || course.status === filterStatus
+    const matchesStatus = filterStatus === 'all' || 
+                          // Map status số sang string để filter hoạt động
+                          (filterStatus === 'Draft' && (course.status === 0 || course.status === 'Draft')) ||
+                          (filterStatus === 'PendingApproval' && (course.status === 1 || course.status === 'PendingApproval')) ||
+                          (filterStatus === 'Approved' && (course.status === 2 || course.status === 'Approved')) ||
+                          (filterStatus === 'Rejected' && (course.status === 3 || course.status === 'Rejected')) ||
+                          (filterStatus === 'Suspended' && (course.status === 4 || course.status === 'Suspended')) ||
+                          (filterStatus === 'Archived' && (course.status === 5 || course.status === 'Archived'))
+
     return matchesSearch && matchesStatus
   })
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      PENDING: { label: 'Chờ giáo viên', className: 'bg-yellow-100 text-yellow-800' },
-      ASSIGNED: { label: 'Đã có GV', className: 'bg-blue-100 text-blue-800' }, // Giáo viên đã ký
-      CONFIRMED: { label: 'Đã duyệt', className: 'bg-purple-100 text-purple-800' }, // Staff đã duyệt
-      PUBLISHED: { label: 'Đã đăng', className: 'bg-green-100 text-green-800' }, // Center đã đăng
-      CANCELLED: { label: 'Đã hủy', className: 'bg-red-100 text-red-800' },
-      COMPLETED: { label: 'Đã kết thúc', className: 'bg-gray-100 text-gray-800' }
+      Draft: { label: 'Bản nháp', className: 'bg-gray-100 text-gray-600', icon: <EditOutlined /> },
+      PendingApproval: { label: 'Chờ duyệt', className: 'bg-yellow-100 text-yellow-800', icon: <ClockCircleOutlined /> },
+      Approved: { label: 'Đã duyệt', className: 'bg-green-100 text-green-800', icon: <CheckCircleOutlined /> },
+      Rejected: { label: 'Bị từ chối', className: 'bg-red-100 text-red-800', icon: <CloseOutlined /> },
+      Suspended: { label: 'Tạm ngưng', className: 'bg-orange-100 text-orange-800', icon: <StopOutlined /> },
+      Archived: { label: 'Lưu trữ', className: 'bg-gray-200 text-gray-800', icon: <FileSyncOutlined /> }
     }
-    const config = statusConfig[status] || statusConfig.PENDING
+
+    // Map số (từ API) sang Key (để lấy config)
+    const statusMap = {
+        0: 'Draft',
+        1: 'PendingApproval',
+        2: 'Approved',
+        3: 'Rejected',
+        4: 'Suspended',
+        5: 'Archived'
+    }
+    
+    // Xử lý status có thể là số hoặc chuỗi
+    const statusKey = typeof status === 'number' ? statusMap[status] : status
+    const config = statusConfig[statusKey] || { label: 'Không xác định', className: 'bg-gray-100 text-gray-800' }
+
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.className}`}>
+      <span className={`flex items-center gap-1 w-fit px-2 py-1 rounded-full text-xs font-medium ${config.className}`}>
+        {config.icon}
         {config.label}
       </span>
     )
+  }
+
+  // Kiểm tra xem có được phép Sửa/Xóa/Gửi duyệt không
+  // Chỉ cho phép khi Draft (0) hoặc Rejected (3)
+  const canModify = (status) => {
+      if (status === 'Draft' || status === 0) return true
+      if (status === 'Rejected' || status === 3) return true
+      return false
   }
 
   const teachingMethods = [
@@ -310,21 +380,21 @@ const CourseManagement = () => {
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="text-2xl font-bold text-yellow-600">
-            {courses.filter(c => c.status === 'PENDING').length}
+            {courses.filter(c => c.status === 'PendingApproval' || c.status === 1).length}
           </div>
-          <div className="text-sm text-gray-600">Chờ giáo viên</div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="text-2xl font-bold text-purple-600">
-            {courses.filter(c => c.status === 'CONFIRMED').length}
-          </div>
-          <div className="text-sm text-gray-600">Chờ đăng</div>
+          <div className="text-sm text-gray-600">Chờ duyệt</div>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="text-2xl font-bold text-green-600">
-            {courses.filter(c => c.status === 'PUBLISHED').length}
+            {courses.filter(c => c.status === 'Approved' || c.status === 2).length}
           </div>
-          <div className="text-sm text-gray-600">Đã đăng</div>
+          <div className="text-sm text-gray-600">Đã duyệt</div>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="text-2xl font-bold text-red-600">
+            {courses.filter(c => c.status === 'Rejected' || c.status === 3).length}
+          </div>
+          <div className="text-sm text-gray-600">Bị từ chối</div>
         </div>
       </div>
 
@@ -349,12 +419,12 @@ const CourseManagement = () => {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           >
             <option value="all">Tất cả trạng thái</option>
-            <option value="PENDING">Chờ giáo viên</option>
-            <option value="ASSIGNED">Đã có GV</option>
-            <option value="CONFIRMED">Đã duyệt</option>
-            <option value="PUBLISHED">Đã đăng</option>
-            <option value="CANCELLED">Đã hủy</option>
-            <option value="COMPLETED">Đã kết thúc</option>
+            <option value="Draft">Bản nháp</option>
+            <option value="PendingApproval">Chờ duyệt</option>
+            <option value="Approved">Đã duyệt</option>
+            <option value="Rejected">Bị từ chối</option>
+            <option value="Suspended">Tạm ngưng</option>
+            <option value="Archived">Lưu trữ</option>
           </select>
         </div>
       </div>
@@ -391,11 +461,10 @@ const CourseManagement = () => {
                   <tr key={course.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-gray-900">{course.title}</div>
-                      {/* Hiển thị giáo viên nếu đã có */}
                       {course.teacherProfileId ? (
-                         <div className="text-xs text-blue-600 mt-1">GV: {course.teacherName || 'Đã nhận lớp'}</div>
+                          <div className="text-xs text-blue-600 mt-1">GV: {course.teacherName || 'Đã phân công'}</div>
                       ) : (
-                         <div className="text-xs text-gray-400 mt-1 italic">Chưa có GV</div>
+                          <div className="text-xs text-gray-400 mt-1 italic">Chưa có GV</div>
                       )}
                     </td>
                     <td className="px-6 py-4">
@@ -416,19 +485,19 @@ const CourseManagement = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        {/* Chỉ hiện nút Đăng (Publish) nếu Staff đã Confirm */}
-                        {course.status === 'CONFIRMED' && (
-                          <button 
-                            onClick={() => handlePublishCourse(course.id)}
-                            className="p-1 text-green-600 hover:bg-green-50 rounded"
-                            title="Đăng khóa học"
-                          >
-                            <CheckCircleOutlined />
-                          </button>
-                        )}
-                        {/* Cho phép sửa/xóa khi còn Pending */}
-                        {course.status === 'PENDING' && (
+                        {/* Chỉ hiện nút thao tác nếu trạng thái là Draft hoặc Rejected */}
+                        {canModify(course.status) ? (
                           <>
+                            {/* Nút Gửi Duyệt */}
+                            <button 
+                              onClick={() => handleRequestApprovalClick(course.id)}
+                              className="p-1 text-green-600 hover:bg-green-50 rounded"
+                              title="Gửi duyệt"
+                            >
+                              <SendOutlined />
+                            </button>
+
+                            {/* Nút Sửa */}
                             <button 
                               onClick={() => handleOpenModal(course)}
                               className="p-1 text-blue-600 hover:bg-blue-50 rounded"
@@ -436,6 +505,8 @@ const CourseManagement = () => {
                             >
                               <EditOutlined />
                             </button>
+
+                            {/* Nút Xóa */}
                             <button 
                               onClick={() => handleDeleteClick(course.id)}
                               className="p-1 text-red-600 hover:bg-red-50 rounded"
@@ -444,6 +515,8 @@ const CourseManagement = () => {
                               <DeleteOutlined />
                             </button>
                           </>
+                        ) : (
+                           <span className="text-gray-400 text-xs italic">Đã khóa</span>
                         )}
                       </div>
                     </td>
@@ -461,11 +534,10 @@ const CourseManagement = () => {
         </div>
       </div>
 
-      {/* Modal Form */}
+      {/* Modal Form: Tạo/Sửa */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">
                 {editingId ? 'Chỉnh sửa khóa học' : 'Thêm khóa học mới'}
@@ -478,264 +550,135 @@ const CourseManagement = () => {
               </button>
             </div>
 
-            {/* Modal Body */}
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {errors.submit && (
-                <div className="p-3 bg-red-100 text-red-800 rounded-lg text-sm">
-                  {errors.submit}
-                </div>
-              )}
-
-              {/* Row 1: Tên khóa học & Môn học */}
+              {/* Giữ nguyên các trường form */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tên khóa học *
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                      errors.title ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Nhập tên khóa học"
-                  />
-                  {errors.title && (
-                    <p className="mt-1 text-sm text-red-600">{errors.title}</p>
-                  )}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tên khóa học *</label>
+                  <input type="text" name="title" value={formData.title} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Nhập tên khóa học" />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Môn học *
-                  </label>
-                  <select
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                      errors.subject ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  >
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Môn học *</label>
+                  <select name="subject" value={formData.subject} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
                     <option value="">-- Chọn môn học --</option>
-                    {subjects.map(subject => (
-                      <option key={subject.id} value={subject.subjectName}>
-                        {subject.subjectName}
-                      </option>
-                    ))}
+                    {subjects.map(subject => (<option key={subject.id} value={subject.subjectName}>{subject.subjectName}</option>))}
                   </select>
-                  {errors.subject && (
-                    <p className="mt-1 text-sm text-red-600">{errors.subject}</p>
-                  )}
                 </div>
               </div>
-
-              {/* Row 2: Mô tả (Bỏ chọn giáo viên ở đây) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mô tả *
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows="3"
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                    errors.description ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Nhập mô tả khóa học"
-                />
-                {errors.description && (
-                  <p className="mt-1 text-sm text-red-600">{errors.description}</p>
-                )}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Giáo viên phụ trách</label>
+                <select name="teacherProfileId" value={formData.teacherProfileId || ''} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                  <option value="">-- Chưa chỉ định --</option>
+                  {teachers.map((teacher) => (
+                    <option key={teacher.id} value={teacher.profileId}>{teacher.fullName} {teacher.subject ? `(- ${teacher.subject})` : ''}</option>
+                  ))}
+                </select>
               </div>
-
-              {/* Row 3: Địa điểm & Kỳ học */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả *</label>
+                <textarea name="description" value={formData.description} onChange={handleInputChange} rows="3" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Địa điểm *
-                  </label>
-                  <input
-                    type="text"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                      errors.location ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Nhập địa điểm"
-                  />
-                  {errors.location && (
-                    <p className="mt-1 text-sm text-red-600">{errors.location}</p>
-                  )}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Địa điểm *</label>
+                  <input type="text" name="location" value={formData.location} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Kỳ học *
-                  </label>
-                  <select
-                    name="semester"
-                    value={formData.semester}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  >
-                    <option value={1}>Kỳ 1</option>
-                    <option value={2}>Kỳ 2</option>
-                    <option value={3}>Kỳ hè</option>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Kỳ học *</label>
+                  <select name="semester" value={formData.semester} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    <option value={1}>Kỳ 1</option><option value={2}>Kỳ 2</option><option value={3}>Kỳ hè</option>
                   </select>
                 </div>
               </div>
-
-              {/* Row 4: Ngày bắt đầu & Ngày kết thúc */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ngày bắt đầu *
-                  </label>
-                  <input
-                    type="date"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    min={getTodayDate()}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                      errors.startDate ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.startDate && (
-                    <p className="mt-1 text-sm text-red-600">{errors.startDate}</p>
-                  )}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày bắt đầu *</label>
+                  <input type="date" name="startDate" value={formData.startDate} onChange={handleInputChange} min={getTodayDate()} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ngày kết thúc *
-                  </label>
-                  <input
-                    type="date"
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleInputChange}
-                    min={formData.startDate}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                      errors.endDate ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.endDate && (
-                    <p className="mt-1 text-sm text-red-600">{errors.endDate}</p>
-                  )}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày kết thúc *</label>
+                  <input type="date" name="endDate" value={formData.endDate} onChange={handleInputChange} min={formData.startDate} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
                 </div>
               </div>
-
-              {/* Row 5: Phương pháp giảng dạy & Lớp học */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phương pháp giảng dạy *
-                  </label>
-                  <select
-                    name="teachingMethod"
-                    value={formData.teachingMethod}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  >
-                    {teachingMethods.map(method => (
-                      <option key={method.value} value={method.value}>
-                        {method.label}
-                      </option>
-                    ))}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phương pháp *</label>
+                  <select name="teachingMethod" value={formData.teachingMethod} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    {teachingMethods.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Lớp học *
-                  </label>
-                  <select
-                    name="gradeLevel"
-                    value={formData.gradeLevel}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  >
-                    {gradeLevels.map(grade => (
-                      <option key={grade.value} value={grade.value}>
-                        {grade.label}
-                      </option>
-                    ))}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Lớp học *</label>
+                  <select name="gradeLevel" value={formData.gradeLevel} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    {gradeLevels.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
                   </select>
                 </div>
               </div>
-
-              {/* Row 6: Học phí & Sức chứa */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Học phí (đ) *
-                  </label>
-                  <input
-                    type="number"
-                    name="tuitionFee"
-                    value={formData.tuitionFee}
-                    onChange={handleInputChange}
-                    min="0"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                      errors.tuitionFee ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="0"
-                  />
-                  {errors.tuitionFee && (
-                    <p className="mt-1 text-sm text-red-600">{errors.tuitionFee}</p>
-                  )}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Học phí *</label>
+                  <input type="number" name="tuitionFee" value={formData.tuitionFee} onChange={handleInputChange} min="0" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Sức chứa (học sinh) *
-                  </label>
-                  <input
-                    type="number"
-                    name="capacity"
-                    value={formData.capacity}
-                    onChange={handleInputChange}
-                    min="1"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                      errors.capacity ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="30"
-                  />
-                  {errors.capacity && (
-                    <p className="mt-1 text-sm text-red-600">{errors.capacity}</p>
-                  )}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Sức chứa *</label>
+                  <input type="number" name="capacity" value={formData.capacity} onChange={handleInputChange} min="1" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
                 </div>
               </div>
 
-              {/* Modal Footer */}
               <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
-                >
-                  {loading ? 'Đang lưu...' : editingId ? 'Cập nhật' : 'Thêm mới'}
-                </button>
+                <button type="button" onClick={handleCloseModal} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Hủy</button>
+                <button type="submit" disabled={loading} className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50">{loading ? 'Đang lưu...' : editingId ? 'Cập nhật' : 'Thêm mới'}</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Delete Modal (Giữ nguyên) */}
+      {/* [MỚI] Modal Gửi Yêu Cầu Duyệt */}
+      {showRequestModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-sm w-full">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <SendOutlined className="text-2xl text-blue-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Gửi yêu cầu duyệt</h3>
+              </div>
+              <p className="text-gray-600 mb-4">
+                Bạn có chắc chắn muốn gửi khóa học này để admin phê duyệt không?
+              </p>
+              
+              <div className="mb-4">
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú (Tùy chọn)</label>
+                 <textarea 
+                    value={requestNote}
+                    onChange={(e) => setRequestNote(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    rows="3"
+                    placeholder="Nhập ghi chú cho quản trị viên..."
+                 />
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowRequestModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleConfirmRequest}
+                  disabled={loading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {loading ? 'Đang gửi...' : 'Gửi duyệt'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg max-w-sm w-full">
@@ -744,23 +687,10 @@ const CourseManagement = () => {
                 <ExclamationCircleOutlined className="text-2xl text-red-600" />
                 <h3 className="text-lg font-semibold text-gray-900">Xác nhận xóa</h3>
               </div>
-              <p className="text-gray-600 mb-6">
-                Bạn có chắc chắn muốn xóa khóa học này? Hành động này không thể hoàn tác.
-              </p>
+              <p className="text-gray-600 mb-6">Bạn có chắc chắn muốn xóa khóa học này? Hành động này không thể hoàn tác.</p>
               <div className="flex gap-3 justify-end">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleConfirmDelete}
-                  disabled={loading}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                >
-                  {loading ? 'Đang xóa...' : 'Xóa'}
-                </button>
+                <button onClick={() => setShowDeleteConfirm(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Hủy</button>
+                <button onClick={handleConfirmDelete} disabled={loading} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50">{loading ? 'Đang xóa...' : 'Xóa'}</button>
               </div>
             </div>
           </div>
