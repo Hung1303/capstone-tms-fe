@@ -180,7 +180,7 @@ const ROLE_MENUS = {
     {
       key: '/center/schedule',
       icon: <CalendarOutlined />,
-      label: 'Lịch học',
+      label: 'Lên lịch',
       path: '/center/schedule'
     },
     {

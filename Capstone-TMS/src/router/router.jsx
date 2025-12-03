@@ -35,6 +35,8 @@ import TeacherCourseApproval from "../pages/management/TeacherCourseApproval";
 import StaffCourseConfirmation from "../pages/management/StaffCourseConfirmation";
 import SubscriptionManagement from "../pages/management/SubscriptionManagement";
 import CenterSubscription from "../pages/management/CenterSubscription";
+import CenterScheduleAssignment from "../pages/management/CenterScheduleAssignment";
+import TeacherManagement from "../pages/management/TeacherManagement";
 
 // Error pages
 import NotFound from "../pages/error/NotFound";
@@ -213,6 +215,10 @@ export const router = createBrowserRouter([
             {
                 path: "subscription",
                 element: <ProtectedRoute requiredRole="Center"><CenterSubscription /></ProtectedRoute>
+            },
+            {
+                path: "schedule",
+                element: <ProtectedRoute requiredRole="Center"><CenterScheduleAssignment /></ProtectedRoute>
             },
             {
                 path: "teachers",

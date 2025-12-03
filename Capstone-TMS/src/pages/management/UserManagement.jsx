@@ -180,7 +180,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     fetchUsers(pagination.pageNumber, pagination.pageSize)
-  }, [pagination.pageNumber, pagination.pageSize])
+  }, [])
 
   const handleChangeStatus = async (userId, newStatus) => {
     setLoading(true)
@@ -565,6 +565,7 @@ const UserManagement = () => {
 								<Input
 									name="phoneNumber"
 									type="text"
+                  maxLength={10}
 									value={formData.phoneNumber}
 									onChange={(e) => handleChange("phoneNumber", e.target.value)}
 									className="!w-full !px-4 !py-2 !border-2"
