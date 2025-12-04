@@ -10,7 +10,8 @@ import {
   StopOutlined,
   FileSyncOutlined,
   ClockCircleOutlined,
-  SendOutlined // [MỚI] Icon gửi duyệt
+  SendOutlined,
+  GlobalOutlined // [MỚI] Icon cho nút Public
 } from '@ant-design/icons'
 import { toast } from 'react-toastify'
 import api from '../../config/axios'
@@ -29,13 +30,19 @@ const CourseManagement = () => {
   // Modal states
   const [showModal, setShowModal] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  
+  // Delete states
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteId, setDeleteId] = useState(null)
   
-  // [MỚI] State cho modal gửi yêu cầu duyệt
+  // Request Approval states
   const [showRequestModal, setShowRequestModal] = useState(false)
   const [requestCourseId, setRequestCourseId] = useState(null)
   const [requestNote, setRequestNote] = useState('')
+
+  // [MỚI] Publish states (Công khai khóa học)
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false)
+  const [publishId, setPublishId] = useState(null)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -115,10 +122,6 @@ const CourseManagement = () => {
 
     if (!formData.title.trim()) newErrors.title = 'Vui lòng nhập tên khóa học'
     if (!formData.subject.trim()) newErrors.subject = 'Vui lòng chọn môn học'
-    
-    // Gắn giáo viên: Tùy logic nghiệp vụ mà có bắt buộc hay không
-    // if (!formData.teacherProfileId) newErrors.teacherProfileId = 'Vui lòng chọn giáo viên'
-    
     if (!formData.description.trim()) newErrors.description = 'Vui lòng nhập mô tả'
     if (!formData.location.trim()) newErrors.location = 'Vui lòng nhập địa điểm'
 
@@ -212,11 +215,9 @@ const CourseManagement = () => {
       }
       
       if (editingId) {
-        // [API PUT] Sửa khóa học
         await api.put(`/Course/${editingId}`, payload)
         toast.success('Cập nhật khóa học thành công!')
       } else {
-        // [API POST] Tạo khóa học (Mặc định sẽ là Draft)
         await api.post('/Course', payload)
         toast.success('Tạo bản nháp thành công! Vui lòng gửi duyệt.')
       }
@@ -239,7 +240,6 @@ const CourseManagement = () => {
   const handleConfirmDelete = async () => {
     setLoading(true)
     try {
-      // [API DELETE] Xóa khóa học
       await api.delete(`/Course/${deleteId}`)
       await fetchCourses()
       setShowDeleteConfirm(false)
@@ -253,10 +253,10 @@ const CourseManagement = () => {
     }
   }
 
-  // --- [MỚI] Handlers cho Gửi Duyệt ---
+  // --- Handlers cho Gửi Duyệt ---
   const handleRequestApprovalClick = (courseId) => {
     setRequestCourseId(courseId)
-    setRequestNote('') // Reset ghi chú
+    setRequestNote('')
     setShowRequestModal(true)
   }
 
@@ -265,19 +265,12 @@ const CourseManagement = () => {
 
     setLoading(true)
     try {
-      // [API POST] Gửi yêu cầu duyệt
-      // Endpoint: /api/ApprovalRequests/Course/{courseId}?requestedByUserId={userId}
       const url = `/ApprovalRequests/Course/${requestCourseId}?requestedByUserId=${user.userId}`
-      
-      // Body là string JSON
       await api.post(url, JSON.stringify(requestNote), {
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
       })
-
       toast.success('Đã gửi yêu cầu duyệt thành công!')
-      await fetchCourses() // Load lại để cập nhật trạng thái sang PendingApproval
+      await fetchCourses()
       setShowRequestModal(false)
       setRequestCourseId(null)
     } catch (error) {
@@ -288,12 +281,37 @@ const CourseManagement = () => {
     }
   }
 
+  // --- [MỚI] Handlers cho Publish (Công khai) ---
+  const handlePublishClick = (id) => {
+    setPublishId(id)
+    setShowPublishConfirm(true)
+  }
+
+  const handleConfirmPublish = async () => {
+    if (!publishId || !centerId) return
+
+    setLoading(true)
+    try {
+      // API: PUT /api/Course/Publish/{courseId}?centerProfileId={centerProfileId}
+      await api.put(`/Course/Publish/${publishId}?centerProfileId=${centerId}`)
+      
+      toast.success('Khóa học đã được công khai thành công!')
+      await fetchCourses() // Load lại data để cập nhật trạng thái
+      setShowPublishConfirm(false)
+      setPublishId(null)
+    } catch (error) {
+      console.error('Error publishing course:', error)
+      toast.error(error.response?.data?.message || 'Lỗi khi công khai khóa học')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // --- Helpers ---
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           course.subject?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = filterStatus === 'all' || 
-                          // Map status số sang string để filter hoạt động
                           (filterStatus === 'Draft' && (course.status === 0 || course.status === 'Draft')) ||
                           (filterStatus === 'PendingApproval' && (course.status === 1 || course.status === 'PendingApproval')) ||
                           (filterStatus === 'Approved' && (course.status === 2 || course.status === 'Approved')) ||
@@ -314,7 +332,6 @@ const CourseManagement = () => {
       Archived: { label: 'Lưu trữ', className: 'bg-gray-200 text-gray-800', icon: <FileSyncOutlined /> }
     }
 
-    // Map số (từ API) sang Key (để lấy config)
     const statusMap = {
         0: 'Draft',
         1: 'PendingApproval',
@@ -324,7 +341,6 @@ const CourseManagement = () => {
         5: 'Archived'
     }
     
-    // Xử lý status có thể là số hoặc chuỗi
     const statusKey = typeof status === 'number' ? statusMap[status] : status
     const config = statusConfig[statusKey] || { label: 'Không xác định', className: 'bg-gray-100 text-gray-800' }
 
@@ -336,12 +352,17 @@ const CourseManagement = () => {
     )
   }
 
-  // Kiểm tra xem có được phép Sửa/Xóa/Gửi duyệt không
-  // Chỉ cho phép khi Draft (0) hoặc Rejected (3)
+  // Điều kiện hiển thị nút Sửa/Xóa/Gửi duyệt
   const canModify = (status) => {
       if (status === 'Draft' || status === 0) return true
       if (status === 'Rejected' || status === 3) return true
       return false
+  }
+
+  // Điều kiện hiển thị nút Publish
+  // Thường chỉ khóa học "Đã duyệt" (Approved - 2) mới được phép public
+  const canPublish = (status) => {
+    return status === 'Approved' || status === 2
   }
 
   const teachingMethods = [
@@ -435,24 +456,12 @@ const CourseManagement = () => {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tên khóa học
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Môn học
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thời gian
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Học phí
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Trạng thái
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thao tác
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên khóa học</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Môn học</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời gian</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Học phí</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -485,10 +494,21 @@ const CourseManagement = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        {/* Chỉ hiện nút thao tác nếu trạng thái là Draft hoặc Rejected */}
+                        
+                        {/* [MỚI] Nút Publish - Chỉ hiện khi khóa học Đã duyệt (Status 2) */}
+                        {canPublish(course.status) && (
+                           <button 
+                             onClick={() => handlePublishClick(course.id)}
+                             className="p-1 text-purple-600 hover:bg-purple-50 rounded"
+                             title="Công khai khóa học"
+                           >
+                             <GlobalOutlined />
+                           </button>
+                        )}
+
+                        {/* Các nút Draft/Sửa/Xóa - Chỉ hiện khi Draft hoặc Rejected */}
                         {canModify(course.status) ? (
                           <>
-                            {/* Nút Gửi Duyệt */}
                             <button 
                               onClick={() => handleRequestApprovalClick(course.id)}
                               className="p-1 text-green-600 hover:bg-green-50 rounded"
@@ -496,8 +516,6 @@ const CourseManagement = () => {
                             >
                               <SendOutlined />
                             </button>
-
-                            {/* Nút Sửa */}
                             <button 
                               onClick={() => handleOpenModal(course)}
                               className="p-1 text-blue-600 hover:bg-blue-50 rounded"
@@ -505,8 +523,6 @@ const CourseManagement = () => {
                             >
                               <EditOutlined />
                             </button>
-
-                            {/* Nút Xóa */}
                             <button 
                               onClick={() => handleDeleteClick(course.id)}
                               className="p-1 text-red-600 hover:bg-red-50 rounded"
@@ -515,7 +531,8 @@ const CourseManagement = () => {
                               <DeleteOutlined />
                             </button>
                           </>
-                        ) : (
+                        ) : !canPublish(course.status) && (
+                           // Nếu không phải Draft/Rejected VÀ cũng không phải Approved (để hiện nút Publish)
                            <span className="text-gray-400 text-xs italic">Đã khóa</span>
                         )}
                       </div>
@@ -542,16 +559,11 @@ const CourseManagement = () => {
               <h3 className="text-lg font-semibold text-gray-900">
                 {editingId ? 'Chỉnh sửa khóa học' : 'Thêm khóa học mới'}
               </h3>
-              <button 
-                onClick={handleCloseModal}
-                className="text-gray-400 hover:text-gray-600"
-              >
+              <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600">
                 <CloseOutlined className="text-xl" />
               </button>
             </div>
-
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {/* Giữ nguyên các trường form */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tên khóa học *</label>
@@ -624,7 +636,6 @@ const CourseManagement = () => {
                   <input type="number" name="capacity" value={formData.capacity} onChange={handleInputChange} min="1" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
                 </div>
               </div>
-
               <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
                 <button type="button" onClick={handleCloseModal} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Hủy</button>
                 <button type="submit" disabled={loading} className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50">{loading ? 'Đang lưu...' : editingId ? 'Cập nhật' : 'Thêm mới'}</button>
@@ -634,7 +645,7 @@ const CourseManagement = () => {
         </div>
       )}
 
-      {/* [MỚI] Modal Gửi Yêu Cầu Duyệt */}
+      {/* Modal Gửi Yêu Cầu Duyệt */}
       {showRequestModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg max-w-sm w-full">
@@ -643,35 +654,42 @@ const CourseManagement = () => {
                 <SendOutlined className="text-2xl text-blue-600" />
                 <h3 className="text-lg font-semibold text-gray-900">Gửi yêu cầu duyệt</h3>
               </div>
-              <p className="text-gray-600 mb-4">
-                Bạn có chắc chắn muốn gửi khóa học này để admin phê duyệt không?
-              </p>
-              
+              <p className="text-gray-600 mb-4">Bạn có chắc chắn muốn gửi khóa học này để admin phê duyệt không?</p>
               <div className="mb-4">
                  <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú (Tùy chọn)</label>
                  <textarea 
-                    value={requestNote}
-                    onChange={(e) => setRequestNote(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    rows="3"
-                    placeholder="Nhập ghi chú cho quản trị viên..."
+                   value={requestNote}
+                   onChange={(e) => setRequestNote(e.target.value)}
+                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                   rows="3"
+                   placeholder="Nhập ghi chú cho quản trị viên..."
                  />
               </div>
-
               <div className="flex gap-3 justify-end">
-                <button
-                  onClick={() => setShowRequestModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleConfirmRequest}
-                  disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {loading ? 'Đang gửi...' : 'Gửi duyệt'}
-                </button>
+                <button onClick={() => setShowRequestModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Hủy</button>
+                <button onClick={handleConfirmRequest} disabled={loading} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">{loading ? 'Đang gửi...' : 'Gửi duyệt'}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* [MỚI] Modal Publish Confirmation */}
+      {showPublishConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-sm w-full">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <GlobalOutlined className="text-2xl text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Công khai khóa học</h3>
+              </div>
+              <p className="text-gray-600 mb-6">
+                Bạn có chắc chắn muốn công khai khóa học này? <br/>
+                Sau khi công khai, phụ huynh và học sinh sẽ nhìn thấy khóa học này trên trang chủ.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setShowPublishConfirm(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Hủy</button>
+                <button onClick={handleConfirmPublish} disabled={loading} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">{loading ? 'Đang xử lý...' : 'Công khai'}</button>
               </div>
             </div>
           </div>

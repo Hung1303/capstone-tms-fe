@@ -20,6 +20,7 @@ import AdminDashboard from "../pages/dashboard/AdminDashboard";
 import StaffDashboard from "../pages/dashboard/StaffDashboard";
 import CenterDashboard from "../pages/dashboard/CenterDashboard";
 import TeacherDashboard from "../pages/dashboard/TeacherDashboard";
+import TeacherCourses from "../pages/dashboard/TeacherCourses";
 import ParentDashboard from "../pages/dashboard/ParentDashboard";
 import StudentDashboard from "../pages/dashboard/StudentDashboard";
 
@@ -234,6 +235,11 @@ export const router = createBrowserRouter([
             {
                 index: true,
                 element: <ProtectedRoute requiredRole="Teacher"><TeacherDashboard /></ProtectedRoute>
+            }
+            ,
+            {
+                path: "courses",
+                element: <ProtectedRoute requiredRole="Teacher"><TeacherCourses /></ProtectedRoute>
             }
         ]
     },
