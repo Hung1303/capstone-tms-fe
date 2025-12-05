@@ -81,12 +81,6 @@ const ROLE_MENUS = {
       label: 'Duyệt khóa học',
       path: '/admin/course-approval'
     },
-    {
-      key: '/admin/settings',
-      icon: <SettingOutlined />,
-      label: 'Cài đặt',
-      path: '/admin/settings'
-    }
   ],
   Staff: [
     {
