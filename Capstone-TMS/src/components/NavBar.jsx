@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion' // eslint-disable-line no-unused-vars
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { DashboardOutlined, LogoutOutlined, ShoppingCartOutlined, UserOutlined, WalletOutlined } from '@ant-design/icons'
+import { useCart } from '../hooks/useCart'
+import { useAuth } from '../contexts/AuthContext'
 
 // ... (menuData và moreMenu giữ nguyên) ...
 
@@ -25,6 +28,10 @@ const moreMenu = [
 const NavBar = () => {
     const [openMenu, setOpenMenu] = useState(null)
     const [openSubMenu, setOpenSubMenu] = useState(null)
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const navigate = useNavigate();
+    const { cartItems } = useCart()
+    const { user, logout } = useAuth()
 
     const handleMenuEnter = (menu) => setOpenMenu(menu)
     const handleMenuLeave = () => {
@@ -37,6 +44,20 @@ const NavBar = () => {
         // LOẠI BỎ setTimeout: Đóng menu cấp 2 ngay lập tức khi chuột rời khỏi vùng chứa menu cấp 2
         setOpenSubMenu(null)
     }
+
+    const handleLogout = () => {
+        logout()
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (!e.target.closest(".dropdown-wrapper")) {
+                setIsDropdownOpen(false);
+            }
+        };
+        document.addEventListener("click", handleClickOutside);
+        return () => document.removeEventListener("click", handleClickOutside);
+    }, []);
 
     return (
         <header className="border-b border-blue-100 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 sticky top-0 z-10">
@@ -153,24 +174,95 @@ const NavBar = () => {
 
                 {/* Auth buttons */}
                 <div className="flex items-center gap-3">
-                    <Link to="/login">
+                    <Link to="/cart" className="relative">
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="cursor-pointer px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-50"
+                            className="cursor-pointer px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-50 flex items-center gap-2"
                         >
-                            Đăng nhập
+                            <ShoppingCartOutlined />
+                            Giỏ hàng
+                            {cartItems.length > 0 && (
+                                <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-white bg-orange-500 rounded-full">
+                                    {cartItems.length}
+                                </span>
+                            )}
                         </motion.button>
                     </Link>
-                    <Link to="/register">
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="cursor-pointer px-3 py-2 text-sm font-medium rounded-md bg-orange-500 text-white hover:bg-orange-600"
-                        >
-                            Đăng ký
-                        </motion.button>
-                    </Link>
+
+                    {user ? (
+                        <>
+                            <div className="relative dropdown-wrapper">
+                                <button
+                                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                    className="flex items-center space-x-2 focus:outline-none rounded-full hover:bg-gray-100 px-2 py-1"
+                                >
+                                    <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-blue-600 text-white font-bold text-lg">
+                                        {user.fullName.charAt(0)}
+                                    </span>
+                                    <span className="font-medium text-gray-800">{user.fullName}</span>
+                                    <svg
+                                        className={`w-4 h-4 ml-1 transition-transform duration-200 ${isDropdownOpen ? "rotate-180 text-blue-600" : "text-gray-500"
+                                            }`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                {isDropdownOpen && (
+                                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 z-50">
+                                        <button
+                                            onClick={() => navigate("/parent")}
+                                            className="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100"
+                                        >
+                                            <DashboardOutlined className="mr-2 h-4 w-4" />
+                                            Dashboard
+                                        </button>
+                                        <button
+                                            onClick={() => navigate("/member/wallet")}
+                                            className="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100"
+                                        >
+                                            <WalletOutlined className="mr-2 h-4 w-4" />
+                                            Ví của tôi
+                                        </button>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="flex items-center w-full px-4 py-2 text-red-600 hover:bg-gray-100"
+                                        >
+                                            <LogoutOutlined className="mr-2 h-4 w-4" />
+                                            Đăng xuất
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <Link to="/login">
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className="cursor-pointer px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-50"
+                                >
+                                    Đăng nhập
+                                </motion.button>
+                            </Link>
+                            <Link to="/register">
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className="cursor-pointer px-3 py-2 text-sm font-medium rounded-md bg-orange-500 text-white hover:bg-orange-600"
+                                >
+                                    Đăng ký
+                                </motion.button>
+                            </Link>
+                        </>
+                    )
+                    }
                 </div>
             </div>
         </header>

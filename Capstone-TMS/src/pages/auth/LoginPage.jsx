@@ -89,7 +89,7 @@ const LoginPage = ({ switchTo }) => {
         Staff: '/staff',
         Center: '/center',
         Teacher: '/teacher',
-        Parent: '/parent',
+        Parent: '/',
         Student: '/student',
         Inspector: '/inspector'
       }
