@@ -55,6 +55,10 @@ import ParentCenters from "../pages/dashboard/ParentCenters";
 import ParentCourses from "../pages/dashboard/ParentCourses";
 import ParentCentersMap from "../pages/dashboard/ParentCentersMap";
 import { AuthProvider } from "../contexts/AuthContext";
+import Course from "../pages/shared/Course";
+import CartPage from "../pages/shared/Cart";
+import PaymentSuccess from "../pages/shared/PaymentSuccess";
+import PaymentFailure from "../pages/shared/PaymentFailure";
 
 export const router = createBrowserRouter([
     // Auth routes (không dùng layout)
@@ -79,6 +83,22 @@ export const router = createBrowserRouter([
             {
                 path: "centers",
                 element: <Centers />,
+            },
+            {
+                path: "courses",
+                element: <Course />
+            },
+            {
+                path: "cart",
+                element: <CartPage />
+            },
+            {
+                path: "payment/success",
+                element: <PaymentSuccess />
+            },
+            {
+                path: "payment/failure",
+                element: <PaymentFailure />
             },
             {
                 path: "find-tutor",

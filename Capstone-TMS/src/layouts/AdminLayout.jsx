@@ -81,12 +81,6 @@ const ROLE_MENUS = {
       label: 'Duyệt khóa học',
       path: '/admin/course-approval'
     },
-    {
-      key: '/admin/settings',
-      icon: <SettingOutlined />,
-      label: 'Cài đặt',
-      path: '/admin/settings'
-    }
   ],
   Staff: [
     {
@@ -395,7 +389,7 @@ const AdminLayout = () => {
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className="cursor-pointer flex items-center gap-3 w-full px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
           >
             <LogoutOutlined />
             <span>Đăng xuất</span>
