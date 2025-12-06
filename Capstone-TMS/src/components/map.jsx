@@ -1,18 +1,17 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from "react-leaflet";
-import { Select, Spin, Button, Space, Tag, Typography, List, Avatar, Card, Input, Empty, Tooltip } from "antd";
-import { MenuFoldOutlined, MenuUnfoldOutlined, EnvironmentOutlined, PhoneOutlined, MailOutlined, UserOutlined, BookOutlined, SendOutlined, WarningOutlined } from "@ant-design/icons";
+import { Spin, Button, Space, Tag, Typography, List, Avatar, Input, Empty } from "antd";
+import { MenuFoldOutlined, MenuUnfoldOutlined, EnvironmentOutlined, PhoneOutlined, MailOutlined, UserOutlined, BookOutlined, SendOutlined, WarningOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import api from "../../config/axios";
+import api from "../config/axios";
 
 const OSRM_URL = "https://router.project-osrm.org/route/v1/driving";
 
-const { Option } = Select;
 const { Title, Text } = Typography;
 
-// Fix icon Leaflet không hiện
+// Fix lỗi icon Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
@@ -20,15 +19,35 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-// --- SUB-COMPONENTS ---
-const FlyToLocation = ({ position }) => {
+// --- SUB-COMPONENT QUAN TRỌNG: XỬ LÝ MAP & POPUP ---
+// Component này thay thế cho FlyToLocation cũ
+const MapHandler = ({ selectedCenter, markerRefs }) => {
   const map = useMap();
+
   useEffect(() => {
-    if (position) map.flyTo(position, 15, { duration: 1.5 });
-  }, [position, map]);
+    if (selectedCenter && selectedCenter.latitude && selectedCenter.longitude) {
+      const { latitude, longitude, id } = selectedCenter;
+
+      // 1. Bay đến vị trí
+      map.flyTo([latitude, longitude], 16, {
+        duration: 1.5,
+      });
+
+      // 2. Tìm marker và mở popup
+      const marker = markerRefs.current[id];
+      if (marker) {
+        // Đợi 1 chút cho map bắt đầu hiệu ứng bay rồi mới mở popup để tránh bị lag hoặc đóng ngay lập tức
+        setTimeout(() => {
+          marker.openPopup();
+        }, 200);
+      }
+    }
+  }, [selectedCenter, map, markerRefs]);
+
   return null;
 };
 
+// --- SIDEBAR ---
 const CenterSidebar = ({
   visible,
   onClose,
@@ -37,8 +56,6 @@ const CenterSidebar = ({
   onSelectCenter,
   searchTerm,
   onSearchChange,
-  filterStatus,
-  onFilterStatus,
 }) => {
   if (!visible) return null;
 
@@ -60,24 +77,10 @@ const CenterSidebar = ({
             style={{ marginBottom: 16 }}
             allowClear
           />
-
-          {/* Lọc theo trạng thái */}
-          <Text strong style={{ fontSize: 12, color: "#888" }}>TRẠNG THÁI</Text>
-          <Select
-            style={{ width: "100%", marginTop: 8, marginBottom: 16 }}
-            placeholder="Tất cả trạng thái"
-            allowClear
-            onChange={onFilterStatus}
-            value={filterStatus}
-          >
-            <Option value="Active">Hoạt động</Option>
-            <Option value="Pending">Chờ duyệt</Option>
-          </Select>
-
-          <Text strong style={{ fontSize: 12, color: "#888" }}>KẾT QUẢ: {centers.length}</Text>
+          <Text strong style={{ fontSize: 12, color: "#888" }}>KẾT QUẢ: {centers.length} (Đang hoạt động)</Text>
         </div>
 
-        {/* Danh sách trung tâm */}
+        {/* Danh sách */}
         {centers.length === 0 ? (
           <div style={{ padding: 24 }}>
             <Empty description="Không tìm thấy trung tâm nào" />
@@ -99,25 +102,20 @@ const CenterSidebar = ({
                       shape="square"
                       size={40}
                       icon={<BookOutlined />}
-                      style={{
-                        backgroundColor: item.status === "Active" ? "#f6ffed" : "#fff1f0",
-                        color: item.status === "Active" ? "#52c41a" : "#f5222d",
-                      }}
+                      style={{ backgroundColor: "#f6ffed", color: "#52c41a" }}
                     />
                   }
                   title={<Text strong>{item.centerName}</Text>}
                   description={
                     <div>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        {item.ownerName}
-                      </Text>
+                      <Text type="secondary" style={{ fontSize: 12 }}>{item.ownerName}</Text>
                       <br />
                       <Text type="secondary" style={{ fontSize: 12 }}>
                         <EnvironmentOutlined /> {item.address}
                       </Text>
                       <br />
-                      <Tag color={item.status === "Active" ? "green" : "orange"} style={{ marginTop: 4 }}>
-                        {item.status === "Active" ? "Hoạt động" : "Chờ duyệt"}
+                      <Tag icon={<CheckCircleOutlined />} color="success" style={{ marginTop: 4 }}>
+                        Hoạt động
                       </Tag>
                     </div>
                   }
@@ -134,28 +132,25 @@ const CenterSidebar = ({
 // --- MAIN COMPONENT ---
 const ParentCentersMap = () => {
   const navigate = useNavigate();
-  const markerRefs = useRef({});
+  
+  // Ref để lưu trữ tham chiếu đến tất cả các Marker trên bản đồ
+  const markerRefs = useRef({}); 
 
   // States
   const [centers, setCenters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCenter, setSelectedCenter] = useState(null);
-  const [filterCity, setFilterCity] = useState(null);
-  const [filterDistrict, setFilterDistrict] = useState(null);
-  const [filterStatus, setFilterStatus] = useState(null);
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [userPos, setUserPos] = useState(null);
-  const [mapCenter, setMapCenter] = useState([10.762622, 106.660172]); // Mặc định HCM
+  const [mapCenter, setMapCenter] = useState([10.762622, 106.660172]);
   const [routeCoords, setRouteCoords] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
 
-  // Fetch centers
   useEffect(() => {
     const initData = async () => {
       setLoading(true);
-
-      // Lấy vị trí user
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
@@ -168,70 +163,46 @@ const ParentCentersMap = () => {
       }
 
       try {
-        console.log("Đang load trung tâm...");
         const response = await api.get("/Users/Centers");
         const centersData = response.data?.centers || [];
-        setCenters(centersData);
+        // Chỉ lấy trung tâm Active
+        setCenters(centersData.filter(c => c.status === "Active"));
       } catch (err) {
-        console.error("Lỗi khi load trung tâm:", err);
-        setCenters([]);
+        console.error("Lỗi:", err);
       } finally {
         setLoading(false);
       }
     };
-
     initData();
   }, []);
 
-  // Filter logic
   const filteredCenters = useMemo(() => {
     return centers.filter((center) => {
-      const matchSearch =
-        center.centerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        center.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        center.address.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchCity = !filterCity || center.city === filterCity;
-      const matchDistrict = !filterDistrict || center.district === filterDistrict;
-      const matchStatus = !filterStatus || center.status === filterStatus;
-
-      return matchSearch && matchCity && matchDistrict && matchStatus;
+      const s = searchTerm.toLowerCase();
+      return (
+        center.centerName.toLowerCase().includes(s) ||
+        center.ownerName.toLowerCase().includes(s) ||
+        center.address.toLowerCase().includes(s)
+      );
     });
-  }, [centers, searchTerm, filterCity, filterDistrict, filterStatus]);
+  }, [centers, searchTerm]);
 
-  const cities = useMemo(() => {
-    const citySet = new Set(centers.map((c) => c.city).filter(Boolean));
-    return Array.from(citySet);
-  }, [centers]);
-
-  const districts = useMemo(() => {
-    if (!filterCity) return [];
-    const districtSet = new Set(
-      centers
-        .filter((c) => c.city === filterCity)
-        .map((c) => c.district)
-        .filter(Boolean)
-    );
-    return Array.from(districtSet);
-  }, [centers, filterCity]);
-
-  // Actions
   const handleSelectCenter = (center) => {
-    setSelectedCenter(center);
-    if (center.latitude && center.longitude) {
-      setMapCenter([center.latitude, center.longitude]);
-      setTimeout(() => markerRefs.current[center.id]?.openPopup(), 100);
-    }
+    // Clone object để đảm bảo useEffect trong MapHandler luôn chạy (kể cả khi click lại trung tâm cũ)
+    setSelectedCenter({ ...center });
+    
+    // Trên mobile thì đóng sidebar để xem map
+    if (window.innerWidth < 768) setIsSidebarOpen(false);
   };
 
-  const handleViewCourses = (center) => {
-    navigate(`/parent/centers?centerId=${center.id}`);
-  };
+  const handleViewCourses = (center) => navigate(`/parent/centers?centerId=${center.id}`);
 
   const handleGetDirection = async (center) => {
     if (!userPos) return alert("Cần bật định vị!");
-    setSelectedCenter(center);
-    markerRefs.current[center.id]?.closePopup();
+    
+    // Khi bấm chỉ đường cũng tự động chọn trung tâm đó
+    setSelectedCenter({ ...center });
+
     const url = `${OSRM_URL}/${userPos[1]},${userPos[0]};${center.longitude || 106.660172},${center.latitude || 10.762622}?overview=full&geometries=geojson`;
     try {
       const res = await fetch(url).then(r => r.json());
@@ -246,30 +217,17 @@ const ParentCentersMap = () => {
   const clearRoute = () => {
     setRouteCoords(null);
     setRouteInfo(null);
-    setMapCenter(userPos || mapCenter);
+    if(userPos) setMapCenter(userPos);
   };
 
-  if (loading) {
-    return (
-      <div style={styles.center}>
-        <Spin size="large" tip="Đang tải bản đồ..." />
-      </div>
-    );
-  }
+  if (loading) return <div style={styles.center}><Spin size="large" /></div>;
 
   return (
     <div style={styles.container}>
-      {/* Nút mở Sidebar khi bị đóng */}
       {!isSidebarOpen && (
-        <Button
-          icon={<MenuUnfoldOutlined />}
-          size="large"
-          onClick={() => setIsSidebarOpen(true)}
-          style={styles.floatingButton}
-        />
+        <Button icon={<MenuUnfoldOutlined />} size="large" onClick={() => setIsSidebarOpen(true)} style={styles.floatingButton} />
       )}
 
-      {/* Sidebar */}
       <CenterSidebar
         visible={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -278,11 +236,8 @@ const ParentCentersMap = () => {
         onSelectCenter={handleSelectCenter}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        filterStatus={filterStatus}
-        onFilterStatus={setFilterStatus}
       />
 
-      {/* Map */}
       <div style={{ flex: 1, position: "relative" }}>
         <MapContainer
           center={mapCenter}
@@ -290,13 +245,11 @@ const ParentCentersMap = () => {
           style={{ height: "100%", width: "100%" }}
           zoomControl={false}
         >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="&copy; OSM"
-          />
-          <FlyToLocation position={mapCenter} />
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OSM" />
+          
+          {/* Component điều khiển Map & Popup */}
+          <MapHandler selectedCenter={selectedCenter} markerRefs={markerRefs} />
 
-          {/* User position */}
           {userPos && (
             <Marker
               position={userPos}
@@ -307,57 +260,33 @@ const ParentCentersMap = () => {
             />
           )}
 
-          {/* Route polyline */}
           {routeCoords && <Polyline positions={routeCoords} color="#1890ff" weight={6} />}
 
-          {/* Centers markers */}
           {filteredCenters.map((center) => {
-            // Nếu không có tọa độ, dùng tọa độ mặc định HCM
             const lat = center.latitude || 10.762622;
             const lng = center.longitude || 106.660172;
 
             return (
-              <Marker key={center.id} position={[lat, lng]} ref={(r) => (markerRefs.current[center.id] = r)}>
+              <Marker
+                key={center.id}
+                position={[lat, lng]}
+                // QUAN TRỌNG: Gán ref của marker vào object markerRefs
+                ref={(ref) => {
+                  if (ref) markerRefs.current[center.id] = ref;
+                }}
+              >
                 <Popup maxWidth={300}>
                   <div style={{ padding: 8 }}>
-                    <Title level={5} style={{ margin: "0 0 8px 0" }}>
-                      {center.centerName}
-                    </Title>
-                    <Text type="secondary">
-                      <UserOutlined /> {center.ownerName}
-                    </Text>
-                    <br />
-                    <Text type="secondary">
-                      <EnvironmentOutlined /> {center.address}
-                    </Text>
-                    <br />
-                    <Text type="secondary">
-                      <PhoneOutlined /> {center.contactPhone}
-                    </Text>
-                    <br />
-                    <Text type="secondary">
-                      <MailOutlined /> {center.contactEmail}
-                    </Text>
-                    <div style={{ margin: "12px 0" }}>
-                      <Tag color={center.status === "Active" ? "green" : "orange"}>
-                        {center.status === "Active" ? "Hoạt động" : "Chờ duyệt"}
-                      </Tag>
-                    </div>
+                    <Title level={5} style={{ margin: "0 0 8px 0" }}>{center.centerName}</Title>
+                    <Text type="secondary"><UserOutlined /> {center.ownerName}</Text><br />
+                    <Text type="secondary"><EnvironmentOutlined /> {center.address}</Text><br />
+                    <Text type="secondary"><PhoneOutlined /> {center.contactPhone}</Text><br />
+                    <div style={{ margin: "12px 0" }}><Tag color="green">Hoạt động</Tag></div>
                     <Space style={{ width: "100%", flexDirection: "column" }}>
-                      <Button
-                        block
-                        icon={<SendOutlined />}
-                        onClick={() => handleGetDirection(center)}
-                        disabled={!userPos}
-                      >
+                      <Button block icon={<SendOutlined />} onClick={() => handleGetDirection(center)} disabled={!userPos}>
                         Chỉ đường
                       </Button>
-                      <Button
-                        type="primary"
-                        block
-                        icon={<BookOutlined />}
-                        onClick={() => handleViewCourses(center)}
-                      >
+                      <Button type="primary" block icon={<BookOutlined />} onClick={() => handleViewCourses(center)}>
                         Xem khóa học
                       </Button>
                     </Space>
@@ -368,7 +297,6 @@ const ParentCentersMap = () => {
           })}
         </MapContainer>
 
-        {/* Route info overlay */}
         {routeInfo && (
           <div style={styles.routeOverlay}>
             <Text strong style={{color:'white', fontSize: 16}}>
@@ -378,7 +306,6 @@ const ParentCentersMap = () => {
           </div>
         )}
       </div>
-
       <GlobalStyle />
     </div>
   );
@@ -386,45 +313,14 @@ const ParentCentersMap = () => {
 
 // --- STYLES ---
 const styles = {
-  container: {
-    display: "flex",
-    height: "100vh",
-    overflow: "hidden",
-    position: "relative",
-  },
+  container: { display: "flex", height: "100vh", overflow: "hidden", position: "relative" },
   center: { height: "100vh", display: "flex", justifyContent: "center", alignItems: "center" },
-  sidebar: {
-    width: 400,
-    background: "white",
-    borderRight: "1px solid #ddd",
-    display: "flex",
-    flexDirection: "column",
-    zIndex: 100,
-    boxShadow: "2px 0 8px rgba(0,0,0,0.1)",
-  },
+  sidebar: { width: 400, background: "white", borderRight: "1px solid #ddd", display: "flex", flexDirection: "column", zIndex: 100, boxShadow: "2px 0 8px rgba(0,0,0,0.1)" },
   sidebarHeader: { padding: 16, borderBottom: "1px solid #f0f0f0" },
   sidebarContent: { flex: 1, overflowY: "auto" },
   listItem: { padding: "12px 24px", cursor: "pointer", transition: "0.2s" },
-  floatingButton: {
-    position: "absolute",
-    top: 24,
-    left: 24,
-    zIndex: 1001,
-    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-  },
-  routeOverlay: {
-    position: 'absolute', 
-    bottom: 30, 
-    left: '50%', 
-    transform: 'translateX(-50%)',
-    background: 'rgba(0,0,0,0.8)', 
-    padding: '8px 20px', 
-    borderRadius: 30,
-    zIndex: 900, 
-    display: 'flex', 
-    alignItems: 'center', 
-    gap: 10
-  },
+  floatingButton: { position: "absolute", top: 24, left: 24, zIndex: 1001, boxShadow: "0 2px 8px rgba(0,0,0,0.15)" },
+  routeOverlay: { position: 'absolute', bottom: 30, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.8)', padding: '8px 20px', borderRadius: 30, zIndex: 900, display: 'flex', alignItems: 'center', gap: 10 },
 };
 
 const GlobalStyle = () => (
@@ -432,11 +328,7 @@ const GlobalStyle = () => (
     .leaflet-popup-content-wrapper { border-radius: 12px; padding: 0; overflow: hidden; }
     .leaflet-popup-content { margin: 0 !important; width: 100% !important; }
     .user-pulse { animation: pulse 2s infinite; }
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(24,144,255,0.7); }
-      70% { box-shadow: 0 0 0 10px rgba(24,144,255,0); }
-      100% { box-shadow: 0 0 0 0 rgba(24,144,255,0); }
-    }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(24,144,255,0.7); } 70% { box-shadow: 0 0 0 10px rgba(24,144,255,0); } 100% { box-shadow: 0 0 0 0 rgba(24,144,255,0); } }
   `}</style>
 );
 

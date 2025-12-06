@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react'
-import { 
-  SearchOutlined, 
+import {
+  SearchOutlined,
   EnvironmentOutlined,
   PhoneOutlined,
   MailOutlined,
   BookOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  CloseCircleOutlined,
   ArrowLeftOutlined,
   UserOutlined,
   FileTextOutlined,
   TeamOutlined,
-  LoadingOutlined
+  LoadingOutlined // Import icon loading
 } from '@ant-design/icons'
+import { Spin } from 'antd' // Import Spin từ antd để hiển thị loading đẹp hơn (tùy chọn)
 import api from '../../config/axios'
 
 const ParentCenters = () => {
@@ -22,7 +22,7 @@ const ParentCenters = () => {
   const [centerCourses, setCenterCourses] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCity, setFilterCity] = useState('')
-  const [filterStatus, setFilterStatus] = useState('')
+  // const [filterStatus, setFilterStatus] = useState('') // Bỏ filterStatus vì chỉ hiện Active
   const [loading, setLoading] = useState(false)
   const [coursesLoading, setCoursesLoading] = useState(false)
 
@@ -78,11 +78,15 @@ const ParentCenters = () => {
   }
 
   const filteredCenters = centers.filter(center => {
+    // Chỉ lấy trung tâm có status là Active
+    const isActive = center.status === 'Active';
+
     const matchSearch = center.centerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       center.ownerName.toLowerCase().includes(searchTerm.toLowerCase())
+      center.ownerName.toLowerCase().includes(searchTerm.toLowerCase())
     const matchCity = !filterCity || center.city === filterCity
-    const matchStatus = !filterStatus || center.status === filterStatus
-    return matchSearch && matchCity && matchStatus
+    // const matchStatus = !filterStatus || center.status === filterStatus // Bỏ dòng này
+
+    return isActive && matchSearch && matchCity // && matchStatus
   })
 
   const getStatusColor = (status) => {
@@ -109,7 +113,16 @@ const ParentCenters = () => {
   }
 
   const cities = [...new Set(centers.map(c => c.city))]
-  const statuses = ['Active', 'Pending']
+  // const statuses = ['Active', 'Pending'] // Bỏ danh sách status
+
+  // Hiển thị Loading khi đang tải danh sách trung tâm
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="Đang tải danh sách trung tâm..." />
+      </div>
+    );
+  }
 
   if (selectedCenter) {
     return (
@@ -196,7 +209,12 @@ const ParentCenters = () => {
             Khóa học ({centerCourses.length})
           </h3>
 
-          {centerCourses.length === 0 ? (
+          {/* Hiển thị Loading khi đang tải khóa học */}
+          {coursesLoading ? (
+            <div className="flex justify-center items-center h-32">
+              <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="Đang tải khóa học..." />
+            </div>
+          ) : centerCourses.length === 0 ? (
             <div className="text-center py-8">
               <BookOutlined className="text-4xl text-gray-300 mb-3" />
               <p className="text-gray-600">Trung tâm này chưa có khóa học nào</p>
@@ -255,7 +273,8 @@ const ParentCenters = () => {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Đã xóa div chứa filterStatus và chỉnh lại grid cols */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Tìm kiếm</label>
             <div className="relative">
@@ -284,31 +303,14 @@ const ParentCenters = () => {
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Trạng thái</label>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            >
-              <option value="">Tất cả trạng thái</option>
-              {statuses.map((status) => (
-                <option key={status} value={status}>
-                  {status === 'Active' ? 'Hoạt động' : 'Chờ duyệt'}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
+          <div className="flex items-end">
             <button
               onClick={() => {
                 setSearchTerm('')
                 setFilterCity('')
-                setFilterStatus('')
+                // setFilterStatus('') // Bỏ reset status
               }}
-              className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium h-[42px]" // Chỉnh height cho khớp với input
             >
               Xóa bộ lọc
             </button>

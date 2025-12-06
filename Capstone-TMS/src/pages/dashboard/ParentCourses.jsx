@@ -2,14 +2,16 @@ import { useState, useEffect } from 'react'
 import { 
   SearchOutlined, 
   BookOutlined,
-  TeamOutlined,
-  DollarOutlined,
   CalendarOutlined,
   EnvironmentOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  StarOutlined,
-  LoadingOutlined
+  CloseCircleOutlined,
+  StopOutlined,
+  EditOutlined,
+  FileZipOutlined,
+  LaptopOutlined,
+  UsergroupAddOutlined
 } from '@ant-design/icons'
 import api from '../../config/axios'
 
@@ -21,13 +23,13 @@ const ParentCourses = () => {
   const [filterStatus, setFilterStatus] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Fetch courses from API
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         setLoading(true)
-        const response = await api.get('/Course')
-        if (response.data && response.data.data) {
+        const response = await api.get('/Course/Published/Courses')
+        // Xử lý response theo đúng cấu trúc JSON bạn cung cấp
+        if (response.data && response.data.success && response.data.data) {
           setCourses(response.data.data)
         } else if (Array.isArray(response.data)) {
           setCourses(response.data)
@@ -42,45 +44,61 @@ const ParentCourses = () => {
     fetchCourses()
   }, [])
 
+  // Logic lọc
   const filteredCourses = courses.filter(course => {
-    const matchSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       course.centerName.toLowerCase().includes(searchTerm.toLowerCase())
+    // 1. Tìm kiếm theo Tên hoặc Môn học (Bỏ tìm theo CenterName vì API không trả về)
+    const matchSearch = course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        course.subject?.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    // 2. Các bộ lọc khác
     const matchSubject = !filterSubject || course.subject === filterSubject
-    const matchGrade = !filterGrade || course.gradeLevel.toString() === filterGrade
-    const matchStatus = !filterStatus || course.status === filterStatus
+    const matchGrade = !filterGrade || course.gradeLevel?.toString() === filterGrade
+    
+    const matchStatus = filterStatus === '' || 
+        (filterStatus === 'Approved' && (course.status === 2 || course.status === 'Approved')) ||
+        (filterStatus === 'PendingApproval' && (course.status === 1 || course.status === 'PendingApproval')) ||
+        // ... (các status khác nếu cần)
+        (course.status?.toString() === filterStatus)
+
     return matchSearch && matchSubject && matchGrade && matchStatus
   })
 
+  // Helper: Mapping Teaching Method
+  const getTeachingMethod = (method) => {
+    switch (method) {
+      case 1: return 'Trực tiếp';
+      case 2: return 'Trực tuyến';
+      case 3: return 'Kết hợp';
+      default: return 'Khác';
+    }
+  }
+
+  // Helper: Status Badge
+  const getStatusInfo = (status) => {
+    const statusNum = typeof status === 'string' && !isNaN(status) ? parseInt(status) : status;
+    switch (statusNum) {
+      case 0: return { color: 'gray', icon: <EditOutlined />, text: 'Bản nháp', bg: 'bg-gray-100 text-gray-600' };
+      case 1: return { color: 'orange', icon: <ClockCircleOutlined />, text: 'Chờ duyệt', bg: 'bg-orange-100 text-orange-600' };
+      case 2: return { color: 'green', icon: <CheckCircleOutlined />, text: 'Đang hoạt động', bg: 'bg-green-100 text-green-600' };
+      case 3: return { color: 'red', icon: <CloseCircleOutlined />, text: 'Từ chối', bg: 'bg-red-100 text-red-600' };
+      case 4: return { color: 'yellow', icon: <StopOutlined />, text: 'Tạm ngưng', bg: 'bg-yellow-100 text-yellow-700' };
+      case 5: return { color: 'purple', icon: <FileZipOutlined />, text: 'Lưu trữ', bg: 'bg-purple-100 text-purple-600' };
+      default: return { color: 'blue', icon: <BookOutlined />, text: 'Không xác định', bg: 'bg-blue-100 text-blue-600' };
+    }
+  }
+
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount)
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
   }
 
   const formatDate = (dateString) => {
+    if (!dateString) return ''
     return new Date(dateString).toLocaleDateString('vi-VN')
   }
 
-  const getStatusColor = (status) => {
-    return status === 'Active' ? 'green' : 'orange'
-  }
-
-  const getStatusIcon = (status) => {
-    return status === 'Active' ? <CheckCircleOutlined /> : <ClockCircleOutlined />
-  }
-
-  const getStatusText = (status) => {
-    return status === 'Active' ? 'Hoạt động' : 'Chờ duyệt'
-  }
-
-  const subjects = [...new Set(courses.map(c => c.subject))]
-  const grades = [...new Set(courses.map(c => c.gradeLevel))].sort((a, b) => a - b)
-  const statuses = ['Active', 'Pending']
-
-  const getCapacityPercentage = (enrolled, capacity) => {
-    return Math.round((enrolled / capacity) * 100)
-  }
+  // Get unique values for filters
+  const subjects = [...new Set(courses.map(c => c.subject).filter(Boolean))]
+  const grades = [...new Set(courses.map(c => c.gradeLevel).filter(Boolean))].sort((a, b) => a - b)
 
   return (
     <div className="space-y-6">
@@ -93,13 +111,14 @@ const ParentCourses = () => {
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          {/* Search */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Tìm kiếm</label>
             <div className="relative">
               <SearchOutlined className="absolute left-3 top-3 text-gray-400" />
               <input
                 type="text"
-                placeholder="Tên khóa học, trung tâm..."
+                placeholder="Tên khóa học, môn học..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -107,6 +126,7 @@ const ParentCourses = () => {
             </div>
           </div>
 
+          {/* Subject Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Môn học</label>
             <select
@@ -121,6 +141,7 @@ const ParentCourses = () => {
             </select>
           </div>
 
+          {/* Grade Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Lớp</label>
             <select
@@ -135,6 +156,7 @@ const ParentCourses = () => {
             </select>
           </div>
 
+          {/* Status Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Trạng thái</label>
             <select
@@ -143,14 +165,12 @@ const ParentCourses = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Tất cả trạng thái</option>
-              {statuses.map((status) => (
-                <option key={status} value={status}>
-                  {status === 'Active' ? 'Hoạt động' : 'Chờ duyệt'}
-                </option>
-              ))}
+              <option value="Approved">Đang hoạt động</option>
+              <option value="PendingApproval">Chờ duyệt</option>
             </select>
           </div>
 
+          {/* Clear Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
             <button
@@ -168,107 +188,95 @@ const ParentCourses = () => {
         </div>
       </div>
 
-      {/* Courses grid */}
+      {/* Courses Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCourses.length === 0 ? (
+        {loading ? (
+             <div className="col-span-full text-center py-12">Đang tải dữ liệu...</div>
+        ) : filteredCourses.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <BookOutlined className="text-4xl text-gray-300 mb-3" />
             <p className="text-gray-600">Không tìm thấy khóa học nào</p>
           </div>
         ) : (
-          filteredCourses.map((course) => (
-            <div
-              key={course.id}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
-            >
-              {/* Header with status */}
-              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 text-white">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold">{course.title}</h3>
-                    <p className="text-blue-100 text-sm mt-1">{course.subject}</p>
+          filteredCourses.map((course) => {
+            const statusInfo = getStatusInfo(course.status);
+            
+            return (
+              <div
+                key={course.id}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow flex flex-col"
+              >
+                {/* Header */}
+                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 text-white">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 mr-2">
+                      <h3 className="text-lg font-semibold line-clamp-1" title={course.title}>{course.title}</h3>
+                      <p className="text-blue-100 text-sm mt-1 uppercase font-bold">{course.subject}</p>
+                    </div>
+                    {/* Status Badge */}
+                    <span className={`px-2 py-1 text-xs rounded-full font-medium flex items-center gap-1 shrink-0 ${statusInfo.bg}`}>
+                      {statusInfo.icon}
+                      {statusInfo.text}
+                    </span>
                   </div>
-                  <span className={`px-2 py-1 text-xs rounded-full font-medium flex items-center gap-1 bg-white text-${getStatusColor(course.status)}-600`}>
-                    {getStatusIcon(course.status)}
-                    {getStatusText(course.status)}
-                  </span>
+                </div>
+
+                {/* Body Content */}
+                <div className="p-4 space-y-3 flex-1">
+                  
+                  {/* Description */}
+                  <div className="min-h-[40px]">
+                    <p className="text-sm text-gray-600 line-clamp-2">{course.description}</p>
+                  </div>
+
+                  {/* Location (Thay thế cho CenterName vì API không có CenterName) */}
+                  <div className="flex items-start gap-2 text-sm text-gray-600">
+                    <EnvironmentOutlined className="text-blue-500 mt-1 shrink-0" />
+                    <span className="line-clamp-2">{course.location}</span>
+                  </div>
+
+                  <div className="border-t border-gray-100 my-2"></div>
+
+                  {/* Info Grid: Phương pháp, Sĩ số */}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <LaptopOutlined className="text-purple-500" />
+                      <span>{getTeachingMethod(course.teachingMethod)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <UsergroupAddOutlined className="text-orange-500" />
+                      <span>Sĩ số: {course.capacity}</span>
+                    </div>
+                  </div>
+
+                  {/* Info Grid: Lớp, Học phí */}
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <div className="bg-blue-50 p-2 rounded text-center">
+                      <p className="text-xs text-gray-500">Lớp</p>
+                      <p className="font-bold text-blue-700">Lớp {course.gradeLevel}</p>
+                    </div>
+                    <div className="bg-green-50 p-2 rounded text-center">
+                      <p className="text-xs text-gray-500">Học phí</p>
+                      <p className="font-bold text-green-700">{formatCurrency(course.tuitionFee)}</p>
+                    </div>
+                  </div>
+
+                  {/* Dates */}
+                  <div className="flex items-center gap-2 text-xs text-gray-500 pt-2 justify-center">
+                    <CalendarOutlined />
+                    <span>{formatDate(course.startDate)} - {formatDate(course.endDate)}</span>
+                  </div>
+                </div>
+
+                {/* Footer Button */}
+                <div className="p-4 border-t border-gray-200 bg-gray-50 mt-auto">
+                  <button className="w-full py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm">
+                    Đăng ký ngay
+                  </button>
                 </div>
               </div>
-
-              {/* Content */}
-              <div className="p-4 space-y-3">
-                {/* Description */}
-                <p className="text-sm text-gray-700 line-clamp-2">{course.description}</p>
-
-                {/* Center and location */}
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <TeamOutlined className="text-blue-500" />
-                    <span>{course.centerName}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <EnvironmentOutlined className="text-blue-500" />
-                    <span className="truncate">{course.location}</span>
-                  </div>
-                </div>
-
-                {/* Rating */}
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <StarOutlined
-                        key={i}
-                        className={`text-sm ${i < Math.floor(course.rating) ? 'text-yellow-400' : 'text-gray-300'}`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-sm text-gray-600">
-                    {course.rating} ({course.reviews} đánh giá)
-                  </span>
-                </div>
-
-                {/* Key info grid */}
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200">
-                  <div className="bg-blue-50 p-2 rounded">
-                    <p className="text-xs text-gray-600">Lớp</p>
-                    <p className="font-semibold text-blue-600">{course.gradeLevel}</p>
-                  </div>
-                  <div className="bg-blue-50 p-2 rounded">
-                    <p className="text-xs text-gray-600">Học phí</p>
-                    <p className="font-semibold text-blue-600 text-sm">{formatCurrency(course.tuitionFee)}</p>
-                  </div>
-                </div>
-
-                {/* Capacity */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Sức chứa</span>
-                    <span className="font-medium">{course.enrolled}/{course.capacity}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-500 h-2 rounded-full transition-all"
-                      style={{ width: `${getCapacityPercentage(course.enrolled, course.capacity)}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-gray-500">{getCapacityPercentage(course.enrolled, course.capacity)}% đã đăng ký</p>
-                </div>
-
-                {/* Dates */}
-                <div className="flex items-center gap-2 text-sm text-gray-600 pt-2 border-t border-gray-200">
-                  <CalendarOutlined className="text-blue-500" />
-                  <span>{formatDate(course.startDate)} - {formatDate(course.endDate)}</span>
-                </div>
-              </div>
-
-              {/* Footer button */}
-              <div className="p-4 border-t border-gray-200 bg-gray-50">
-                <button className="w-full py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium">
-                  Đăng ký khóa học
-                </button>
-              </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
     </div>

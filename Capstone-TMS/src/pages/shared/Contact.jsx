@@ -1,4 +1,4 @@
-import CentersMap from '../../components/CentersMap';
+import CentersMap from '../../components/map';
 
 const Contact = () => (
     <main className="max-w-6xl mx-auto px-4 py-12">

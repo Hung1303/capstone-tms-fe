@@ -176,12 +176,6 @@ const ROLE_MENUS = {
       icon: <CalendarOutlined />,
       label: 'Lên lịch',
       path: '/center/schedule'
-    },
-    {
-      key: '/center/revenue',
-      icon: <DollarOutlined />,
-      label: 'Doanh thu',
-      path: '/center/revenue'
     }
   ],
   Teacher: [
@@ -264,18 +258,6 @@ const ROLE_MENUS = {
       icon: <FileTextOutlined />,
       label: 'Kết quả học tập',
       path: '/parent/grades'
-    },
-    {
-      key: '/parent/payments',
-      icon: <DollarOutlined />,
-      label: 'Thanh toán',
-      path: '/parent/payments'
-    },
-    {
-      key: '/parent/notifications',
-      icon: <BellOutlined />,
-      label: 'Thông báo',
-      path: '/parent/notifications'
     }
   ],
   Student: [

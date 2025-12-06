@@ -109,17 +109,6 @@ const TeacherManagement = () => {
     setViewModalVisible(true)
   }
 
-  const handleDeleteTeacher = async (teacherId) => {
-    try {
-      await api.delete(`/Users/${teacherId}`)
-      toast.success('Đã xóa giáo viên')
-      fetchTeachers()
-    } catch (error) {
-      console.error('Error deleting teacher:', error)
-      toast.error('Không thể xóa giáo viên, vui lòng thử lại')
-    }
-  }
-
   const handleEditTeacher = (teacher) => {
     console.log('Editing teacher:', teacher)
     setSelectedTeacher(teacher)
@@ -498,22 +487,7 @@ const TeacherManagement = () => {
         </div>
       ),
     },
-    {
-      title: 'Thông tin liên hệ',
-      key: 'contact',
-      render: (_, teacher) => (
-        <div className="text-sm text-gray-900">
-          <div className="flex items-center gap-2 mb-1">
-            <MailOutlined className="text-gray-400" />
-            <span>{teacher.email || 'N/A'}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <PhoneOutlined className="text-gray-400" />
-            <span>{teacher.phoneNumber || 'N/A'}</span>
-          </div>
-        </div>
-      ),
-    },
+
     {
       title: 'Môn học',
       dataIndex: 'subject',

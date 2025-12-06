@@ -2,7 +2,7 @@ import { VerticalAlignTopOutlined } from '@ant-design/icons'
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { Link } from 'react-router-dom'
-import ParentCentersMap from '../dashboard/ParentCentersMap'
+import ParentCentersMap from '../../components/map'
 import anhQuangCao from '../../assets/anh-quang-cao.png'
 
 const HomePage = () => {
@@ -307,7 +307,7 @@ const HomePage = () => {
                 {/* Vị trí các trung tâm */}
                 <section id="centers-map" className="scroll-mt-20 max-w-6xl mx-auto px-4 py-16">
                     <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-8">Vị trí các trung tâm</h2>
-                    <div style={{ height: '500px', borderRadius: '12px', overflow: 'hidden' }}>
+                    <div style={{ height: '800px', borderRadius: '12px', overflow: 'auto' }}>
                         <ParentCentersMap />
                     </div>
                 </section>
