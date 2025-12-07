@@ -174,22 +174,6 @@ const NavBar = () => {
 
                 {/* Auth buttons */}
                 <div className="flex items-center gap-3">
-                    <Link to="/cart" className="relative">
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="cursor-pointer px-3 py-2 text-sm font-medium rounded-md hover:bg-blue-50 flex items-center gap-2"
-                        >
-                            <ShoppingCartOutlined />
-                            Giỏ hàng
-                            {cartItems.length > 0 && (
-                                <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-white bg-orange-500 rounded-full">
-                                    {cartItems.length}
-                                </span>
-                            )}
-                        </motion.button>
-                    </Link>
-
                     {user ? (
                         <>
                             <div className="relative dropdown-wrapper">
