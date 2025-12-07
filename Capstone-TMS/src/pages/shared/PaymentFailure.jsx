@@ -74,26 +74,11 @@ const PaymentFailure = () => {
                 
                 <Space size="middle" className="w-full justify-center flex-wrap">
                   <Button
-                    type="primary"
-                    size="large"
-                    icon={<ReloadOutlined />}
-                    onClick={() => navigate("/cart")}
-                  >
-                    Thử lại thanh toán
-                  </Button>
-                  <Button
-                    size="large"
-                    icon={<ShoppingCartOutlined />}
-                    onClick={() => navigate("/cart")}
-                  >
-                    Quay lại giỏ hàng
-                  </Button>
-                  <Button
                     size="large"
                     icon={<HomeOutlined />}
-                    onClick={() => navigate("/")}
+                    onClick={() => navigate("center/subscription")}
                   >
-                    Về trang chủ
+                    Quay về
                   </Button>
                 </Space>
               </Space>

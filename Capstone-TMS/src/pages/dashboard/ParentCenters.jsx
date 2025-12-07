@@ -1,22 +1,13 @@
 import { useState, useEffect } from 'react'
-import {
-  SearchOutlined,
-  EnvironmentOutlined,
-  PhoneOutlined,
-  MailOutlined,
-  BookOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  ArrowLeftOutlined,
-  UserOutlined,
-  FileTextOutlined,
-  TeamOutlined,
-  LoadingOutlined // Import icon loading
-} from '@ant-design/icons'
-import { Spin } from 'antd' // Import Spin từ antd để hiển thị loading đẹp hơn (tùy chọn)
+import { SearchOutlined, EnvironmentOutlined, PhoneOutlined, MailOutlined, BookOutlined, CheckCircleOutlined, ClockCircleOutlined,
+         ArrowLeftOutlined, UserOutlined, FileTextOutlined, TeamOutlined, LoadingOutlined } from '@ant-design/icons'
+import { Spin, Modal, Select, message } from 'antd' 
 import api from '../../config/axios'
+import { useAuth } from '../../contexts/AuthContext'
+import { toast } from 'react-toastify'
 
 const ParentCenters = () => {
+  const { user } = useAuth()
   const [centers, setCenters] = useState([])
   const [selectedCenter, setSelectedCenter] = useState(null)
   const [centerCourses, setCenterCourses] = useState([])
@@ -25,6 +16,17 @@ const ParentCenters = () => {
   // const [filterStatus, setFilterStatus] = useState('') // Bỏ filterStatus vì chỉ hiện Active
   const [loading, setLoading] = useState(false)
   const [coursesLoading, setCoursesLoading] = useState(false)
+  
+  // Modal states
+  const [isModalVisible, setIsModalVisible] = useState(false)
+  const [selectedCourse, setSelectedCourse] = useState(null)
+  const [students, setStudents] = useState([])
+  const [studentsLoading, setStudentsLoading] = useState(false)
+  const [registrationData, setRegistrationData] = useState({
+    courseId: '',
+    studentProfileId: ''
+  })
+  const [submitting, setSubmitting] = useState(false)
 
   // Fetch centers from API
   useEffect(() => {
@@ -54,10 +56,6 @@ const ParentCenters = () => {
       const response = await api.get(`/Course?centerProfileId=${centerId}`)
       if (response.data && response.data.data) {
         setCenterCourses(response.data.data)
-      } else if (Array.isArray(response.data)) {
-        setCenterCourses(response.data)
-      } else {
-        setCenterCourses([])
       }
     } catch (error) {
       console.error('Error fetching courses:', error)
@@ -112,8 +110,78 @@ const ParentCenters = () => {
     return new Date(dateString).toLocaleDateString('vi-VN')
   }
 
+  const fetchStudents = async () => {
+    if (!user?.parentProfileId) {
+      toast.error('Không tìm thấy thông tin phụ huynh')
+      return
+    }
+    
+    try {
+      setStudentsLoading(true)
+      const response = await api.get(`/Users/${user.parentProfileId}/Students?pageNumber=1&pageSize=100`)
+      if (response.data && response.data.students) {
+        setStudents(response.data.students)
+      }
+    } catch (error) {
+      console.error('Error fetching students:', error)
+      toast.error('Không thể tải danh sách học sinh')
+      setStudents([])
+    } finally {
+      setStudentsLoading(false)
+    }
+  }
+
+  const handleOpenRegistrationModal = (course) => {
+    setSelectedCourse(course)
+    setRegistrationData({
+      courseId: course.id,
+      studentProfileId: ''
+    })
+    setIsModalVisible(true)
+    fetchStudents()
+  }
+
+  const handleCloseModal = () => {
+    setIsModalVisible(false)
+    setSelectedCourse(null)
+    setRegistrationData({
+      courseId: '',
+      studentProfileId: ''
+    })
+  }
+
+  const handleRegistrationSubmit = async () => {
+    if (!registrationData.studentProfileId) {
+      message.error('Vui lòng chọn học sinh')
+      return
+    }
+
+    try {
+      setSubmitting(true)
+
+      const payload = {
+        courseId: registrationData.courseId,
+        studentProfileId: registrationData.studentProfileId
+      }
+      console.log("payload:", payload)
+
+      const apiResponse = await api.post("/Enrollments", payload)
+      console.log("apiResponse:", apiResponse)
+      
+      toast.success('Đăng ký khóa học thành công!')
+      handleCloseModal()
+    } catch (error) {
+      console.error('Error registering course:', error)
+
+      if (error.response.data.includes("Student is already enrolled or pending payment for this course")) {
+        toast.error('Đã đăng ký hoặc đang chờ thanh toán cho khóa học này.')
+      }
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const cities = [...new Set(centers.map(c => c.city))]
-  // const statuses = ['Active', 'Pending'] // Bỏ danh sách status
 
   // Hiển thị Loading khi đang tải danh sách trung tâm
   if (loading) {
@@ -131,7 +199,7 @@ const ParentCenters = () => {
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={handleBackToList}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
           >
             <ArrowLeftOutlined />
             Quay lại
@@ -251,7 +319,10 @@ const ParentCenters = () => {
                     <p>📍 {course.location}</p>
                   </div>
 
-                  <button className="w-full py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium">
+                  <button 
+                    onClick={() => handleOpenRegistrationModal(course)}
+                    className="w-full py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                  >
                     Đăng ký khóa học
                   </button>
                 </div>
@@ -259,6 +330,77 @@ const ParentCenters = () => {
             </div>
           )}
         </div>
+
+        {/* Registration Modal */}
+        <Modal
+          title="Đăng ký khóa học"
+          open={isModalVisible}
+          onOk={handleRegistrationSubmit}
+          onCancel={handleCloseModal}
+          okText="Đăng ký"
+          cancelText="Hủy"
+          confirmLoading={submitting}
+          width={600}
+        >
+          <div className="space-y-4 py-4">
+            {/* Course Info */}
+            {selectedCourse && (
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h4 className="font-semibold text-gray-900 mb-2">{selectedCourse.title}</h4>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <p><span className="font-medium">Môn học:</span> {selectedCourse.subject}</p>
+                  <p><span className="font-medium">Lớp:</span> {selectedCourse.gradeLevel}</p>
+                  <p><span className="font-medium">Học phí:</span> {formatCurrency(selectedCourse.tuitionFee)}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Course ID (read-only) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Mã khóa học (Course ID)
+              </label>
+              <input
+                type="text"
+                value={registrationData.courseId}
+                readOnly
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+              />
+            </div>
+
+            {/* Student Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Chọn học sinh <span className="text-red-500">*</span>
+              </label>
+              {studentsLoading ? (
+                <div className="flex justify-center py-4">
+                  <Spin size="small" />
+                </div>
+              ) : (
+                <Select
+                  placeholder="Chọn học sinh để đăng ký"
+                  value={registrationData.studentProfileId || undefined}
+                  onChange={(value) => setRegistrationData(prev => ({ ...prev, studentProfileId: value }))}
+                  className="w-full"
+                  showSearch
+                  filterOption={(input, option) =>
+                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                  }
+                  options={students.map(student => ({
+                    value: student.profileId,
+                    label: `${student.fullName}${student.gradeLevel ? ` - Lớp ${student.gradeLevel}` : ''}`
+                  }))}
+                />
+              )}
+              {students.length === 0 && !studentsLoading && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Bạn chưa có học sinh nào. Vui lòng thêm học sinh trước khi đăng ký khóa học.
+                </p>
+              )}
+            </div>
+          </div>
+        </Modal>
       </div>
     )
   }
@@ -360,7 +502,7 @@ const ParentCenters = () => {
 
               <div className="pt-4 border-t border-gray-200">
                 <p className="text-xs text-gray-500 mb-3">Giấy phép: {center.licenseNumber}</p>
-                <button className="w-full py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 transition-colors font-medium">
+                <button className="cursor-pointer w-full py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 transition-colors font-medium">
                   Xem khóa học
                 </button>
               </div>
