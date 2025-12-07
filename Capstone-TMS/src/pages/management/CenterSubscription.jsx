@@ -1,14 +1,9 @@
 import { useState, useEffect } from 'react'
-import { 
-  SearchOutlined,
-  CheckCircleOutlined,
-  ExclamationCircleOutlined,
-  ArrowUpOutlined,
-  DeleteOutlined
-} from '@ant-design/icons'
+import { SearchOutlined, CheckCircleOutlined, ExclamationCircleOutlined, ArrowUpOutlined, DeleteOutlined } from '@ant-design/icons'
 import { toast } from 'react-toastify'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 const CenterSubscription = () => {
   const { user } = useAuth()
@@ -19,6 +14,9 @@ const CenterSubscription = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [confirmAction, setConfirmAction] = useState(null)
   const [selectedPackage, setSelectedPackage] = useState(null)
+  const [autoRenew, setAutoRenew] = useState(false);
+  const navigate = useNavigate()
+
 
   useEffect(() => {
     fetchSubscriptions()
@@ -30,7 +28,7 @@ const CenterSubscription = () => {
     try {
       const response = await api.get('/Subscription/packages')
       const subList = response?.data?.data || response?.data || []
-      const activePackages = subList.filter(s => s.isActive)
+      const activePackages = subList.filter(s => s.isActive === true)
       setSubscriptions(activePackages.sort((a, b) => a.displayOrder - b.displayOrder))
     } catch (error) {
       console.error('Error fetching subscriptions:', error)
@@ -44,7 +42,7 @@ const CenterSubscription = () => {
   const fetchCurrentSubscription = async () => {
     try {
       const response = await api.get(`/Subscription/center/${user?.centerProfileId}/active`)
-      const data = response?.data?.data || response?.data
+      const data = response.data.data
       if (data) {
         setCurrentSubscription(data)
       } else {
@@ -79,10 +77,48 @@ const CenterSubscription = () => {
     setLoading(true)
     try {
       if (confirmAction === 'subscribe') {
-        await api.post('/Subscription/subscribe', {
-          centerId: user?.centerProfileId,
-          packageId: selectedPackage.id
+        const apiRes = await api.post('/Subscription/subscribe', {
+          centerProfileId: user?.centerProfileId,
+          subscriptionPackageId: selectedPackage.id,
+          autoRenewalEnabled: autoRenew
         })
+        console.log("apiRes handleConfirmAction:", apiRes.data)
+        // console.log("selectedPackage:", selectedPackage)
+
+        // const apiSuccess = apiRes.data.success
+        // if (apiSuccess) {
+        //   const payload = {
+        //     amount: selectedPackage.monthlyPrice,
+        //     description: selectedPackage.packageName,
+        //     userId: user.userId,
+        //     centerSubscriptionId: apiRes.data.data.id,
+        //     enrollmentId: null
+        //   }
+        //   console.log("checkout payload:", payload)
+        //   try {
+        //     const apiResPayment = await api.post("/Payment", payload)
+        //     console.log("apiResPayment:", apiResPayment.data)
+
+        //     if (apiResPayment.data.success) {
+        //       const paymentId = apiResPayment.data.data.id
+        //       console.log("paymentId:", paymentId)
+
+        //       try {
+        //         const apiResponse = await api.get(`Payment/VNPAY?paymentId=${paymentId}`)
+        //         console.log("apiResponse:", apiResponse)
+
+        //         const paymentUrl = apiResponse.data.data
+        //         window.open(paymentUrl, "_blank")
+
+        //       } catch (error) {
+        //         console.log("lỗi Payment/VNPAY:", error)
+        //       }
+        //     }
+        //   } catch (error) {
+        //     console.log("lỗi payment:", error)
+        //   }
+        // }
+
         toast.success('Đăng ký gói thành công!')
       } else if (confirmAction === 'upgrade') {
         await api.post('/Subscription/upgrade', {
@@ -110,6 +146,21 @@ const CenterSubscription = () => {
       setLoading(false)
     }
   }
+
+  // Lắng nghe thông điệp từ tab VNPay
+  // useEffect(() => {
+  //   const handleMessage = (event) => {
+  //     if (event.data.payment === "success") {
+  //       navigate("/payment/success");
+  //     } else if (event.data.payment === "failed") {
+  //       navigate("/payment/failure");
+  //     }
+  //   };
+
+  //   window.addEventListener("message", handleMessage);
+  //   return () => window.removeEventListener("message", handleMessage);
+  // }, [navigate]);
+
 
   const getPriceDisplay = (price) => {
     return price?.toLocaleString('vi-VN') || '0'
@@ -262,7 +313,7 @@ const CenterSubscription = () => {
                     <button
                       onClick={() => handleUpgrade(pkg)}
                       disabled={loading}
-                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="cursor-pointer w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       <ArrowUpOutlined />
                       <span>Nâng cấp</span>
@@ -271,7 +322,7 @@ const CenterSubscription = () => {
                     <button
                       onClick={() => handleSubscribe(pkg)}
                       disabled={loading}
-                      className="w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
+                      className="cursor-pointer w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
                     >
                       Đăng ký ngay
                     </button>
@@ -321,6 +372,21 @@ const CenterSubscription = () => {
                 <p className="text-gray-600 mb-6">
                   Bạn có chắc chắn muốn hủy gói hiện tại? Bạn sẽ mất quyền truy cập vào các tính năng của gói.
                 </p>
+              )}
+
+              {(confirmAction === 'subscribe' || confirmAction === 'upgrade') && (
+                <div className="flex items-start mb-6">
+                  <input
+                    type="checkbox"
+                    name="autoRenew"
+                    checked={autoRenew}
+                    onChange={(e) => setAutoRenew(e.target.checked)}
+                    className="mt-1 w-4 h-4 mr-2"
+                  />
+                  <label htmlFor="autoRenew" className="text-gray-700 leading-normal">
+                    Bạn có muốn tự động gia hạn hàng tháng không?
+                  </label>
+                </div>
               )}
 
               <div className="flex gap-3 justify-end">

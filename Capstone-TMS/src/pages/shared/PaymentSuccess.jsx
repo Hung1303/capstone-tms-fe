@@ -36,19 +36,11 @@ const PaymentSuccess = () => {
               <Space direction="vertical" size={16} className="w-full">
                 <Space size="middle" className="w-full justify-center flex-wrap">
                   <Button
-                    type="primary"
-                    size="large"
-                    icon={<ShoppingOutlined />}
-                    onClick={() => navigate("/courses")}
-                  >
-                    Xem thêm khóa học
-                  </Button>
-                  <Button
                     size="large"
                     icon={<HomeOutlined />}
-                    onClick={() => navigate("/")}
+                    onClick={() => navigate("center/subscription")}
                   >
-                    Về trang chủ
+                    Quay về
                   </Button>
                 </Space>
               </Space>

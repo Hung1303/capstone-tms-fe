@@ -166,10 +166,10 @@ const ROLE_MENUS = {
       path: '/center/teachers'
     },
     {
-      key: '/center/students',
+      key: '/center/enrollments',
       icon: <UserOutlined />,
       label: 'Quản lý học sinh',
-      path: '/center/students'
+      path: '/center/enrollments'
     },
     {
       key: '/center/schedule',
