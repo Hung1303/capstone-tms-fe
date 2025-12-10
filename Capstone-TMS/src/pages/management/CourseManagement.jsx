@@ -1,18 +1,6 @@
 import { useState, useEffect } from 'react'
-import { 
-  SearchOutlined, 
-  PlusOutlined, 
-  EditOutlined, 
-  DeleteOutlined,
-  CloseOutlined,
-  ExclamationCircleOutlined,
-  CheckCircleOutlined,
-  StopOutlined,
-  FileSyncOutlined,
-  ClockCircleOutlined,
-  SendOutlined,
-  GlobalOutlined // [MỚI] Icon cho nút Public
-} from '@ant-design/icons'
+import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CloseOutlined, ExclamationCircleOutlined, CheckCircleOutlined, StopOutlined,
+        FileSyncOutlined, ClockCircleOutlined, SendOutlined, GlobalOutlined } from '@ant-design/icons'
 import { toast } from 'react-toastify'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
@@ -26,6 +14,12 @@ const CourseManagement = () => {
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
+
+  const [pagination, setPagination] = useState({
+    pageNumber: 1,
+    pageSize: 5,
+    total: 0
+  })
   
   // Modal states
   const [showModal, setShowModal] = useState(false)
@@ -61,10 +55,10 @@ const CourseManagement = () => {
   const [errors, setErrors] = useState({})
 
   // Lấy centerId chuẩn
-  const centerId = user?.centerProfileId || user?.userId
+  const centerId = user?.centerProfileId
 
   useEffect(() => {
-    fetchCourses()
+    fetchCourses(pagination.pageNumber, pagination.pageSize)
     fetchSubjects()
   }, [])
 
@@ -74,10 +68,11 @@ const CourseManagement = () => {
     }
   }, [centerId])
 
-  const fetchCourses = async () => {
+  const fetchCourses = async (pageNumber, pageSize) => {
     setLoading(true)
     try {
-      const response = await api.get('/Course')
+      const response = await api.get(`/Course?CenterProfileId=${centerId}&pageNumber=${pageNumber}&pageSize=${pageSize}`)
+      console.log("response fetchCourses:", response)
       const courseList = response?.data?.data || response?.data || []
       setCourses(Array.isArray(courseList) ? courseList : [])
     } catch (error) {
@@ -221,7 +216,7 @@ const CourseManagement = () => {
         await api.post('/Course', payload)
         toast.success('Tạo bản nháp thành công! Vui lòng gửi duyệt.')
       }
-      await fetchCourses()
+      await fetchCourses(pagination.pageNumber, pagination.pageSize)
       handleCloseModal()
     } catch (error) {
       console.error('Error saving course:', error)
@@ -241,7 +236,7 @@ const CourseManagement = () => {
     setLoading(true)
     try {
       await api.delete(`/Course/${deleteId}`)
-      await fetchCourses()
+      await fetchCourses(pagination.pageNumber, pagination.pageSize)
       setShowDeleteConfirm(false)
       setDeleteId(null)
       toast.success('Xóa khóa học thành công!')
@@ -270,7 +265,7 @@ const CourseManagement = () => {
         headers: { 'Content-Type': 'application/json' }
       })
       toast.success('Đã gửi yêu cầu duyệt thành công!')
-      await fetchCourses()
+      await fetchCourses(pagination.pageNumber, pagination.pageSize)
       setShowRequestModal(false)
       setRequestCourseId(null)
     } catch (error) {
@@ -296,12 +291,18 @@ const CourseManagement = () => {
       await api.put(`/Course/Publish/${publishId}?centerProfileId=${centerId}`)
       
       toast.success('Khóa học đã được công khai thành công!')
-      await fetchCourses() // Load lại data để cập nhật trạng thái
+      await fetchCourses(pagination.pageNumber, pagination.pageSize) // Load lại data để cập nhật trạng thái
       setShowPublishConfirm(false)
       setPublishId(null)
     } catch (error) {
       console.error('Error publishing course:', error)
-      toast.error(error.response?.data?.message || 'Lỗi khi công khai khóa học')
+      const errorResponse = error.response?.data
+      let errorMessage = ""
+
+      if (errorResponse.includes("Course is already published.")) {
+        errorMessage = "Khóa học này đã được công khai."
+      }
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }

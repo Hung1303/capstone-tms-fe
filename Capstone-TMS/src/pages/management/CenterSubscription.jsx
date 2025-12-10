@@ -83,41 +83,41 @@ const CenterSubscription = () => {
           autoRenewalEnabled: autoRenew
         })
         console.log("apiRes handleConfirmAction:", apiRes.data)
-        // console.log("selectedPackage:", selectedPackage)
+        console.log("selectedPackage:", selectedPackage)
 
-        // const apiSuccess = apiRes.data.success
-        // if (apiSuccess) {
-        //   const payload = {
-        //     amount: selectedPackage.monthlyPrice,
-        //     description: selectedPackage.packageName,
-        //     userId: user.userId,
-        //     centerSubscriptionId: apiRes.data.data.id,
-        //     enrollmentId: null
-        //   }
-        //   console.log("checkout payload:", payload)
-        //   try {
-        //     const apiResPayment = await api.post("/Payment", payload)
-        //     console.log("apiResPayment:", apiResPayment.data)
+        const apiSuccess = apiRes.data.success
+        if (apiSuccess) {
+          const payload = {
+            amount: selectedPackage.monthlyPrice,
+            description: selectedPackage.packageName,
+            userId: user.userId,
+            centerSubscriptionId: apiRes.data.data.id,
+            enrollmentId: null
+          }
+          console.log("checkout payload:", payload)
+          try {
+            const apiResPayment = await api.post("/Payment", payload)
+            console.log("apiResPayment:", apiResPayment.data)
 
-        //     if (apiResPayment.data.success) {
-        //       const paymentId = apiResPayment.data.data.id
-        //       console.log("paymentId:", paymentId)
+            if (apiResPayment.data.success) {
+              const paymentId = apiResPayment.data.data.id
+              console.log("paymentId:", paymentId)
 
-        //       try {
-        //         const apiResponse = await api.get(`Payment/VNPAY?paymentId=${paymentId}`)
-        //         console.log("apiResponse:", apiResponse)
+              try {
+                const apiResponse = await api.get(`Payment/VNPAY?paymentId=${paymentId}`)
+                console.log("apiResponse:", apiResponse)
 
-        //         const paymentUrl = apiResponse.data.data
-        //         window.open(paymentUrl, "_blank")
+                const paymentUrl = apiResponse.data.data
+                window.open(paymentUrl, "_blank")
 
-        //       } catch (error) {
-        //         console.log("lỗi Payment/VNPAY:", error)
-        //       }
-        //     }
-        //   } catch (error) {
-        //     console.log("lỗi payment:", error)
-        //   }
-        // }
+              } catch (error) {
+                console.log("lỗi Payment/VNPAY:", error)
+              }
+            }
+          } catch (error) {
+            console.log("lỗi payment:", error)
+          }
+        }
 
         toast.success('Đăng ký gói thành công!')
       } else if (confirmAction === 'upgrade') {
@@ -148,18 +148,18 @@ const CenterSubscription = () => {
   }
 
   // Lắng nghe thông điệp từ tab VNPay
-  // useEffect(() => {
-  //   const handleMessage = (event) => {
-  //     if (event.data.payment === "success") {
-  //       navigate("/payment/success");
-  //     } else if (event.data.payment === "failed") {
-  //       navigate("/payment/failure");
-  //     }
-  //   };
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data.payment === "success") {
+        navigate("/payment/success");
+      } else if (event.data.payment === "failed") {
+        navigate("/payment/failure");
+      }
+    };
 
-  //   window.addEventListener("message", handleMessage);
-  //   return () => window.removeEventListener("message", handleMessage);
-  // }, [navigate]);
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [navigate]);
 
 
   const getPriceDisplay = (price) => {

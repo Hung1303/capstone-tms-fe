@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import api from '../config/axios'
 import { jwtDecode } from 'jwt-decode'
-import { useNavigate } from 'react-router-dom'
 
 const AuthContext = createContext()
 
@@ -14,14 +13,12 @@ export const useAuth = () => {
 }
 
 export const AuthProvider = ({ children }) => {
-  const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const logout = () => {
     setUser(null)
     localStorage.removeItem('token')
-    navigate("/login");
     delete api.defaults.headers.Authorization
   }
 
