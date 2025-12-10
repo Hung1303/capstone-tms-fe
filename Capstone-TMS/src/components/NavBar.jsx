@@ -47,6 +47,7 @@ const NavBar = () => {
 
     const handleLogout = () => {
         logout()
+        navigate("/login")
     };
 
     useEffect(() => {

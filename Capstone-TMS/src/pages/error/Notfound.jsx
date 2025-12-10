@@ -1,7 +1,15 @@
-import React from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
-const Notfound = () => (
+const Notfound = () => {
+  const { logout } = useAuth();
+
+  useEffect(() => {
+    logout();
+  }, [logout]);
+
+  return (
     <div style={{
         display: 'flex',
         flexDirection: 'column',
@@ -17,6 +25,7 @@ const Notfound = () => (
             Go to Home
         </Link>
     </div>
-);
+  )
+};
 
 export default Notfound;

@@ -60,241 +60,165 @@ import PaymentSuccess from "../pages/shared/PaymentSuccess";
 import PaymentFailure from "../pages/shared/PaymentFailure";
 
 export const router = createBrowserRouter([
-    // Auth routes (không dùng layout)
+
+    // ========================
+    // AUTH ROUTES (no layout)
+    // ========================
     {
         path: "/login",
-        element: <AuthProvider><AuthPage /></AuthProvider>,
+        element: <AuthPage />,
     },
     {
         path: "/register",
-        element: <AuthProvider><AuthPage /></AuthProvider>,
+        element: <AuthPage />,
     },
-    
-    // Public routes (dùng HomeLayout)
+
+    // ========================
+    // PUBLIC ROUTES
+    // ========================
     {
         path: "/",
-        element: <AuthProvider><HomeLayout /></AuthProvider>,
+        element: <HomeLayout />,
         children: [
-            {
-                index: true,
-                element: <HomePage />,
-            },
-            {
-                path: "centers",
-                element: <Centers />,
-            },
-            {
-                path: "find-tutor",
-                element: <FindTutor />,
-            },
-            {
-                path: "new-classes",
-                element: <NewClasses />,
-            },
-            {
-                path: "contact",
-                element: <Contact />,
-            },
-            {
-                path: "recruitment",
-                element: <Recruitment />,
-            },
-            {
-                path: "register-center",
-                element: <RegisterCenter />,
-            },
-            {
-                path: "about",
-                element: <About />,
-            },
-            {
-                path: "blog",
-                element: <Blog />,
-            },
-            {
-                path: "faq",
-                element: <FAQ />,
-            },
-            {
-                path: "/payment/success",
-                element: <PaymentSuccess />
-            },
-            {
-                path: "/payment/failure",
-                element: <PaymentFailure />
-            }
+            { index: true, element: <HomePage /> },
+            { path: "centers", element: <Centers /> },
+            { path: "find-tutor", element: <FindTutor /> },
+            { path: "new-classes", element: <NewClasses /> },
+            { path: "contact", element: <Contact /> },
+            { path: "recruitment", element: <Recruitment /> },
+            { path: "register-center", element: <RegisterCenter /> },
+            { path: "about", element: <About /> },
+            { path: "blog", element: <Blog /> },
+            { path: "faq", element: <FAQ /> },
         ],
     },
-    
-    // Admin routes (dùng AdminLayout)
+
+    // ========================
+    // ADMIN ROUTES
+    // ========================
     {
         path: "/admin",
-        element: <AuthProvider><AdminLayout /></AuthProvider>,
+        element: (
+            <ProtectedRoute requiredRole="Admin">
+                <AdminLayout />
+            </ProtectedRoute>
+        ),
         children: [
-            {
-                index: true,
-                element: <ProtectedRoute requiredRole="Admin"><AdminDashboard /></ProtectedRoute>
-            },
-            {
-                path: "users",
-                element: <ProtectedRoute requiredRole="Admin"><UserManagement /></ProtectedRoute>
-            },
-            {
-                path: "centers",
-                element: <ProtectedRoute requiredRole="Admin"><CenterManagement /></ProtectedRoute>
-            },
-            {
-                path: "students",
-                element: <ProtectedRoute requiredRole="Admin"><StudentManagement /></ProtectedRoute>
-            },
-            {
-                path: "classes",
-                element: <ProtectedRoute requiredRole="Admin"><ClassManagement /></ProtectedRoute>
-            },
-            {
-                path: "subjects",
-                element: <ProtectedRoute requiredRole="Admin"><SubjectManagement /></ProtectedRoute>
-            },
-            {
-                path: "subscriptions",
-                element: <ProtectedRoute requiredRole="Admin"><SubscriptionManagement /></ProtectedRoute>
-            },
-            {
-                path: "course-approval",
-                element: <ProtectedRoute requiredRole="Admin"><CourseApprovalManagement /></ProtectedRoute>
-            }
-        ]
+            { index: true, element: <AdminDashboard /> },
+            { path: "users", element: <UserManagement /> },
+            { path: "centers", element: <CenterManagement /> },
+            { path: "students", element: <StudentManagement /> },
+            { path: "classes", element: <ClassManagement /> },
+            { path: "subjects", element: <SubjectManagement /> },
+            { path: "subscriptions", element: <SubscriptionManagement /> },
+            { path: "course-approval", element: <CourseApprovalManagement /> },
+        ],
     },
 
-    // Staff routes
+    // ========================
+    // STAFF ROUTES
+    // ========================
     {
         path: "/staff",
-        element: <AuthProvider><AdminLayout /></AuthProvider>,
+        element: (
+            <ProtectedRoute requiredRole="Staff">
+                <AdminLayout />
+            </ProtectedRoute>
+        ),
         children: [
-            {
-                index: true,
-                element: <ProtectedRoute requiredRole="Staff"><StaffDashboard /></ProtectedRoute>
-            },
-            {
-                path: "students",
-                element: <ProtectedRoute requiredRole="Staff"><StudentManagement /></ProtectedRoute>
-            },
-            {
-                path: "schedule",
-                element: <ProtectedRoute requiredRole="Staff"><ScheduleManagement /></ProtectedRoute>
-            },
-            {
-                path: "course-confirmation",
-                element: <ProtectedRoute requiredRole="Staff"><StaffCourseConfirmation /></ProtectedRoute>
-            }
-        ]
+            { index: true, element: <StaffDashboard /> },
+            { path: "students", element: <StudentManagement /> },
+            { path: "schedule", element: <ScheduleManagement /> },
+            { path: "course-confirmation", element: <StaffCourseConfirmation /> },
+        ],
     },
 
-    // Inspector routes
+    // ========================
+    // INSPECTOR ROUTES
+    // ========================
     {
         path: "/inspector",
-        element: <AuthProvider><AdminLayout /></AuthProvider>,
+        element: (
+            <ProtectedRoute requiredRole="Inspector">
+                <AdminLayout />
+            </ProtectedRoute>
+        ),
         children: [
-            {
-                index: true,
-                element: <ProtectedRoute requiredRole="Inspector"><StaffDashboard /></ProtectedRoute>
-            },
-            {
-                path: "center",
-                element: <ProtectedRoute requiredRole="Inspector"><CenterInspectionManagement /></ProtectedRoute>
-            },
-            {
-                path: "course-approval",
-                element: <ProtectedRoute requiredRole="Inspector"><CourseApprovalManagement /></ProtectedRoute>
-            }
-        ]
+            { index: true, element: <StaffDashboard /> },
+            { path: "center", element: <CenterInspectionManagement /> },
+            { path: "course-approval", element: <CourseApprovalManagement /> },
+        ],
     },
-    
-    // Center routes
+
+    // ========================
+    // CENTER ROUTES
+    // ========================
     {
         path: "/center",
-        element: <AuthProvider><AdminLayout /></AuthProvider>,
+        element: (
+            <ProtectedRoute requiredRole="Center">
+                <AdminLayout />
+            </ProtectedRoute>
+        ),
         children: [
-            {
-                index: true,
-                element: <ProtectedRoute requiredRole="Center"><CenterDashboard /></ProtectedRoute>
-            },
-            {
-                path: "courses",
-                element: <ProtectedRoute requiredRole="Center"><CourseManagement /></ProtectedRoute>
-            },
-            {
-                path: "subscription",
-                element: <ProtectedRoute requiredRole="Center"><CenterSubscription /></ProtectedRoute>
-            },
-            {
-                path: "schedule",
-                element: <ProtectedRoute requiredRole="Center"><CenterScheduleAssignment /></ProtectedRoute>
-            },
-            {
-                path: "teachers",
-                element: <ProtectedRoute requiredRole="Center"><TeacherManagement /></ProtectedRoute>
-            },
-            {
-                path: "enrollments",
-                element: <ProtectedRoute requiredRole={"Center"}><EnrollmentManagement /></ProtectedRoute>
-            }
-        ]
+            { index: true, element: <CenterDashboard /> },
+            { path: "courses", element: <CourseManagement /> },
+            { path: "subscription", element: <CenterSubscription /> },
+            { path: "schedule", element: <CenterScheduleAssignment /> },
+            { path: "teachers", element: <TeacherManagement /> },
+            { path: "enrollments", element: <EnrollmentManagement /> },
+        ],
     },
-    
-    // Teacher routes
+
+    // ========================
+    // TEACHER ROUTES
+    // ========================
     {
         path: "/teacher",
-        element: <AuthProvider><AdminLayout /></AuthProvider>,
+        element: (
+            <ProtectedRoute requiredRole="Teacher">
+                <AdminLayout />
+            </ProtectedRoute>
+        ),
         children: [
-            {
-                index: true,
-                element: <ProtectedRoute requiredRole="Teacher"><TeacherDashboard /></ProtectedRoute>
-            }
-            ,
-            {
-                path: "courses",
-                element: <ProtectedRoute requiredRole="Teacher"><TeacherCourses /></ProtectedRoute>
-            }
-        ]
+            { index: true, element: <TeacherDashboard /> },
+            { path: "courses", element: <TeacherCourses /> },
+        ],
     },
-    
-    // Parent routes
+
+    // ========================
+    // PARENT ROUTES
+    // ========================
     {
         path: "/parent",
-        element: <AuthProvider><AdminLayout /></AuthProvider>,
+        element: (
+            <ProtectedRoute requiredRole="Parent">
+                <AdminLayout />
+            </ProtectedRoute>
+        ),
         children: [
-            {
-                index: true,
-                element: <ProtectedRoute requiredRole="Parent"><ParentDashboard /></ProtectedRoute>
-            },
-            {
-                path: "children",
-                element: <ProtectedRoute requiredRole="Parent"><ChildrenManagement /></ProtectedRoute>
-            },
-            {
-                path: "centers",
-                element: <ProtectedRoute requiredRole="Parent"><ParentCenters /></ProtectedRoute>
-            },
-            {
-                path: "courses",
-                element: <ProtectedRoute requiredRole="Parent"><ParentCourses /></ProtectedRoute>
-            }
-        ]
+            { index: true, element: <ParentDashboard /> },
+            { path: "children", element: <ChildrenManagement /> },
+            { path: "centers", element: <ParentCenters /> },
+            { path: "courses", element: <ParentCourses /> },
+        ],
     },
-    
-    // Student routes
+
+    // ========================
+    // STUDENT ROUTES
+    // ========================
     {
         path: "/student",
-        element: <AuthProvider><AdminLayout /></AuthProvider>,
+        element: (
+            <ProtectedRoute requiredRole="Student">
+                <AdminLayout />
+            </ProtectedRoute>
+        ),
         children: [
-            {
-                index: true,
-                element: <ProtectedRoute requiredRole="Student"><StudentDashboard /></ProtectedRoute>
-            }
-        ]
+            { index: true, element: <StudentDashboard /> },
+        ],
     },
-    
+
     {
         path: "/unauthorized",
         element: (
@@ -309,10 +233,15 @@ export const router = createBrowserRouter([
             </div>
         ),
     },
-    
-    // 404 Not Found - Catch all routes (phải để cuối cùng)
+
+    { path: "payment/success", element: <PaymentSuccess /> },
+    { path: "payment/failure", element: <PaymentFailure /> },
+
+    // ========================
+    // 404
+    // ========================
     {
         path: "*",
-        element: <AuthProvider><NotFound /></AuthProvider>,
+        element: <NotFound />,
     },
 ]);

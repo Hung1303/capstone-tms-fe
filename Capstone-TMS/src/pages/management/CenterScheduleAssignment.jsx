@@ -486,31 +486,6 @@ const CenterScheduleAssignment = () => {
               <Form.Item
                 label={
                   <span>
-                    <UserOutlined className="mr-2" />
-                    Giáo viên
-                  </span>
-                }
-                name="teacherProfileId"
-                rules={[{ required: true, message: 'Vui lòng chọn giáo viên' }]}
-              >
-                <Select
-                  placeholder="Chọn giáo viên"
-                  showSearch
-                  filterOption={(input, option) =>
-                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                  }
-                >
-                  {teachers.map(teacher => (
-                    <Option key={teacher.profileId} value={teacher.profileId}>
-                      {teacher.fullName} ({teacher.subject})
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-
-              <Form.Item
-                label={
-                  <span>
                     <BookOutlined className="mr-2" />
                     Khóa học
                   </span>
@@ -520,18 +495,66 @@ const CenterScheduleAssignment = () => {
               >
                 <Select
                   placeholder="Chọn khóa học"
+                  onChange={(value) => {
+                    const selectedCourse = courses.find(c => c.id === value)
+                    if (selectedCourse) {
+                      form.setFieldsValue({
+                        teacherProfileId: selectedCourse.teacherProfileId
+                      })
+                    }
+                  }}
                   showSearch
                   filterOption={(input, option) =>
                     option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                   }
                 >
+                  
                   {courses.map(course => (
                     <Option key={course.id} value={course.id}>
-                      {course.title} -|- {course.subject} ({course.gradeLevel})
+                      {course.title} -|- {course.subject} ({course.gradeLevel}) -|- {course.teacherName}
                     </Option>
                   ))}
                 </Select>
               </Form.Item>
+
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) => prevValues.courseId !== currentValues.courseId}
+              >
+                {({ getFieldValue }) => {
+                  const courseId = getFieldValue('courseId')
+                  const selectedCourse = courses.find(c => c.id === courseId)
+                  const teacherProfileId = getFieldValue('teacherProfileId')
+                  
+                  // Tìm giáo viên từ danh sách teachers dựa trên teacherProfileId
+                  const selectedTeacher = teachers.find(t => t.profileId === teacherProfileId)
+                  
+                  return (
+                    <Form.Item
+                      label={
+                        <span>
+                          <UserOutlined className="mr-2" />
+                          Giáo viên
+                        </span>
+                      }
+                      name="teacherProfileId"
+                      rules={[{ required: true, message: 'Vui lòng chọn giáo viên' }]}
+                    >
+                      <Select
+                        placeholder="Chọn giáo viên"
+                        disabled={!selectedCourse}
+                        value={teacherProfileId}
+                      >
+                        {selectedTeacher && (
+                          <Option key={selectedTeacher.profileId} value={selectedTeacher.profileId}>
+                            {selectedTeacher.fullName} {selectedTeacher.subject ? `(${selectedTeacher.subject})` : ''}
+                          </Option>
+                        )}
+                      </Select>
+                    </Form.Item>
+                  )
+                }}
+              </Form.Item>             
 
               <Form.Item
                 noStyle
