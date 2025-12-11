@@ -6,12 +6,12 @@ import { useEffect } from "react"
 const PaymentSuccess = () => {
   const navigate = useNavigate()
 
-  useEffect(() => {
-    if (window.opener) {
-      window.opener.postMessage({ payment: "success" }, "*");
-      window.close();
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (window.opener) {
+  //     window.opener.postMessage({ payment: "success" }, "*");
+  //     window.close();
+  //   }
+  // }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
@@ -38,7 +38,7 @@ const PaymentSuccess = () => {
                   <Button
                     size="large"
                     icon={<HomeOutlined />}
-                    onClick={() => navigate("center/subscription")}
+                    onClick={() => navigate(-1)}
                   >
                     Quay về
                   </Button>

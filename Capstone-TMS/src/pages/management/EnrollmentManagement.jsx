@@ -30,7 +30,7 @@ const EnrollmentManagement = () => {
       1: { color: 'yellow', text: 'Đã xác nhận' },
       2: { color: 'red', text: 'Đã hủy' },
       3: { color: 'blue', text: 'Đã hoàn tất' },
-      4: { color: 'green', text: 'Đã thanh toán'}
+      4: { color: 'green', text: 'Đã thanh toán' }
     }
 
     const statusInfo = statusMap[status] || { color: 'default', text: status }
@@ -48,7 +48,7 @@ const EnrollmentManagement = () => {
       2: { color: 'yellow', text: 'Đã chấp nhận' },
       3: { color: 'red', text: 'Đã từ chối' },
       4: { color: 'blue', text: 'Đã cấm' },
-      5: { color: 'green', text: 'Đã lưu trữ'}
+      5: { color: 'green', text: 'Đã lưu trữ' }
     }
 
     const statusInfo = statusMap[status] || { color: 'default', text: status }
@@ -59,6 +59,30 @@ const EnrollmentManagement = () => {
     )
   }
 
+  const courseCache = {}
+
+  const getCourse = async (courseId) => {
+    if (!courseId) return null;
+
+    // Nếu có trong cache thì dùng luôn
+    if (courseCache[courseId]) {
+      return courseCache[courseId];
+    }
+
+    try {
+      const response = await api.get(`/Course/${courseId}`);
+      const data = response.data.data;
+
+      // Lưu cache
+      courseCache[courseId] = data;
+
+      return data;
+    } catch (error) {
+      console.error("Error fetching course:", courseId, error);
+      return null;
+    }
+  };
+
   const fetchEnrollments = useCallback(async (pageNumber, pageSize) => {
     if (!user?.centerProfileId) return
 
@@ -66,7 +90,30 @@ const EnrollmentManagement = () => {
     try {
       const apiResponse = await api.get(`/Enrollments/Center/${user.centerProfileId}/Enrollments?pageNumber=${pageNumber}&pageSize=${pageSize}`)
       console.log("apiResponse:", apiResponse)
-      setEnrollments(apiResponse.data.data)
+
+      const enrollmentDraft = apiResponse.data.data;
+
+      // Lấy danh sách course kèm enrollment
+      const enrollments = await Promise.all(
+        enrollmentDraft.map(async (enrollment) => {
+          const courseObj = await getCourse(enrollment.courseId);
+
+          return {
+            ...enrollment,
+            course: courseObj
+              ? {
+                  capacity: courseObj.capacity,
+                  description: courseObj.description,
+                  teacherName: courseObj.teacherName,
+                  title: courseObj.title,
+                  tuitionFee: courseObj.tuitionFee,
+                }
+              : null,
+          };
+        })
+      );
+
+      setEnrollments(enrollments)
     } catch (error) {
       console.log("error:", error)
     } finally {
@@ -93,7 +140,7 @@ const EnrollmentManagement = () => {
 
   const fetchCourseDetails = async (courseId) => {
     if (!courseId) return
-    
+
     setLoadingCourse(true)
     try {
       const response = await api.get(`/Course/${courseId}`)
@@ -209,6 +256,15 @@ const EnrollmentManagement = () => {
     return Array.from(subjects).sort()
   }
 
+  const getPriceDisplay = (price) => {
+    if (!price) return "0 ₫";
+
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND"
+    }).format(price);
+  };
+
   const columns = [
     {
       title: 'Tên phụ huynh',
@@ -237,9 +293,23 @@ const EnrollmentManagement = () => {
       )
     },
     {
-      title: 'Môn học',
-      dataIndex: 'subject',
-      key: 'subject'
+      title: 'Khóa học',
+      key: 'course',
+      render: (enroll) => (
+        <div>
+          <div className="text-sm font-medium text-gray-900">{enroll.course.title}</div>
+          <div className="text-xs text-gray-400">GV: {enroll.course.teacherName}</div>
+        </div>
+      )
+    },
+    {
+      title: 'Học phí',
+      key: 'tuitionFee',
+      render: (enroll) => (
+        <div>
+          <div className="text-sm font-medium text-gray-900">{getPriceDisplay(enroll.course.tuitionFee)}</div>
+        </div>
+      )
     },
     {
       title: 'Tình trạng',
@@ -254,7 +324,7 @@ const EnrollmentManagement = () => {
           <Tooltip title="Xác nhận">
             <Button
               type="link"
-              icon={<CheckCircleOutlined className="!text-xl !text-green-500"/>}
+              icon={<CheckCircleOutlined className="!text-xl !text-green-500" />}
               onClick={() => handleConfirmEnrolled(enroll)}
             />
           </Tooltip>
@@ -323,21 +393,21 @@ const EnrollmentManagement = () => {
           <Button key="close" onClick={handleCloseModal} disabled={processingAction}>
             Đóng
           </Button>,
-          <Button 
-            key="reject" 
-            danger 
+          <Button
+            key="reject"
+            danger
             onClick={handleReject}
             loading={processingAction}
-            disabled={processingAction || selectedEnrollment?.status !== 0}
+            disabled={processingAction || selectedEnrollment?.status !== 4}
           >
             Từ Chối
           </Button>,
-          <Button 
-            key="approve" 
-            type="primary" 
+          <Button
+            key="approve"
+            type="primary"
             onClick={handleApprove}
             loading={processingAction}
-            disabled={processingAction || selectedEnrollment?.status !== 0}
+            disabled={processingAction || selectedEnrollment?.status !== 4}
           >
             Chấp Nhận
           </Button>
@@ -382,57 +452,57 @@ const EnrollmentManagement = () => {
               <div className="flex justify-center py-8">
                 <Spin size="large" tip="Đang tải thông tin khóa học..." />
               </div>
-            ) : courseDetails 
-                ? (
-                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <BookOutlined className="mr-2 !text-green-500" />
-                      Thông tin khóa học
-                    </h3>
-                    {console.log("courseDetails:", courseDetails)}
-                    <Descriptions column={2} bordered size="small">
-                      <Descriptions.Item label="Tên khóa học">
-                        {courseDetails.title || 'N/A'}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Môn học">
-                        {courseDetails.subject || selectedEnrollment.subject}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Lớp">
-                        {courseDetails.gradeLevel || selectedEnrollment.gradelevel}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Mô tả" span={2}>
-                        {courseDetails.description || 'N/A'}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Học phí">
-                        {formatCurrency(courseDetails.tuitionFee)}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Sức chứa">
-                        {courseDetails.capacity ? `${courseDetails.capacity} học sinh` : 'N/A'}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Ngày bắt đầu">
-                        {formatDate(courseDetails.startDate)}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Ngày kết thúc">
-                        {formatDate(courseDetails.endDate)}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Địa điểm" span={2}>
-                        {courseDetails.location || selectedEnrollment.location}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Phương thức dạy">
-                        {getTeachingMethodLabel(courseDetails.teachingMethod)}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Trạng thái khóa học">
-                        {courseDetails.status !== undefined ? (
-                          getStatusCourse(courseDetails.status)
-                        ) : 'N/A'}
-                      </Descriptions.Item>
-                    </Descriptions>
-                  </div>
-            ) : (
-              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 text-center">
-                <p className="text-yellow-700">Không thể tải thông tin khóa học</p>
-              </div>
-            )}
+            ) : courseDetails
+              ? (
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <BookOutlined className="mr-2 !text-green-500" />
+                    Thông tin khóa học
+                  </h3>
+                  {console.log("courseDetails:", courseDetails)}
+                  <Descriptions column={2} bordered size="small">
+                    <Descriptions.Item label="Tên khóa học">
+                      {courseDetails.title || 'N/A'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Môn học">
+                      {courseDetails.subject || selectedEnrollment.subject}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Lớp">
+                      {courseDetails.gradeLevel || selectedEnrollment.gradelevel}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Mô tả" span={2}>
+                      {courseDetails.description || 'N/A'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Học phí">
+                      {formatCurrency(courseDetails.tuitionFee)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Sức chứa">
+                      {courseDetails.capacity ? `${courseDetails.capacity} học sinh` : 'N/A'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Ngày bắt đầu">
+                      {formatDate(courseDetails.startDate)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Ngày kết thúc">
+                      {formatDate(courseDetails.endDate)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Địa điểm" span={2}>
+                      {courseDetails.location || selectedEnrollment.location}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Phương thức dạy">
+                      {getTeachingMethodLabel(courseDetails.teachingMethod)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Trạng thái khóa học">
+                      {courseDetails.status !== undefined ? (
+                        getStatusCourse(courseDetails.status)
+                      ) : 'N/A'}
+                    </Descriptions.Item>
+                  </Descriptions>
+                </div>
+              ) : (
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 text-center">
+                  <p className="text-yellow-700">Không thể tải thông tin khóa học</p>
+                </div>
+              )}
           </div>
         )}
       </Modal>
@@ -444,9 +514,9 @@ const EnrollmentManagement = () => {
           dataSource={
             searchTerm || filterSubject !== 'all'
               ? filteredTeachers.slice(
-                  (pagination.pageNumber - 1) * pagination.pageSize,
-                  pagination.pageNumber * pagination.pageSize
-                )
+                (pagination.pageNumber - 1) * pagination.pageSize,
+                pagination.pageNumber * pagination.pageSize
+              )
               : filteredTeachers
           }
           loading={loading}
@@ -454,49 +524,49 @@ const EnrollmentManagement = () => {
           pagination={
             searchTerm || filterSubject !== 'all'
               ? {
-                  current: pagination.pageNumber,
-                  pageSize: pagination.pageSize,
-                  total: filteredTeachers.length,
-                  showSizeChanger: true,
-                  showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} giáo viên`,
-                  onChange: (page, pageSize) => {
-                    setPagination(prev => ({
-                      ...prev,
-                      pageNumber: page,
-                      pageSize: pageSize
-                    }))
-                  },
-                  onShowSizeChange: (current, size) => {
-                    setPagination(prev => ({
-                      ...prev,
-                      pageNumber: 1,
-                      pageSize: size
-                    }))
-                  }
+                current: pagination.pageNumber,
+                pageSize: pagination.pageSize,
+                total: filteredTeachers.length,
+                showSizeChanger: true,
+                showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} giáo viên`,
+                onChange: (page, pageSize) => {
+                  setPagination(prev => ({
+                    ...prev,
+                    pageNumber: page,
+                    pageSize: pageSize
+                  }))
+                },
+                onShowSizeChange: (current, size) => {
+                  setPagination(prev => ({
+                    ...prev,
+                    pageNumber: 1,
+                    pageSize: size
+                  }))
                 }
+              }
               : {
-                  current: pagination.pageNumber,
-                  pageSize: pagination.pageSize,
-                  total: pagination.total,
-                  showSizeChanger: true,
-                  showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} giáo viên`,
-                  onChange: (page, pageSize) => {
-                    setPagination(prev => ({
-                      ...prev,
-                      pageNumber: page,
-                      pageSize: pageSize
-                    }))
-                    fetchEnrollments(page, pageSize)
-                  },
-                  onShowSizeChange: (current, size) => {
-                    setPagination(prev => ({
-                      ...prev,
-                      pageNumber: 1,
-                      pageSize: size
-                    }))
-                    fetchEnrollments(1, size)
-                  }
+                current: pagination.pageNumber,
+                pageSize: pagination.pageSize,
+                total: pagination.total,
+                showSizeChanger: true,
+                showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} giáo viên`,
+                onChange: (page, pageSize) => {
+                  setPagination(prev => ({
+                    ...prev,
+                    pageNumber: page,
+                    pageSize: pageSize
+                  }))
+                  fetchEnrollments(page, pageSize)
+                },
+                onShowSizeChange: (current, size) => {
+                  setPagination(prev => ({
+                    ...prev,
+                    pageNumber: 1,
+                    pageSize: size
+                  }))
+                  fetchEnrollments(1, size)
                 }
+              }
           }
           scroll={{ x: "max-content", y: pagination.pageSize === 5 ? undefined : 75 * 5 }}
           locale={{

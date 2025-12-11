@@ -74,7 +74,7 @@ const CourseManagement = () => {
       const response = await api.get(`/Course?CenterProfileId=${centerId}&pageNumber=${pageNumber}&pageSize=${pageSize}`)
       console.log("response fetchCourses:", response)
       const courseList = response?.data?.data || response?.data || []
-      setCourses(Array.isArray(courseList) ? courseList : [])
+      setCourses(courseList)
     } catch (error) {
       console.error('Error fetching courses:', error)
       toast.error('Lỗi khi tải danh sách khóa học')
@@ -103,6 +103,17 @@ const CourseManagement = () => {
       setTeachers(Array.isArray(teacherList) ? teacherList : [])
     } catch (error) {
       console.error('Error fetching teachers:', error)
+    }
+  }
+
+  const fetchCenterDetail = async (id) => {
+    try {
+      const res = await api.get(`Users/Center/${id}`)
+      console.log("api fetchCenterDetail", res)
+      return res.data
+    } catch (error) {
+      console.error("error fetchCenterDetail:", error)
+      return null
     }
   }
 
@@ -140,7 +151,10 @@ const CourseManagement = () => {
   }
 
   // --- Handlers cho Modal Tạo/Sửa ---
-  const handleOpenModal = (course = null) => {
+  const handleOpenModal = async (course = null) => {
+    const center = await fetchCenterDetail(user.userId)
+    console.log("center in handleOpenModal", center)
+
     if (course) {
       setEditingId(course.id)
       setFormData({
@@ -163,7 +177,7 @@ const CourseManagement = () => {
         title: '',
         subject: '',
         description: '',
-        location: '',
+        location: center.address,
         semester: 1,
         startDate: '',
         endDate: '',
@@ -311,7 +325,9 @@ const CourseManagement = () => {
   // --- Helpers ---
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          course.subject?.toLowerCase().includes(searchTerm.toLowerCase())
+                          course.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          course.teacherName?.toLowerCase().includes(searchTerm.toLowerCase())
+
     const matchesStatus = filterStatus === 'all' || 
                           (filterStatus === 'Draft' && (course.status === 0 || course.status === 'Draft')) ||
                           (filterStatus === 'PendingApproval' && (course.status === 1 || course.status === 'PendingApproval')) ||
@@ -594,7 +610,7 @@ const CourseManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Địa điểm *</label>
-                  <input type="text" name="location" value={formData.location} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                  <input readOnly type="text" name="location" value={formData.location} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Kỳ học *</label>

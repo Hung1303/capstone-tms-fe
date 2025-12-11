@@ -9,12 +9,12 @@ const PaymentFailure = () => {
   
   const responseCode = searchParams.get("vnp_ResponseCode") || searchParams.get("responseCode")
 
-  useEffect(() => {
-    if (window.opener) {
-      window.opener.postMessage({ payment: "failed" }, "*");
-      window.close();
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (window.opener) {
+  //     window.opener.postMessage({ payment: "failed" }, "*");
+  //     window.close();
+  //   }
+  // }, []);
 
   // Mã lỗi phổ biến từ VNPay
   const errorMessages = {
@@ -76,7 +76,7 @@ const PaymentFailure = () => {
                   <Button
                     size="large"
                     icon={<HomeOutlined />}
-                    onClick={() => navigate("center/subscription")}
+                    onClick={() => navigate(-1)}
                   >
                     Quay về
                   </Button>

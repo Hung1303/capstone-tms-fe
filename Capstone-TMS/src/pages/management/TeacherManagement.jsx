@@ -41,7 +41,39 @@ const TeacherManagement = () => {
     try {
       const apiResponse = await api.get(`/Users/${user.centerProfileId}/Teachers?pageNumber=${pageNumber}&pageSize=${pageSize}`)
       console.log('API Response:', apiResponse.data)
-      setTeachers(apiResponse.data.teachers)
+
+      const teachersDraft = apiResponse.data.teachers
+
+      const teachers = await Promise.all(
+        teachersDraft.map(async (teacher) => {
+          try {
+            const res = await api.get(`/Course/${teacher.profileId}/Courses`);
+            const userRes = await api.get(`/Users/User/${teacher.id}`)
+
+            const user = userRes.data
+            const courseList = res.data.data
+            
+            return {
+              ...teacher,
+              courses: courseList || [],
+              user: {
+                email: user.email,
+                phoneNumber: user.phoneNumber
+              }
+            };
+          } catch (err) {
+            console.error("Lỗi fetch course cho teacher:", err);
+
+            return {
+              ...teacher,
+              courses: [],
+              user: null
+            };
+          }
+        })
+      )
+
+      setTeachers(teachers)
       setPagination(prev => ({
         ...prev,
         total: apiResponse.data.totalCount
@@ -187,6 +219,17 @@ const TeacherManagement = () => {
       setEditing(false)
     }
   }
+
+  // const handleDeleteTeacher = async (id) => {
+  //   try {
+  //     const res = await api.delete(`/Users/${id}`)
+  //     console.log("api response delete:", res)
+  //     toast.success("Đã xóa thành công.")
+  //   } catch (error) {
+  //     console.error("error api delete teacher:", error)
+  //     toast.error("Xóa thất bại.")
+  //   }
+  // }
 
   const handleAddTeacher = () => {
     form.resetFields()
@@ -505,7 +548,7 @@ const TeacherManagement = () => {
       key: 'courses',
       render: (_, teacher) => (
         <div className="text-sm text-gray-900">
-          {teacher.totalCourses || 0} khóa học
+          {teacher.courses.length || 0} khóa học
         </div>
       ),
     },
@@ -529,14 +572,14 @@ const TeacherManagement = () => {
           <Tooltip title="Xem chi tiết">
             <Button
               type="link"
-              icon={<EyeOutlined />}
+              icon={<EyeOutlined className="!text-blue-500 !text-lg hover:!text-blue-400 active:!text-blue-600"/>}
               onClick={() => handleViewTeacher(teacher)}
             />
           </Tooltip>
           <Tooltip title="Chỉnh sửa">
             <Button
               type="link"
-              icon={<EditOutlined />}
+              icon={<EditOutlined className="!text-yellow-500 !text-lg hover:!text-yellow-400 active:!text-yellow-600"/>}
               onClick={() => handleEditTeacher(teacher)}
             />
           </Tooltip>
@@ -550,8 +593,7 @@ const TeacherManagement = () => {
             <Button
               type="link"
               danger
-              icon={<DeleteOutlined />}
-              title="Xóa"
+              icon={<DeleteOutlined className="!text-lg"/>}
             />
           </Popconfirm> */}
         </Space>
@@ -747,15 +789,15 @@ const TeacherManagement = () => {
               <div>
                 <label className="text-sm font-medium text-gray-500">Email</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <MailOutlined className="text-gray-400" />
-                  <span className="text-gray-900">{selectedTeacher.email || 'N/A'}</span>
+                  <MailOutlined className="!text-gray-400" />
+                  <span className="text-gray-900">{selectedTeacher.user.email || 'N/A'}</span>
                 </div>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Số điện thoại</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <PhoneOutlined className="text-gray-400" />
-                  <span className="text-gray-900">{selectedTeacher.phoneNumber || 'N/A'}</span>
+                  <PhoneOutlined className="!text-gray-400" />
+                  <span className="text-gray-900">{selectedTeacher.user.phoneNumber || 'N/A'}</span>
                 </div>
               </div>
               <div>
@@ -772,7 +814,7 @@ const TeacherManagement = () => {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Số khóa học</label>
-                <div className="mt-1 text-gray-900">{selectedTeacher.totalCourses || 0}</div>
+                <div className="mt-1 text-gray-900">{selectedTeacher.courses.length || 0}</div>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Đánh giá</label>

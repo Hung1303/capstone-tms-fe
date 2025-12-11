@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { SearchOutlined, EnvironmentOutlined, PhoneOutlined, MailOutlined, BookOutlined, CheckCircleOutlined, ClockCircleOutlined,
          ArrowLeftOutlined, UserOutlined, FileTextOutlined, TeamOutlined, LoadingOutlined } from '@ant-design/icons'
 import { Spin, Modal, Select, message } from 'antd' 
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
+import { useNavigate } from 'react-router-dom'
 
 const ParentCenters = () => {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [centers, setCenters] = useState([])
   const [selectedCenter, setSelectedCenter] = useState(null)
   const [centerCourses, setCenterCourses] = useState([])
@@ -16,38 +18,49 @@ const ParentCenters = () => {
   // const [filterStatus, setFilterStatus] = useState('') // Bỏ filterStatus vì chỉ hiện Active
   const [loading, setLoading] = useState(false)
   const [coursesLoading, setCoursesLoading] = useState(false)
-  
-  // Modal states
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [selectedCourse, setSelectedCourse] = useState(null)
   const [students, setStudents] = useState([])
   const [studentsLoading, setStudentsLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [registrationData, setRegistrationData] = useState({
     courseId: '',
     studentProfileId: ''
   })
-  const [submitting, setSubmitting] = useState(false)
+
+  const [pagination, setPagination] = useState({
+    pageNumber: 1,
+    pageSize: 5,
+    total: 0
+  })
 
   // Fetch centers from API
-  useEffect(() => {
-    const fetchCenters = async () => {
-      try {
-        setLoading(true)
-        const response = await api.get('/Users/Centers')
-        if (response.data && response.data.centers) {
-          setCenters(response.data.centers)
-        } else if (Array.isArray(response.data)) {
-          setCenters(response.data)
-        }
-      } catch (error) {
-        console.error('Error fetching centers:', error)
-        setCenters([])
-      } finally {
-        setLoading(false)
+  const fetchCenters = useCallback(async (status, pageNumber, pageSize) => {
+    try {
+      setLoading(true)
+      const response = await api.get(`Users/Centers/Status/${status}?pageNumber=${pageNumber}&pageSize=${pageSize}`)
+      setCenters(response.data.centers)  
+      setPagination(prev => ({
+        ...prev,
+        total: response.data.totalCount
+      }))     
+    } catch (error) {
+      console.error('Error fetching centers:', error)
+
+      if (error.code === 'ERR_NETWORK') {
+        logout();
+        navigate("/login")
       }
+
+      setCenters([])
+    } finally {
+      setLoading(false)
     }
-    fetchCenters()
-  }, [])
+  }, [logout, navigate])
+
+  useEffect(() => {
+    fetchCenters(4, pagination.pageNumber, pagination.pageSize)
+  }, [fetchCenters, pagination.pageNumber, pagination.pageSize])
 
   // Fetch courses for selected center
   const fetchCoursesByCenter = async (centerId) => {
@@ -167,19 +180,68 @@ const ParentCenters = () => {
 
       const apiResponse = await api.post("/Enrollments", payload)
       console.log("apiResponse:", apiResponse)
+
+      const apiSuccess = apiResponse.status
+      if (apiSuccess === 200) {
+        console.log("selectedCourse:", selectedCourse)
+        const payload = {
+          amount: selectedCourse.tuitionFee,
+          description: `${selectedCourse.title} - ${selectedCourse.centerName}`,
+          userId: user.userId,
+          centerSubscriptionId: null,
+          enrollmentId: apiResponse.data.data.id
+        }
+        console.log("checkout payload:", payload)
+        try {
+          const apiResPayment = await api.post("/Payment", payload)
+          console.log("apiResPayment:", apiResPayment.data)
+
+          if (apiResPayment.data.success) {
+            const paymentId = apiResPayment.data.data.id
+            console.log("paymentId:", paymentId)
+
+            try {
+              const apiResponse = await api.get(`Payment/VNPAY?paymentId=${paymentId}`)
+              console.log("apiResponse:", apiResponse)
+
+              const paymentUrl = apiResponse.data.data
+              window.open(paymentUrl, "_blank")
+
+            } catch (error) {
+              console.log("lỗi Payment/VNPAY:", error)
+            }
+          }
+        } catch (error) {
+          console.log("lỗi payment:", error)
+        }
+      }
       
       toast.success('Đăng ký khóa học thành công!')
       handleCloseModal()
     } catch (error) {
       console.error('Error registering course:', error)
 
-      if (error.response.data.includes("Student is already enrolled or pending payment for this course")) {
-        toast.error('Đã đăng ký hoặc đang chờ thanh toán cho khóa học này.')
+      if (error.response.data.message.includes("Student is already enrolled or pending payment for this course")) {
+        toast.error('Đã đăng ký khóa học này rồi.')
       }
     } finally {
       setSubmitting(false)
     }
   }
+
+  // Lắng nghe thông điệp từ tab VNPay
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data.payment === "success") {
+        navigate("/payment/success");
+      } else if (event.data.payment === "failed") {
+        navigate("/payment/failure");
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [navigate]);
 
   const cities = [...new Set(centers.map(c => c.city))]
 
@@ -199,7 +261,7 @@ const ParentCenters = () => {
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={handleBackToList}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+            className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
           >
             <ArrowLeftOutlined />
             Quay lại
@@ -321,7 +383,7 @@ const ParentCenters = () => {
 
                   <button 
                     onClick={() => handleOpenRegistrationModal(course)}
-                    className="w-full py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                    className="cursor-pointer w-full py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium"
                   >
                     Đăng ký khóa học
                   </button>
