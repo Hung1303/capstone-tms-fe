@@ -49,13 +49,18 @@ const CenterScheduleAssignment = () => {
   }
 
   const fetchAllCourse = async (searchTerm, TeacherProfileId, CenterProfileId, page, pageSize) => {
+    const params = new URLSearchParams();
 
-    const apiResponse = await api.get(`/Course?${searchTerm ? `searchTerm=${searchTerm}&` : ""}
-                                               ${TeacherProfileId ? `TeacherProfileId=${TeacherProfileId}&` : ""}
-                                               ${CenterProfileId ? `CenterProfileId=${CenterProfileId}&` : ""}
-                                               pageNumber=${page}&pageSize=${pageSize}`)
+    if (searchTerm) params.append("searchTerm", searchTerm);
+    if (TeacherProfileId) params.append("TeacherProfileId", TeacherProfileId);
+    if (CenterProfileId) params.append("CenterProfileId", CenterProfileId);
 
-    console.log(apiResponse.data);
+    params.append("pageNumber", page);
+    params.append("pageSize", pageSize);
+
+    const apiResponse = await api.get(`/Course?${params.toString()}`)
+
+    console.log("fetchAllCourse", apiResponse.data);
     setCourses(apiResponse.data.data)
   }
 
@@ -74,7 +79,7 @@ const CenterScheduleAssignment = () => {
   }, [user.centerProfileId]);
 
   useEffect(() => {
-    fetchAllCourse("", null, user.centerProfileId, 1, 20);
+    fetchAllCourse("", "", user.centerProfileId, 1, 20);
   }, [user.centerProfileId]);
 
   useEffect(() => {
