@@ -180,7 +180,7 @@ const NavBar = () => {
                             <div className="relative dropdown-wrapper">
                                 <button
                                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                    className="flex items-center space-x-2 focus:outline-none rounded-full hover:bg-gray-100 px-2 py-1"
+                                    className="cursor-pointer flex items-center space-x-2 focus:outline-none rounded-full hover:bg-gray-100 px-2 py-1"
                                 >
                                     <span className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-blue-600 text-white font-bold text-lg">
                                         {user.fullName.charAt(0)}
@@ -202,14 +202,14 @@ const NavBar = () => {
                                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 z-50">
                                         <button
                                             onClick={() => navigate("/parent")}
-                                            className="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100"
+                                            className="cursor-pointer flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100"
                                         >
                                             <DashboardOutlined className="mr-2 h-4 w-4" />
                                             Dashboard
                                         </button>
                                         <button
                                             onClick={handleLogout}
-                                            className="flex items-center w-full px-4 py-2 text-red-600 hover:bg-gray-100"
+                                            className="cursor-pointer flex items-center w-full px-4 py-2 text-red-600 hover:bg-gray-100"
                                         >
                                             <LogoutOutlined className="mr-2 h-4 w-4" />
                                             Đăng xuất

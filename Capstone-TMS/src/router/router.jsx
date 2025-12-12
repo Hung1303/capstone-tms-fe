@@ -53,6 +53,7 @@ import CenterInspectionManagement from "../pages/management/CenterInspectionMana
 import CourseApprovalManagement from "../pages/management/CourseApprovalManagement";
 import ParentCenters from "../pages/dashboard/ParentCenters";
 import ParentCourses from "../pages/dashboard/ParentCourses";
+import ParentSchedule from "../pages/dashboard/ParentSchedule";
 import ParentCentersMap from "../components/map";
 import { AuthProvider } from "../contexts/AuthContext";
 import EnrollmentManagement from "../pages/management/EnrollmentManagement";
@@ -201,6 +202,7 @@ export const router = createBrowserRouter([
             { path: "children", element: <ChildrenManagement /> },
             { path: "centers", element: <ParentCenters /> },
             { path: "courses", element: <ParentCourses /> },
+            { path: "schedule", element: <ParentSchedule /> },
         ],
     },
 
