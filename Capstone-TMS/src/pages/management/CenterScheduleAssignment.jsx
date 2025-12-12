@@ -20,6 +20,7 @@ const CenterScheduleAssignment = () => {
   const [events, setEvents] = useState([])
   const [teachers, setTeachers] = useState([])
   const [courses, setCourses] = useState([])
+  const [subjects, setSubjects] = useState([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -64,6 +65,17 @@ const CenterScheduleAssignment = () => {
     setCourses(apiResponse.data.data)
   }
 
+  const fetchSubjects = async (page, pageSize) => {
+    try {
+      const response = await api.get(`/Subject?pageNumber=${page}&pageSize=${pageSize}`)
+      console.log("response fetchSubjects:", response.data)
+      setSubjects(response.data.data)
+    } catch (error) {
+      console.error('Error fetching subjects:', error)
+      setSubjects([])
+    }
+  }
+
   const fetchAllScheduledClass = async (page, pageSize) => {
     const apiResponse = await api.get(`/ClassSchedule?pageNumber=${page}&pageSize=${pageSize}`)
     console.log("apiResponse schedule:", apiResponse.data);
@@ -81,6 +93,10 @@ const CenterScheduleAssignment = () => {
   useEffect(() => {
     fetchAllCourse("", "", user.centerProfileId, 1, 20);
   }, [user.centerProfileId]);
+
+  useEffect(() => {
+    fetchSubjects(1, 50)
+  }, [])
 
   useEffect(() => {
     fetchAllScheduledClass(1, 50);
@@ -202,12 +218,15 @@ const CenterScheduleAssignment = () => {
       console.log('Form values:', values)
       console.log('Teachers:', teachers)
       console.log('Courses:', courses)
+      console.log('Subjects:', subjects)
 
       const selectedTeacher = teachers.find(t => t.profileId === values.teacherProfileId)
       const selectedCourse = courses.find(c => c.id === values.courseId)
+      const selectedSubject = subjects.find(s => s.subjectName === selectedCourse.subject)
 
       console.log('Selected Teacher:', selectedTeacher)
       console.log('Selected Course:', selectedCourse)
+      console.log('Selected Subject:', selectedSubject)
 
       if (!selectedTeacher || !selectedCourse) {
         message.error('Không tìm thấy thông tin giáo viên hoặc khóa học')
@@ -240,7 +259,27 @@ const CenterScheduleAssignment = () => {
         await api.put(`/ClassSchedule/${editingEvent.originalEventId}`, payload)
         toast.success('Đã cập nhật lịch phân công')
       } else {
-        await api.post("/ClassSchedule", payload)
+        const resPost = await api.post("/ClassSchedule", payload)
+        console.log("response api resPost:", resPost)
+
+        const classShedule = resPost.data.data
+
+        if (resPost.status === 200) {
+          const payload = {
+            courseId: selectedCourse.id,
+            classScheduleId: classShedule.id,
+            subjectId: selectedSubject.subjectId,
+            status: "string"
+          }
+          console.log("payload for post/subject:", payload)
+
+          try {
+            const resPostSubject = await api.post("../Subject", payload)
+            console.log("resPostSubject:", resPostSubject)
+          } catch (error) {
+            console.error("error of resPostSubject:", error)
+          }
+        }
         toast.success('Đã tạo lịch phân công mới')
       }
 

@@ -305,7 +305,7 @@ const ChildrenManagement = () => {
                   <Tooltip title="Chỉnh sửa thông tin">
                     <button
                       onClick={() => handleEditChild(child)}
-                      className="flex-1 py-2 bg-white border border-orange-200 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                      className="cursor-pointer flex-1 py-2 bg-white border border-orange-200 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors text-sm font-medium flex items-center justify-center gap-2"
                     >
                       <EditOutlined /> Sửa
                     </button>
@@ -313,7 +313,7 @@ const ChildrenManagement = () => {
                   <Tooltip title="Xóa con">
                     <button
                       onClick={() => handleDeleteChild(child.userId || child.id)}
-                      className="py-2 px-4 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-lg flex items-center justify-center"
+                      className="cursor-pointer py-2 px-4 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-lg flex items-center justify-center"
                     >
                       <DeleteOutlined />
                     </button>
