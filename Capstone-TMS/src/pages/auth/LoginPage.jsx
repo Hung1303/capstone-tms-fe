@@ -68,7 +68,7 @@ const LoginPage = ({ switchTo }) => {
 
       if (!token) throw new Error('No token returned');
 
-      const { Email, FullName, PhoneNumber, Role, UserId, UserName, ParentProfileId, CenterProfileId } = jwtDecode(token)
+      const { Email, FullName, PhoneNumber, Role, UserId, UserName, ParentProfileId, CenterProfileId, TeacherProfileId, StudentProfileId } = jwtDecode(token)
       console.log("Decoded token payload:", jwtDecode(token))
 
       const userData = {
@@ -79,7 +79,9 @@ const LoginPage = ({ switchTo }) => {
         role: Role,
         userName: UserName,
         ...(ParentProfileId && { parentProfileId: ParentProfileId }),
-        ...(CenterProfileId && { centerProfileId: CenterProfileId })
+        ...(CenterProfileId && { centerProfileId: CenterProfileId }),
+        ...(TeacherProfileId && { teacherProfileId: TeacherProfileId }),
+        ...(StudentProfileId && { studentProfileId: StudentProfileId })
       }
 
       login(userData, token)

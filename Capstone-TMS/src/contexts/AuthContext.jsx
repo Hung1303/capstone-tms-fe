@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
         return
       }
 
-      const { Email, FullName, PhoneNumber, Role, UserId, UserName, ParentProfileId, CenterProfileId } = jwtDecode(token)
+      const { Email, FullName, PhoneNumber, Role, UserId, UserName, ParentProfileId, CenterProfileId, TeacherProfileId, StudentProfileId } = jwtDecode(token)
 
       const builtUser = {
         userId: UserId,
@@ -58,7 +58,9 @@ export const AuthProvider = ({ children }) => {
         role: Role,
         userName: UserName,
         ...(ParentProfileId && { parentProfileId: ParentProfileId }),
-        ...(CenterProfileId && { centerProfileId: CenterProfileId })
+        ...(CenterProfileId && { centerProfileId: CenterProfileId }),
+        ...(TeacherProfileId && { teacherProfileId: TeacherProfileId }),
+        ...(StudentProfileId && { studentProfileId: StudentProfileId })
       }
 
       setUser(builtUser)

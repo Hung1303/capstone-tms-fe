@@ -21,8 +21,11 @@ import StaffDashboard from "../pages/dashboard/StaffDashboard";
 import CenterDashboard from "../pages/dashboard/CenterDashboard";
 import TeacherDashboard from "../pages/dashboard/TeacherDashboard";
 import TeacherCourses from "../pages/dashboard/TeacherCourses";
+import TeacherSchedule from "../pages/dashboard/TeacherSchedule";
 import ParentDashboard from "../pages/dashboard/ParentDashboard";
 import StudentDashboard from "../pages/dashboard/StudentDashboard";
+import StudentSchedule from "../pages/dashboard/StudentSchedule";
+import StudentCourses from "../pages/dashboard/StudentCourses";
 
 // Management pages
 import UserManagement from "../pages/management/UserManagement";
@@ -184,6 +187,7 @@ export const router = createBrowserRouter([
         children: [
             { index: true, element: <TeacherDashboard /> },
             { path: "courses", element: <TeacherCourses /> },
+            { path: "schedule", element: <TeacherSchedule /> },
         ],
     },
 
@@ -218,6 +222,8 @@ export const router = createBrowserRouter([
         ),
         children: [
             { index: true, element: <StudentDashboard /> },
+            { path: "courses", element: <StudentCourses /> },
+            { path: "schedule", element: <StudentSchedule /> },
         ],
     },
 
