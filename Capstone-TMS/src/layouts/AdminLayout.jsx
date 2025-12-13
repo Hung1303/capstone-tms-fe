@@ -204,12 +204,6 @@ const ROLE_MENUS = {
       path: '/teacher/schedule'
     },
     {
-      key: '/teacher/attendance',
-      icon: <CheckCircleOutlined />,
-      label: 'Điểm danh',
-      path: '/teacher/attendance'
-    },
-    {
       key: '/teacher/grading',
       icon: <FileTextOutlined />,
       label: 'Chấm điểm',
