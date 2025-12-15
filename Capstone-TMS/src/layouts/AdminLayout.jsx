@@ -192,12 +192,6 @@ const ROLE_MENUS = {
       path: '/teacher/courses'
     },
     {
-      key: '/teacher/students',
-      icon: <UserOutlined />,
-      label: 'Học sinh',
-      path: '/teacher/students'
-    },
-    {
       key: '/teacher/schedule',
       icon: <CalendarOutlined />,
       label: 'Lịch dạy',

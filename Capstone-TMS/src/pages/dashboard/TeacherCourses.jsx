@@ -1,27 +1,11 @@
-import React, { useEffect, useState } from 'react'
-import { 
-  Table, Spin, Empty, Tag, Card, Alert, 
-  Input, Select, Row, Col, Statistic, 
-  Typography, Space, Tooltip, Button 
-} from 'antd'
-import { 
-  CheckCircleOutlined, 
-  ClockCircleOutlined, 
-  CloseOutlined, 
-  StopOutlined, 
-  FileSyncOutlined,
-  SearchOutlined,
-  BookOutlined,
-  CalendarOutlined,
-  EnvironmentOutlined,
-  TeamOutlined,
-  DollarOutlined,
-  EyeOutlined
-} from '@ant-design/icons'
+import { useEffect, useState } from 'react'
+import { Table, Empty, Tag, Card, Alert, Input, Select, Row, Col, Statistic, Typography, Space, Tooltip, Button } from 'antd'
+import { CheckCircleOutlined, ClockCircleOutlined, CloseOutlined, StopOutlined, FileSyncOutlined, SearchOutlined, BookOutlined,
+        CalendarOutlined, EnvironmentOutlined, TeamOutlined, DollarOutlined, EyeOutlined, UserOutlined} from '@ant-design/icons'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
 
-const { Title, Text } = Typography
+const { Title } = Typography
 const { Option } = Select
 
 const TeacherCourses = () => {
@@ -29,7 +13,16 @@ const TeacherCourses = () => {
   const [courses, setCourses] = useState([])
   const [filteredCourses, setFilteredCourses] = useState([])
   const [loading, setLoading] = useState(false)
+  const [isView, setIsView] = useState(false)
   const [error, setError] = useState(null)
+  const [enrollmentCourses, setEnrollmentCourses] = useState()
+  const [selectedCourseId, setSelectedCourseId] = useState(null);
+
+  const [studentPagination, setStudentPagination] = useState({
+    page: 1,
+    pageSize: 5,
+    total: 0
+  })
   
   // State cho bộ lọc
   const [searchText, setSearchText] = useState('')
@@ -100,9 +93,32 @@ const TeacherCourses = () => {
         setCourses(data)
         setFilteredCourses(data)
       }
-    } catch (err) {
+    } catch (error) {
+      console.log("error in fetchCourses:", error)
       setError('Lỗi kết nối máy chủ.')
       setCourses([])
+    } finally {
+      setLoading(false)
+      setEnrollmentCourses([])
+      setIsView(false)
+    }
+  }
+
+  const fetchEnrollmentCourses = async (page, pageSize, courseId = selectedCourseId) => {
+    setLoading(true)
+
+    try {
+      const res = await api.get(`/Enrollments/Course/${courseId}/Enrollments?pageNumber=${page}&pageSize=${pageSize}`) 
+      console.log("api response handleViewList:", res)
+      setEnrollmentCourses(res.data.data)
+      setStudentPagination({
+        page: page,
+        pageSize: pageSize,
+        total: res.data.pagination.totalItems
+      })
+    } catch (error) {
+      console.error("error response handleViewList:", error)
+      setEnrollmentCourses([])
     } finally {
       setLoading(false)
     }
@@ -120,6 +136,12 @@ const TeacherCourses = () => {
     }
     const item = config[status] || { label: 'N/A', color: 'default' }
     return <Tag icon={item.icon} color={item.color} className="m-0 px-2 py-1 text-sm rounded">{item.label}</Tag>
+  }
+
+  const handleViewList = async (courseId) => {
+    setIsView(true)
+    setSelectedCourseId(courseId)
+    fetchEnrollmentCourses(1, studentPagination.pageSize, courseId)
   }
 
   const columns = [
@@ -185,14 +207,70 @@ const TeacherCourses = () => {
       width: 150,
       render: (status) => getStatusTag(status) 
     },
-    // Cột hành động (để mở rộng sau này)
     {
       key: 'action',
       width: 80,
-      render: () => (
-        <Tooltip title="Xem chi tiết">
-          <Button type="text" shape="circle" icon={<EyeOutlined />} />
-        </Tooltip>
+      render: (record) => (
+        <>
+          
+            <Button 
+              type="default" 
+              onClick={() => handleViewList(record.id)}
+              icon={<EyeOutlined />} 
+              className="!bg-cyan-400 !border-cyan-500 !text-white hover:!bg-cyan-500"
+            >
+              Danh sách HS
+            </Button>
+        </>
+      )
+    }
+  ]
+
+  const StudentListColums = [
+    {
+      title: "Tên học sinh",
+      key: "studentName",
+      render: (record) => (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+            <UserOutlined className="text-blue-600" />
+          </div>
+          <div>
+            <div className="font-semibold text-gray-900">{record.studentName}</div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Tên trường",
+      key: "schoolName",
+      render: (record) => (
+        <div>
+          {console.log("record:", record)}
+          <div className="font-semibold text-gray-900">{record.schoolName}</div>
+        </div>
+      )
+    },
+    {
+      title: "Môn đăng ký",
+      key: "subject",
+      render: (record) => (
+        <div>
+          <div className="font-semibold text-gray-900">
+            <BookOutlined /> {record.subject}
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Địa điểm học",
+      key: "location",
+      render: (record) => (
+        <div>
+          <div className="font-semibold text-gray-900">
+            <EnvironmentOutlined /> {record.location}
+          </div>
+        </div>
       )
     }
   ]
@@ -213,7 +291,7 @@ const TeacherCourses = () => {
           <Title level={2} className="!mb-4">Lịch giảng dạy</Title>
           <Row gutter={16}>
             <Col span={8}>
-              <Card bordered={false} className="shadow-sm">
+              <Card className="shadow-sm">
                 <Statistic 
                   title="Tổng khóa học" 
                   value={stats.total} 
@@ -223,7 +301,7 @@ const TeacherCourses = () => {
               </Card>
             </Col>
             <Col span={8}>
-              <Card bordered={false} className="shadow-sm">
+              <Card className="shadow-sm">
                 <Statistic 
                   title="Đang hoạt động" 
                   value={stats.active} 
@@ -233,7 +311,7 @@ const TeacherCourses = () => {
               </Card>
             </Col>
             <Col span={8}>
-              <Card bordered={false} className="shadow-sm">
+              <Card className="shadow-sm">
                 <Statistic 
                   title="Chờ duyệt" 
                   value={stats.pending} 
@@ -246,7 +324,7 @@ const TeacherCourses = () => {
         </div>
 
         {/* Toolbar: Search & Filter */}
-        <Card bordered={false} className="shadow-sm">
+        <Card className="shadow-sm">
           <Row gutter={16} align="middle">
             <Col xs={24} md={12}>
               <Input 
@@ -280,21 +358,45 @@ const TeacherCourses = () => {
         {/* Main Table */}
         {error && <Alert message={error} type="error" showIcon />}
         
-        <Card bordered={false} className="shadow-sm p-0 overflow-hidden" bodyStyle={{ padding: 0 }}>
+        <Card className="shadow-sm p-0 overflow-hidden">
           <Table 
             loading={loading}
             dataSource={filteredCourses} 
             columns={columns} 
             rowKey="id" 
             pagination={{ 
-              pageSize: 8, 
+              pageSize: 10, 
               showTotal: (total) => `Tổng ${total} khóa học`,
-              position: ['bottomCenter']
+              position: ['bottomRight']
             }}
             locale={{ emptyText: <Empty description="Không tìm thấy khóa học nào" /> }}
             scroll={{ x: 1000 }} // Đảm bảo scroll ngang trên mobile
           />
         </Card>
+
+        {/* Danh sách học sinh */}
+        {isView && (
+          <Card>
+            <Table
+              columns={StudentListColums}
+              dataSource={enrollmentCourses}
+              rowKey="id"
+              loading={loading}
+              pagination={{
+                current: studentPagination.page,
+                pageSize: studentPagination.pageSize,
+                total: studentPagination.total,
+                showSizeChanger: true,
+                pageSizeOptions: ['5', '10', '50'],
+                showTotal: (total) => `Tổng ${total} học sinh`,
+                position: ['bottomRight'],
+                onChange: (page, pageSize) => {
+                  fetchEnrollmentCourses(page, pageSize)
+                }
+              }}
+            />
+          </Card>
+        )}
       </Space>
     </div>
   )
