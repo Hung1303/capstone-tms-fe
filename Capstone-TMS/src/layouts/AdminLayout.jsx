@@ -273,24 +273,24 @@ const ROLE_MENUS = {
       label: 'Điểm số',
       path: '/student/grades'
     },
-    {
-      key: '/student/attendance',
-      icon: <CheckCircleOutlined />,
-      label: 'Điểm danh',
-      path: '/student/attendance'
-    },
-    {
-      key: '/student/homework',
-      icon: <FileTextOutlined />,
-      label: 'Bài tập',
-      path: '/student/homework'
-    },
-    {
-      key: '/student/materials',
-      icon: <FileTextOutlined />,
-      label: 'Tài liệu',
-      path: '/student/materials'
-    }
+    // {
+    //   key: '/student/attendance',
+    //   icon: <CheckCircleOutlined />,
+    //   label: 'Điểm danh',
+    //   path: '/student/attendance'
+    // },
+    // {
+    //   key: '/student/homework',
+    //   icon: <FileTextOutlined />,
+    //   label: 'Bài tập',
+    //   path: '/student/homework'
+    // },
+    // {
+    //   key: '/student/materials',
+    //   icon: <FileTextOutlined />,
+    //   label: 'Tài liệu',
+    //   path: '/student/materials'
+    // }
   ]
 }
 
