@@ -27,6 +27,8 @@ import ParentDashboard from "../pages/dashboard/ParentDashboard";
 import StudentDashboard from "../pages/dashboard/StudentDashboard";
 import StudentSchedule from "../pages/dashboard/StudentSchedule";
 import StudentCourses from "../pages/dashboard/StudentCourses";
+import StudentGrades from "../pages/dashboard/StudentGrades";
+import ParentGrades from "../pages/dashboard/ParentGrades";
 
 // Management pages
 import UserManagement from "../pages/management/UserManagement";
@@ -209,6 +211,7 @@ export const router = createBrowserRouter([
             { path: "centers", element: <ParentCenters /> },
             { path: "courses", element: <ParentCourses /> },
             { path: "schedule", element: <ParentSchedule /> },
+            { path: "grades", element: <ParentGrades /> },
         ],
     },
 
@@ -226,6 +229,7 @@ export const router = createBrowserRouter([
             { index: true, element: <StudentDashboard /> },
             { path: "courses", element: <StudentCourses /> },
             { path: "schedule", element: <StudentSchedule /> },
+            { path: "grades", element: <StudentGrades /> },
         ],
     },
 
