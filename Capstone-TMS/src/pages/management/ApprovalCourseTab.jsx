@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react'
-import { Table, Button, Modal, Space, Empty, Alert, Popconfirm, message } from 'antd'
-import { CheckOutlined, CloseOutlined, DeleteOutlined } from '@ant-design/icons'
+import { useState, useEffect } from 'react'
+import { Table, Button, Modal, Space, Empty, Alert, Popconfirm, message, Input, Typography } from 'antd'
+import { BookOutlined, CheckOutlined, CloseOutlined, DeleteOutlined, ReloadOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
 
-const CourseApprovalManagement = () => {
+const { Text } = Typography
+
+const ApprovalCourseTab = () => {
   const { user } = useAuth()
   const [approvals, setApprovals] = useState([])
   const [loading, setLoading] = useState(false)
@@ -24,10 +26,26 @@ const CourseApprovalManagement = () => {
     total: 0
   })
 
-  // 1. Fetch danh sách (GET)
+  // Search State
+  const [searchTerm, setSearchTerm] = useState('')
+  const [allApprovals, setAllApprovals] = useState([]) // Store all data for client-side search
+
+  // 1. Fetch danh sách khi mount
   useEffect(() => {
-    fetchApprovals(pagination.current, pagination.pageSize)
+    fetchApprovals(1, pagination.pageSize)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // 2. Fetch all data when searching
+  useEffect(() => {
+    if (searchTerm) {
+      fetchAllApprovals()
+    } else {
+      // Reset to normal pagination when clearing search
+      fetchApprovals(1, pagination.pageSize)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm])
 
   const fetchApprovals = async (page = 1, pageSize = 10) => {
     try {
@@ -41,6 +59,7 @@ const CourseApprovalManagement = () => {
       })
       
       const { records, totalCount } = response.data || {}
+      
       setApprovals(records || [])
       setPagination(prev => ({
         ...prev,
@@ -57,9 +76,67 @@ const CourseApprovalManagement = () => {
     }
   }
 
-  const handleTableChange = (newPagination) => {
-    fetchApprovals(newPagination.current, newPagination.pageSize)
+  const fetchAllApprovals = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      // Fetch a large number to get all records (adjust based on your needs)
+      const response = await api.get('/ApprovalRequests', {
+        params: {
+          pageNumber: 1,
+          pageSize: 1000 // Adjust this based on your typical data size
+        }
+      })
+      
+      const { records } = response.data || {}
+      setAllApprovals(records || [])
+      setPagination(prev => ({
+        ...prev,
+        current: 1,
+        total: records?.length || 0
+      }))
+
+    } catch (err) {
+      setError(err.message || 'Lỗi khi tải danh sách duyệt khóa học')
+      console.error('Fetch error:', err)
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const handleTableChange = (newPagination) => {
+    if (searchTerm) {
+      // Client-side pagination when searching
+      setPagination(prev => ({
+        ...prev,
+        current: newPagination.current,
+        pageSize: newPagination.pageSize
+      }))
+    } else {
+      // Server-side pagination when not searching
+      fetchApprovals(newPagination.current, newPagination.pageSize)
+    }
+  }
+
+  // Filter approvals based on search term
+  const filteredApprovals = searchTerm 
+    ? allApprovals.filter(approval => {
+        const searchLower = searchTerm.toLowerCase()
+        return (
+          approval.courseTitle?.toLowerCase().includes(searchLower) ||
+          approval.notes?.toLowerCase().includes(searchLower) ||
+          approval.decidedBy?.toLowerCase().includes(searchLower)
+        )
+      })
+    : approvals
+
+  // Client-side pagination for search results
+  const paginatedApprovals = searchTerm 
+    ? filteredApprovals.slice(
+        (pagination.current - 1) * pagination.pageSize,
+        pagination.current * pagination.pageSize
+      )
+    : filteredApprovals
 
   // 2. Chuẩn bị Modal
   const handleApprove = (record) => {
@@ -142,7 +219,12 @@ const CourseApprovalManagement = () => {
       key: 'courseTitle',
       width: 200,
       fixed: 'left',
-      render: (text) => <span className="font-medium text-blue-600">{text}</span>
+      render: (text) => (
+        <Space>
+          <BookOutlined style={{ color: '#1890ff' }} />
+          <Text strong>{text}</Text>
+        </Space>
+      )
     },
     {
       title: 'Trạng thái',
@@ -186,7 +268,12 @@ const CourseApprovalManagement = () => {
       dataIndex: 'decidedBy',
       key: 'decidedBy',
       width: 150,
-      render: (text) => text || '-'
+      render: (text) => (
+        <Space>
+          <UserOutlined style={{ color: '#52c41a' }} />
+          <Text strong>{text}</Text>
+        </Space>
+      )
     },
     {
       title: 'Ngày tạo',
@@ -257,29 +344,69 @@ const CourseApprovalManagement = () => {
   ]
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-            <h1 className="text-2xl font-bold text-gray-800">Duyệt khóa học</h1>
-            <p className="text-gray-600">Duyệt hoặc từ chối các khóa học gửi từ trung tâm</p>
-        </div>
-        <Button onClick={() => fetchApprovals(pagination.current, pagination.pageSize)}>
-            Làm mới
+    <div>
+      <div className="flex gap-2 items-center">
+        <Input
+          className="search-input"
+          size="large"
+          placeholder="Tìm kiếm theo tên khóa học, ghi chú hoặc người duyệt..."
+          prefix={<SearchOutlined className="search-icon" />}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          allowClear
+        />
+        <Button 
+          icon={<ReloadOutlined />}
+          onClick={() => {
+            setSearchTerm('')
+            fetchApprovals(pagination.current, pagination.pageSize)
+          }}
+        >
+          Làm mới
         </Button>
       </div>
 
-      {error && <Alert message="Lỗi hệ thống" description={error} type="error" showIcon className="mb-4" closable onClose={() => setError(null)} />}
+      {error && (
+        <Alert 
+          message="Lỗi hệ thống" 
+          description={error} 
+          type="error" 
+          showIcon 
+          className="mb-4" 
+          closable 
+          onClose={() => setError(null)} 
+        />
+      )}
 
-      <div className="bg-white rounded-lg shadow border border-gray-200">
+      <div className="mt-6 rounded-lg shadow-sm">
         <Table
           columns={columns}
-          dataSource={approvals}
+          dataSource={paginatedApprovals}
           loading={loading}
           rowKey="id"
-          pagination={pagination}
+          pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: searchTerm ? filteredApprovals.length : pagination.total,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} mục`,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            className: "!mr-2"
+          }}
           onChange={handleTableChange}
           scroll={{ x: 1000 }}
-          locale={{ emptyText: <Empty description="Không có dữ liệu" /> }}
+          locale={{ 
+            emptyText: (
+              <Empty 
+                description={
+                  searchTerm 
+                    ? 'Không tìm thấy kết quả nào' 
+                    : 'Không có dữ liệu'
+                } 
+              />
+            ) 
+          }}
         />
       </div>
 
@@ -330,4 +457,4 @@ const CourseApprovalManagement = () => {
   )
 }
 
-export default CourseApprovalManagement
+export default ApprovalCourseTab

@@ -40,10 +40,10 @@ const ROLE_MENUS = {
       path: '/admin/centers'
     },
     {
-      key: '/admin/students',
-      icon: <UserOutlined />,
-      label: 'Quản lý học sinh',
-      path: '/admin/students'
+      key: '/admin/courses',
+      icon: <BookOutlined />,
+      label: 'Quản lý khóa học',
+      path: '/admin/courses'
     },
     {
       key: '/admin/classes',
@@ -63,24 +63,24 @@ const ROLE_MENUS = {
       label: 'Quản lý gói',
       path: '/admin/subscriptions'
     },
-    {
-      key: '/admin/schedule',
-      icon: <CalendarOutlined />,
-      label: 'Lịch học',
-      path: '/admin/schedule'
-    },
-    {
-      key: '/admin/reports',
-      icon: <BarChartOutlined />,
-      label: 'Báo cáo',
-      path: '/admin/reports'
-    },
-    {
-      key: '/admin/course-approval',
-      icon: <CheckCircleOutlined />,
-      label: 'Duyệt khóa học',
-      path: '/admin/course-approval'
-    },
+    // {
+    //   key: '/admin/schedule',
+    //   icon: <CalendarOutlined />,
+    //   label: 'Lịch học',
+    //   path: '/admin/schedule'
+    // },
+    // {
+    //   key: '/admin/reports',
+    //   icon: <BarChartOutlined />,
+    //   label: 'Báo cáo',
+    //   path: '/admin/reports'
+    // },
+    // {
+    //   key: '/admin/course-approval',
+    //   icon: <CheckCircleOutlined />,
+    //   label: 'Duyệt khóa học',
+    //   path: '/admin/course-approval'
+    // },
   ],
   Staff: [
     {

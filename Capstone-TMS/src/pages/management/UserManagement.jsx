@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { SearchOutlined, PlusOutlined, DeleteOutlined, UserOutlined, TeamOutlined, ClockCircleOutlined, CheckCircleOutlined, 
          WarningOutlined, StopOutlined, EyeOutlined, EyeInvisibleOutlined} from '@ant-design/icons'
 import { PiChalkboardTeacherLight, PiStudentLight } from 'react-icons/pi'
-import { Card, Space, Table, Tooltip, Select, Modal, Input, Popconfirm } from 'antd'
+import { Card, Space, Table, Select, Modal, Input, Popconfirm } from 'antd'
 import api from '../../config/axios'
 import { RiAdminLine } from 'react-icons/ri'
 import { TfiLayoutCtaCenter } from 'react-icons/tfi'
@@ -10,6 +10,16 @@ import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { toast } from 'react-toastify'
 
 const UserManagement = () => {
+  const ROLE_META = [
+    { key: 'all', label: 'Tất cả', accent: 'from-orange-50 via-amber-50 to-orange-100', border: 'border-orange-200', icon: <UserOutlined className="text-orange-500" /> },
+    { key: 'Admin', label: 'Quản trị viên', accent: 'from-rose-50 via-rose-50 to-rose-100', border: 'border-rose-200', icon: <RiAdminLine className="text-rose-500 text-xl" /> },
+    { key: 'Inspector', label: 'Giám định viên', accent: 'from-slate-50 via-slate-50 to-slate-100', border: 'border-slate-200', icon: <TeamOutlined className="text-slate-600" /> },
+    { key: 'Center', label: 'Trung tâm', accent: 'from-purple-50 via-purple-50 to-purple-100', border: 'border-purple-200', icon: <TfiLayoutCtaCenter className="text-purple-500" /> },
+    { key: 'Teacher', label: 'Giáo viên', accent: 'from-green-50 via-green-50 to-emerald-100', border: 'border-green-200', icon: <PiChalkboardTeacherLight className="text-green-600 text-xl" /> },
+    { key: 'Parent', label: 'Phụ huynh', accent: 'from-yellow-50 via-amber-50 to-yellow-100', border: 'border-yellow-200', icon: <UserOutlined className="text-amber-500" /> },
+    { key: 'Student', label: 'Học sinh', accent: 'from-blue-50 via-sky-50 to-blue-100', border: 'border-sky-200', icon: <PiStudentLight className="text-sky-600 text-xl" /> },
+  ]
+
   const initialFormData = {
 		email: "",
 		userName: "",
@@ -24,9 +34,19 @@ const UserManagement = () => {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterRole, setFilterRole] = useState('all')
   const [selectedUsers, setSelectedUsers] = useState([])
   const [openModalAdd, setOpenModalAdd] = useState(false)
+  const [activeRole, setActiveRole] = useState('all')
+  const [roleStats, setRoleStats] = useState({
+    all: 0,
+    Admin: 0,
+    Inspector: 0,
+    Center: 0,
+    Teacher: 0,
+    Parent: 0,
+    Student: 0
+  })
+  const [statsLoading, setStatsLoading] = useState(false)
   const STATUS_LIST = [ 'Pending', 'Active', 'Suspended', 'Deactivated' ]
   const [pagination, setPagination] = useState({
     pageNumber: 1,
@@ -159,17 +179,69 @@ const UserManagement = () => {
     status: user.status,
   }))
 
-  const fetchUsers = async (pageNumber, pageSize) => {
+  const filteredData = data.filter(item => {
+    if (!searchTerm.trim()) return true
+    const keyword = searchTerm.trim().toLowerCase()
+    return (
+      item.account.fullName.toLowerCase().includes(keyword) ||
+      item.account.email.toLowerCase().includes(keyword)
+    )
+  })
+
+  const deriveCount = (payload) => {
+    if (!payload) return 0
+    if (Array.isArray(payload)) return payload.length
+    if (Array.isArray(payload.users)) return payload.users.length
+    if (typeof payload.totalCount === 'number') return payload.totalCount
+    return 0
+  }
+
+  const fetchRoleStats = async () => {
+    setStatsLoading(true)
+    try {
+      const [ centersRes, teachersRes, parentsRes, studentsRes, adminsRes, inspectorsRes ] = await Promise.all([
+        api.get('/Users/Centers'),
+        api.get('/Users/Teachers'),
+        api.get('/Users/Parents'),
+        api.get('/Users/Students'),
+        api.get('/Users/Users?userRole=Admin'),
+        api.get('/Users/Users?userRole=Inspector'),
+      ])
+
+      const counts = {
+        Center: deriveCount(centersRes.data),
+        Teacher: deriveCount(teachersRes.data),
+        Parent: deriveCount(parentsRes.data),
+        Student: deriveCount(studentsRes.data),
+        Admin: deriveCount(adminsRes.data),
+        Inspector: deriveCount(inspectorsRes.data),
+      }
+
+      const totalCount = Object.values(counts).reduce((acc, curr) => acc + curr, 0)
+      setRoleStats({
+        all: totalCount,
+        ...counts,
+      })
+    } catch (error) {
+      console.error('Error fetching role statistics:', error)
+    } finally {
+      setStatsLoading(false)
+    }
+  }
+
+  const fetchUsers = async (role, pageNumber, pageSize) => {
     setLoading(true)
 
+    const roleParam = role && role !== 'all' ? `&userRole=${role}` : ''
     try {
-      const apiResponse = await api.get(`/Users/Users?pageNumber=${pageNumber}&pageSize=${pageSize}`)
+      const apiResponse = await api.get(`/Users/Users?pageNumber=${pageNumber}&pageSize=${pageSize}${roleParam}`)
       console.log('API Response:', apiResponse.data)
-      setUsers(apiResponse.data.users)
+      const payload = apiResponse.data
+      setUsers(payload.users || [])
       setPagination({
-        pageNumber: pageNumber,
-        pageSize: pageSize,
-        total: apiResponse.data.totalCount,
+        pageNumber,
+        pageSize,
+        total: payload.totalCount || (payload.users?.length ?? 0),
       })
     } catch (error) {
       console.error('Error fetching users:', error)
@@ -179,7 +251,9 @@ const UserManagement = () => {
   }
 
   useEffect(() => {
-    fetchUsers(pagination.pageNumber, pagination.pageSize)
+    fetchRoleStats()
+    fetchUsers(activeRole, pagination.pageNumber, pagination.pageSize)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleChangeStatus = async (userId, newStatus) => {
@@ -196,7 +270,7 @@ const UserManagement = () => {
       console.error('Change status failed:', error)
       toast.error('Cập nhật trạng thái thất bại')
     } finally {
-      fetchUsers(pagination.pageNumber, pagination.pageSize)
+      fetchUsers(activeRole, pagination.pageNumber, pagination.pageSize)
       setLoading(false)
     }
   }
@@ -208,7 +282,8 @@ const UserManagement = () => {
       const apiResponse = await api.delete(`/Users/${userId}`)
       toast.success('Xóa người dùng thành công')
       console.log('Delete user response:', apiResponse.data)
-      await fetchUsers(pagination.pageNumber, pagination.pageSize)
+      await fetchUsers(activeRole, pagination.pageNumber, pagination.pageSize)
+      await fetchRoleStats()
     } catch (error) {
       console.error('Error deleting user:', error)
       toast.error('Xóa người dùng thất bại')
@@ -267,7 +342,11 @@ const UserManagement = () => {
       }
     }
 
-    const config = statusConfig[status]
+    const config = statusConfig[status] || {
+      label: status || "Không rõ",
+      className: "bg-gray-100 text-gray-800",
+      icon: <ClockCircleOutlined />
+    }
     return (
       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.className}`}>
         {config.icon}
@@ -289,6 +368,15 @@ const UserManagement = () => {
 			})
 		}
 	}  
+
+  const handleSelectRole = (roleKey) => {
+    setActiveRole(roleKey)
+    setPagination((prev) => ({
+      ...prev,
+      pageNumber: 1,
+    }))
+    fetchUsers(roleKey, 1, pagination.pageSize)
+  }
 
   const normalizeFullName = (name) => {
     return name
@@ -395,22 +483,24 @@ const UserManagement = () => {
 			toast.error("Thất bại. Vui lòng thử lại")
 		} finally {
 			setLoading(false)
-      await fetchUsers(pagination.pageNumber, pagination.pageSize)
+      await fetchUsers(activeRole, pagination.pageNumber, pagination.pageSize)
+      await fetchRoleStats()
 		}
 	}
 
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
       {/* Header */}
-      <Card>
+      <Card className="bg-gradient-to-r from-orange-50 via-white to-purple-50 border-none shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
+            <p className="text-sm uppercase tracking-wide text-orange-500 font-semibold">Quản trị hệ thống</p>
             <h2 className="text-2xl font-bold text-gray-900">Quản lý người dùng</h2>
-            <p className="text-gray-600">Quản lý tài khoản người dùng trong hệ thống</p>
+            <p className="text-gray-600">Theo dõi vai trò, trạng thái và thao tác nhanh với tài khoản.</p>
           </div>
           <button 
             onClick={() => setOpenModalAdd(true)}
-            className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+            className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg shadow hover:shadow-md transition-all"
           >
             <PlusOutlined />
             <span>Tạo NV Giám Định</span>
@@ -418,10 +508,44 @@ const UserManagement = () => {
         </div>
       </Card>
 
+      {/* Role Highlights */}
+      <Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {ROLE_META.map(role => {
+            const isActive = activeRole === role.key
+            const count = roleStats[role.key] ?? 0
+            return (
+              <button
+                key={role.key}
+                onClick={() => handleSelectRole(role.key)}
+                className={`relative group rounded-xl border ${role.border} bg-gradient-to-br ${role.accent} px-4 py-3 text-left transition-all duration-200 ${isActive ? 'ring-2 ring-offset-2 ring-orange-400 shadow-md' : 'hover:-translate-y-0.5 hover:shadow'} `}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className={`flex h-10 w-10 items-center justify-center rounded-full bg-white/70 ${isActive ? 'shadow-inner' : ''}`}>
+                      {role.icon}
+                    </span>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-gray-500">Vai trò</p>
+                      <p className="text-base font-semibold text-gray-900">{role.label}</p>
+                    </div>
+                  </div>
+                  <span className="text-lg font-bold text-gray-900">{statsLoading ? '...' : count}</span>
+                </div>
+                <div className="mt-2 text-xs text-gray-600 flex items-center gap-1">
+                  <span className={`inline-block h-2 w-2 rounded-full ${isActive ? 'bg-orange-500' : 'bg-gray-300'}`} />
+                  {isActive ? 'Đang xem' : 'Nhấn để xem chi tiết'}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </Card>
+
       {/* Filters */}
       <Card>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex-1">
               <div className="relative">
                 <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -434,32 +558,22 @@ const UserManagement = () => {
                 />
               </div>
             </div>
-            <select
-              value={filterRole}
-              onChange={(e) => setFilterRole(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            >
-              <option value="all">Tất cả vai trò</option>
-              <option value="Admin">Quản trị viên</option>
-              <option value="Staff">Nhân viên</option>
-              <option value="Teacher">Giáo viên</option>
-              <option value="Student">Học sinh</option>
-              <option value="Parent">Phụ huynh</option>
-              <option value="Center">Trung tâm</option>
-            </select>
+            <div className="text-right text-sm text-gray-500">
+              Vai trò đang xem: <span className="font-semibold text-gray-800">{ROLE_META.find(r => r.key === activeRole)?.label}</span>
+            </div>
           </div>
         </div>
       </Card>
 
       {/* Content */}
-      <Card>
+      <Card className="shadow-sm border border-gray-100">
         <Table
           rowSelection={{
             selectedRowKeys: selectedUsers,
             onChange: (selectedRowKeys) => setSelectedUsers(selectedRowKeys),
           }}
           columns={columns}
-          dataSource={data}
+          dataSource={filteredData}
           rowKey="key"
           loading={loading}
           pagination={{
@@ -469,7 +583,7 @@ const UserManagement = () => {
             showSizeChanger: true,
             pageSizeOptions: ['5', '10', '20'],
             showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`,
-            onChange: (page, pageSize) => fetchUsers(page, pageSize),
+            onChange: (page, pageSize) => fetchUsers(activeRole, page, pageSize),
           }}
           scroll={{ x: "max-content", y: pagination.pageSize === 5 ? undefined : 75 * 5 }}
         />

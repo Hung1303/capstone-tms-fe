@@ -1,3 +1,18 @@
 @import "tailwindcss";
 
 html { scroll-behavior: smooth; }
+
+.search-input .search-icon {
+  color: #9ca3af; /* gray-400 */
+  transition: color 0.2s ease;
+}
+
+/* Hover */
+.search-input:hover .search-icon {
+  color: #1890ff;
+}
+
+/* Focus / typing */
+.search-input.ant-input-affix-wrapper-focused .search-icon {
+  color: #1890ff;
+}
