@@ -56,7 +56,7 @@ import AdminLayout from "../layouts/AdminLayout";
 import ProtectedRoute from "../components/ProtectedRoute";
 import ChildrenManagement from "../pages/management/ChildrenManagement";
 import CenterInspectionManagement from "../pages/management/CenterInspectionManagement";
-import CourseApprovalManagement from "../pages/management/CourseApprovalManagement";
+import AdminCourseManagement from "../pages/management/AdminCourseManagement";
 import ParentCenters from "../pages/dashboard/ParentCenters";
 import ParentCourses from "../pages/dashboard/ParentCourses";
 import ParentSchedule from "../pages/dashboard/ParentSchedule";
@@ -114,11 +114,10 @@ export const router = createBrowserRouter([
             { index: true, element: <AdminDashboard /> },
             { path: "users", element: <UserManagement /> },
             { path: "centers", element: <CenterManagement /> },
-            { path: "students", element: <StudentManagement /> },
+            { path: "courses", element: <AdminCourseManagement /> },
             { path: "classes", element: <ClassManagement /> },
             { path: "subjects", element: <SubjectManagement /> },
             { path: "subscriptions", element: <SubscriptionManagement /> },
-            { path: "course-approval", element: <CourseApprovalManagement /> },
         ],
     },
 
