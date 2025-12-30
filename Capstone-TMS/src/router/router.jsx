@@ -29,6 +29,7 @@ import StudentSchedule from "../pages/dashboard/StudentSchedule";
 import StudentCourses from "../pages/dashboard/StudentCourses";
 import StudentGrades from "../pages/dashboard/StudentGrades";
 import ParentGrades from "../pages/dashboard/ParentGrades";
+import FeedbackList from "../pages/dashboard/FeedbackList";
 
 // Management pages
 import UserManagement from "../pages/management/UserManagement";
@@ -65,6 +66,7 @@ import { AuthProvider } from "../contexts/AuthContext";
 import EnrollmentManagement from "../pages/management/EnrollmentManagement";
 import PaymentSuccess from "../pages/shared/PaymentSuccess";
 import PaymentFailure from "../pages/shared/PaymentFailure";
+import ApprovalCourseTab from "../pages/management/ApprovalCourseTab";
 
 export const router = createBrowserRouter([
 
@@ -118,6 +120,7 @@ export const router = createBrowserRouter([
             { path: "classes", element: <ClassManagement /> },
             { path: "subjects", element: <SubjectManagement /> },
             { path: "subscriptions", element: <SubscriptionManagement /> },
+            { path: "feedbacks", element: <FeedbackList /> },
         ],
     },
 
@@ -152,7 +155,8 @@ export const router = createBrowserRouter([
         children: [
             { index: true, element: <StaffDashboard /> },
             { path: "center", element: <CenterInspectionManagement /> },
-            { path: "course-approval", element: <CourseApprovalManagement /> },
+            { path: "course-approval", element: <ApprovalCourseTab /> },
+            { path: "feedbacks", element: <FeedbackList /> },
         ],
     },
 
@@ -173,6 +177,7 @@ export const router = createBrowserRouter([
             { path: "schedule", element: <CenterScheduleAssignment /> },
             { path: "teachers", element: <TeacherManagement /> },
             { path: "enrollments", element: <EnrollmentManagement /> },
+            { path: "feedbacks", element: <FeedbackList /> },
         ],
     },
 
@@ -191,6 +196,7 @@ export const router = createBrowserRouter([
             { path: "courses", element: <TeacherCourses /> },
             { path: "schedule", element: <TeacherSchedule /> },
             { path: "grading", element: <TeacherGrading /> },
+            { path: "feedbacks", element: <FeedbackList /> },
         ],
     },
 

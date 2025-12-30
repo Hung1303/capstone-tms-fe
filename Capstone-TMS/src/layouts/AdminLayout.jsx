@@ -15,7 +15,8 @@ import {
   BellOutlined,
   StarOutlined,
   GiftOutlined,
-  EnvironmentOutlined
+  EnvironmentOutlined,
+  MessageOutlined
 } from '@ant-design/icons'
 
 // Menu configuration cho từng role
@@ -62,6 +63,12 @@ const ROLE_MENUS = {
       icon: <GiftOutlined />,
       label: 'Quản lý gói',
       path: '/admin/subscriptions'
+    },
+    {
+      key: '/admin/feedbacks',
+      icon: <MessageOutlined />,
+      label: 'Danh sách Feedback',
+      path: '/admin/feedbacks'
     },
     // {
     //   key: '/admin/schedule',
@@ -138,7 +145,13 @@ const ROLE_MENUS = {
       icon: <CheckCircleOutlined />,
       label: 'Duyệt khóa học',
       path: '/inspector/course-approval'
-    }
+    },
+    {
+      key: '/inspector/feedbacks',
+      icon: <MessageOutlined />,
+      label: 'Danh sách Feedback',
+      path: '/inspector/feedbacks'
+    },
   ],
   Center: [
     {
@@ -176,6 +189,12 @@ const ROLE_MENUS = {
       icon: <CalendarOutlined />,
       label: 'Lên lịch',
       path: '/center/schedule'
+    },
+    {
+      key: '/center/feedbacks',
+      icon: <MessageOutlined />,
+      label: 'Danh sách Feedback',
+      path: '/center/feedbacks'
     }
   ],
   Teacher: [
@@ -208,6 +227,12 @@ const ROLE_MENUS = {
       icon: <FileTextOutlined />,
       label: 'Tài liệu',
       path: '/teacher/materials'
+    },
+    {
+      key: '/teacher/feedbacks',
+      icon: <MessageOutlined />,
+      label: 'Feedback của tôi',
+      path: '/teacher/feedbacks'
     }
   ],
   Parent: [

@@ -315,7 +315,10 @@ const CourseManagement = () => {
 
       if (errorResponse.includes("Course is already published.")) {
         errorMessage = "Khóa học này đã được công khai."
+      } else {
+        errorMessage = errorResponse
       }
+      
       toast.error(errorMessage)
     } finally {
       setLoading(false)

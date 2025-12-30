@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
 import dayjs from 'dayjs'
 import 'dayjs/locale/vi'
+import * as signalR from "@microsoft/signalr";
 
 dayjs.locale('vi')
 
@@ -74,6 +75,34 @@ const StudentGrades = () => {
     }
   }, [user.studentProfileId])
 
+  useEffect(() => {
+    console.log("JWT:", localStorage.getItem("token"));
+
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl("https://localhost:7181/hubs/notify", {
+        accessTokenFactory: () => localStorage.getItem("token")
+      })
+      .configureLogging(signalR.LogLevel.Information)
+      .withAutomaticReconnect()
+      .build();
+
+    connection.start()
+              .then(() => console.log("SignalR connected"))
+              .catch(err => console.error("SignalR error", err));
+
+    connection.on("feedbackModerated", msg => {
+      console.log("Received:", msg);
+      toast.warning(
+        msg.message
+      );
+    });
+
+    return () => {
+      connection.stop();
+    };
+  }, []);
+
+
   // Filter kết quả
   useEffect(() => {
     let result = [...courseResults]
@@ -131,7 +160,7 @@ const StudentGrades = () => {
     setFeedbackModalVisible(true)
   }
 
-  console.log("user:", user)
+  // console.log("user:", user)
   const handleSubmitFeedback = async (values) => {
     if (!selectedResult || !selectedResult.courseId) {
       toast.error('Thông tin khóa học không hợp lệ')
@@ -142,6 +171,7 @@ const StudentGrades = () => {
     const errors = []
 
     try {
+      const submissionId = crypto.randomUUID();
       // 1. Gửi feedback khóa học: POST /api/CourseFeedbacks/{courseId}
       const courseFeedbackPayload = {
         rating: Number(values.courseRating),
@@ -149,7 +179,8 @@ const StudentGrades = () => {
       }
 
       const params = {
-        reviewerId: user?.userId
+        reviewerId: user?.userId,
+        submissionId
       };
 
       try {
@@ -174,7 +205,8 @@ const StudentGrades = () => {
 
         const params = {
           teacherProfileId: teacherProfileId,
-          reviewerId: user?.userId
+          reviewerId: user?.userId,
+          submissionId
         }
 
         try {
@@ -328,6 +360,7 @@ const StudentGrades = () => {
     good: courseResults.filter(r => parseFloat(r.mark) >= 6.5 && parseFloat(r.mark) < 8).length
   }
 
+  console.log('filteredResults:', filteredResults)
   return (
     <div className="space-y-6">
       {/* Header */}
