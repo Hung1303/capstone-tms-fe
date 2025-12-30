@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: "https://tms-api-tcgn.onrender.com/api", 
+    // baseURL: "https://tms-api-tcgn.onrender.com/api", 
+    baseURL: "https://localhost:7181/api", 
     timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
