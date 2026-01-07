@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCircleOutlined, StopOutlined, ReloadOutlined } from '@ant-design/icons'
+import { CheckCircleOutlined, StopOutlined, ReloadOutlined, BookOutlined } from '@ant-design/icons'
 import { Button, Card, Space, Typography, Row, Col } from 'antd'
 import SuspendCourseTab from './SuspendCourseTab'
 import ApprovalCourseTab from './ApprovalCourseTab'
@@ -36,27 +36,12 @@ const AdminCourseManagement = () => {
     <Space direction="vertical" style={{ width: '100%' }}>
       {/* Header */}
       <Card className="!bg-gradient-to-br !from-[#667eea] !to-[#764ba2] !rounded-xl shadow-[0_8px_24px_rgba(102,126,234,0.3)]">
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={2} className="!text-white !m-0 !font-bold">
-              Quản lý khóa học
-            </Title>
-            <Text className="!text-white/90 !text-base">
-              Thu hồi và chấp nhận các khóa học đã được công khai
-            </Text>
-          </Col>
-          <Col>
-            <Button
-              type="primary"
-              onClick={() => window.location.reload()}
-              size="large"
-              className="group !bg-white/20 !border !border-white/30 !text-white !font-bold !backdrop-blur-[10px] hover:!bg-white/30 !transition-colors"
-            >
-              <ReloadOutlined className="group-hover:animate-spin"/>
-              Làm mới
-            </Button>
-          </Col>
-        </Row>
+        <Title level={2} className="!text-white !m-0 !font-bold">
+          <BookOutlined /> Quản lý khóa học
+        </Title>
+        <Text className="!text-white/90 !text-base">
+          Thu hồi và chấp nhận các khóa học đã được công khai
+        </Text>
       </Card>
 
       {/* Excel-style Tabs and Search */}

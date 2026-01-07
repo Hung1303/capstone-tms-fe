@@ -7,6 +7,7 @@ import { toast } from 'react-toastify'
 import dayjs from 'dayjs'
 import 'dayjs/locale/vi'
 import * as signalR from "@microsoft/signalr";
+import { useNavigate } from 'react-router-dom'
 
 dayjs.locale('vi')
 
@@ -14,6 +15,7 @@ const { TextArea } = Input
 
 const StudentGrades = () => {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [courseResults, setCourseResults] = useState([])
   const [filteredResults, setFilteredResults] = useState([])
@@ -76,10 +78,8 @@ const StudentGrades = () => {
   }, [user.studentProfileId])
 
   useEffect(() => {
-    console.log("JWT:", localStorage.getItem("token"));
-
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl("https://localhost:7181/hubs/notify", {
+      .withUrl("https://tms-api-tcgn.onrender.com/hubs/notify", {
         accessTokenFactory: () => localStorage.getItem("token")
       })
       .configureLogging(signalR.LogLevel.Information)
@@ -90,16 +90,41 @@ const StudentGrades = () => {
               .then(() => console.log("SignalR connected"))
               .catch(err => console.error("SignalR error", err));
 
-    connection.on("feedbackModerated", msg => {
-      console.log("Received:", msg);
-      toast.warning(
-        msg.message
-      );
-    });
+    connection.on("feedbackModerated", (data) => {
+      console.log("Feedback moderated data:", data);
+      toast.warning(data.message);
+    })
 
-    return () => {
-      connection.stop();
-    };
+    return () => connection.stop();
+  }, []);
+
+  useEffect(() => {
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl("https://tms-api-tcgn.onrender.com/hubs/notify", {
+        accessTokenFactory: () => localStorage.getItem("token")
+      })
+      .configureLogging(signalR.LogLevel.Information)
+      .withAutomaticReconnect()
+      .build();
+
+    connection.start()
+              .then(() => console.log("SignalR connected"))
+              .catch(err => console.error("SignalR error", err));
+
+    connection.on("accountBannedPermanent", () => {
+      localStorage.removeItem("token");
+      navigate("/login");
+      toast.error("Tài khoản của bạn đã bị khóa vĩnh viễn.");
+    })
+
+    connection.on("accountSuspended", data => {
+      console.log("Account suspended data:", data);
+      localStorage.removeItem("token");
+      navigate("/login");
+      toast.error(`Tài khoản của bạn đã bị khóa trong ${data.days} ngày.`);
+    })
+
+    return () => connection.stop();
   }, []);
 
 
@@ -189,8 +214,8 @@ const StudentGrades = () => {
       } catch (error) {
         console.error('Error submitting course feedback:', error)
         errors.push('Không thể gửi feedback khóa học')
-        if (error.response?.data?.message) {
-          errors[errors.length - 1] += `: ${error.response.data.message}`
+        if (error.response?.data) {
+          errors[errors.length - 1] += `: ${error.response.data}`
         }
       }
 
@@ -215,8 +240,8 @@ const StudentGrades = () => {
         } catch (error) {
           console.error('Error submitting teacher feedback:', error)
           errors.push('Không thể gửi feedback giáo viên')
-          if (error.response?.data?.message) {
-            errors[errors.length - 1] += `: ${error.response.data.message}`
+          if (error.response?.data) {
+            errors[errors.length - 1] += `: ${error.response.data}`
           }
         }
       } else {
@@ -230,11 +255,10 @@ const StudentGrades = () => {
         setFeedbackModalVisible(false)
         form.resetFields()
         setSelectedResult(null)
-        // Refresh data
         await fetchCourseResults()
       } else if (errors.length === 2) {
         // Cả 2 đều lỗi
-        toast.error('Không thể gửi feedback. Vui lòng thử lại.')
+        toast.error('Bạn đã feedback rồi.')
         console.error('All feedback submissions failed:', errors)
       } else {
         // Một trong hai thành công
@@ -362,28 +386,32 @@ const StudentGrades = () => {
 
   console.log('filteredResults:', filteredResults)
   return (
-    <div className="space-y-6">
+    <Space direction="vertical" style={{ width: '100%' }}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <TrophyOutlined className="text-orange-500" />
-            Điểm số
-          </h1>
-          <p className="text-gray-600 mt-2">Xem điểm các khóa học đã học và gửi feedback</p>
+      <Card className="!bg-gradient-to-r !from-[#a00aea] !to-[#bb44f7] !rounded-xl shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <Title level={2} className="!text-white !m-0 !font-bold">
+              <TrophyOutlined /> Điểm số
+            </Title>
+            <Text className="!text-white/90 !text-base">
+              Xem điểm các khóa học đã học và gửi feedback.
+            </Text>
+          </div>
+          <Button
+            type="default"
+            onClick={() => {
+              if (user.studentProfileId) {
+                fetchCourseResults()
+              }
+            }}
+            className="group !bg-white/50 !border-none !text-white !transition-colors"
+          >
+            <ReloadOutlined className="group-hover:animate-spin" />
+            Làm mới
+          </Button>
         </div>
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={() => {
-            if (user.studentProfileId) {
-              fetchCourseResults()
-            }
-          }}
-          loading={loading}
-        >
-          Làm mới
-        </Button>
-      </div>
+      </Card>
 
       {/* Stats */}
       {courseResults.length > 0 && (
@@ -584,7 +612,7 @@ const StudentGrades = () => {
           </div>
         )}
       </Modal>
-    </div>
+    </Space>
   )
 }
 

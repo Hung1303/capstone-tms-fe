@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { MessageOutlined, StarOutlined, BookOutlined, UserOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
-import { Card, Table, Tag, Button, Input, Spin, Empty, Tabs, Rate, Select, Space, InputNumber } from 'antd'
+import { MessageOutlined, BookOutlined, UserOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
+import { Card, Table, Tag, Button, Input, Empty, Tabs, Rate, Select, Space, InputNumber, Typography } from 'antd'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
@@ -12,6 +12,7 @@ dayjs.locale('vi')
 
 const { TabPane } = Tabs
 const { Option } = Select
+const { Title, Text } = Typography
 
 const FeedbackList = () => {
   const { user } = useAuth()
@@ -47,7 +48,7 @@ const FeedbackList = () => {
 
   useEffect(() => {
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl("https://localhost:7181/hubs/moderation", {
+      .withUrl("https://tms-api-tcgn.onrender.com/hubs/moderation", {
         accessTokenFactory: () => localStorage.getItem("token")
       })
       .withAutomaticReconnect()
@@ -63,6 +64,7 @@ const FeedbackList = () => {
     })
 
     connection.on("newViolationReview", (data) => {
+      console.log('New violation review received:', data);
       toast.info("Bạn đã thay đổi trạng thái của feedback.")
     })
 
@@ -106,7 +108,7 @@ const FeedbackList = () => {
       } finally {
         setLoadingCourses(false)
       }
-    } else if (user?.role === 'Inspector') {
+    } else if (user?.role === 'Inspector' || user?.role === 'Admin') {
       setLoadingCourses(true)
       try {
         const response = await api.get(`/Course/Published/Courses?pageNumber=1&pageSize=1000`)
@@ -139,7 +141,7 @@ const FeedbackList = () => {
       } finally {
         setLoadingTeachers(false)
       }
-    } else if (user?.role === 'Inspector') {
+    } else if (user?.role === 'Inspector' || user?.role === 'Admin') {
       // Admin có thể lấy tất cả giáo viên
       setLoadingTeachers(true)
       try {
@@ -326,7 +328,7 @@ const FeedbackList = () => {
 
     try {
       const statusValue = STATUS_LIST.indexOf(newStatus)
-      const moderationNotes = "Bạn đã vi phạm quy định cộng đồng."
+      const moderationNotes = statusValue === 1 ? "Chúng tui đã xem xét lại." : "Bạn đã vi phạm quy định cộng đồng."
 
       const payload = {
         status: statusValue,
@@ -411,22 +413,18 @@ const FeedbackList = () => {
       width: 200,
       align: 'center',
       render: (_, record) => {
-        // if (record.status === 1) {
-        //   return
-        // } else {
-          return (
-            <Select
-              value={STATUS_LIST[record.status]}
-              onChange={(val) => handleChangeStatus(record.id, null, val)}
-              style={{ width: 155, textAlign: "center" }}
-              options={[
-                { value: 'Đã hiện', label: 'Đã hiện' },
-                { value: 'Cảnh báo', label: 'Cảnh báo' },
-                { value: 'Đã ẩn', label: 'Đã ẩn' },
-              ]}
-            />
-          )
-        // }
+        return (
+          <Select
+            value={STATUS_LIST[record.status]}
+            onChange={(val) => handleChangeStatus(record.id, null, val)}
+            style={{ width: 155, textAlign: "center" }}
+            options={[
+              { value: 'Đã hiện', label: 'Đã hiện' },
+              { value: 'Cảnh báo', label: 'Cảnh báo' },
+              { value: 'Đã ẩn', label: 'Đã ẩn' },
+            ]}
+          />
+        )
       }
     },
   ]
@@ -487,22 +485,18 @@ const FeedbackList = () => {
       width: 200,
       align: 'center',
       render: (_, record) => {
-        // if (record.status === 1) {
-        //   return
-        // } else {
-          return (
-            <Select
-              value={STATUS_LIST[record.status]}
-              onChange={(val) => handleChangeStatus(null, record.id, val)}
-              style={{ width: 155, textAlign: "center" }}
-              options={[
-                { value: 'Đã hiện', label: 'Đã hiện' },
-                { value: 'Cảnh báo', label: 'Cảnh báo' },
-                { value: 'Đã ẩn', label: 'Đã ẩn' },
-              ]}
-            />
-          )
-        // }
+        return (
+          <Select
+            value={STATUS_LIST[record.status]}
+            onChange={(val) => handleChangeStatus(null, record.id, val)}
+            style={{ width: 155, textAlign: "center" }}
+            options={[
+              { value: 'Đã hiện', label: 'Đã hiện' },
+              { value: 'Cảnh báo', label: 'Cảnh báo' },
+              { value: 'Đã ẩn', label: 'Đã ẩn' },
+            ]}
+          />
+        )
       }
     },
   ]
@@ -531,30 +525,34 @@ const FeedbackList = () => {
   })
 
   return (
-    <div className="space-y-6">
+    <Space direction="vertical" style={{ width: '100%' }}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <MessageOutlined className="text-blue-500" />
-            Danh sách Feedback
-          </h1>
-          <p className="text-gray-600 mt-2">Xem và quản lý feedback về khóa học và giáo viên</p>
+      <Card className="!bg-gradient-to-r !from-[#a00aea] !to-[#bb44f7] !rounded-xl shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <Title level={2} className="!text-white !m-0 !font-bold">
+              <MessageOutlined /> Danh sách Feedback
+            </Title>
+            <Text className="!text-white/90 !text-base">
+              Xem và quản lý feedback về khóa học và giáo viên.
+            </Text>
+          </div>
+          <Button
+            type="default"
+            onClick={() => {
+              if (activeTab === 'course' && selectedCourseId) {
+                fetchCourseFeedbacks(coursePagination.current, coursePagination.pageSize)
+              } else if (activeTab === 'teacher') {
+                fetchTeacherFeedbacks(teacherPagination.current, teacherPagination.pageSize)
+              }
+            }}
+            className="group !bg-white/50 !border-none !text-white !transition-colors"
+          >
+            <ReloadOutlined className="group-hover:animate-spin" />
+            Làm mới
+          </Button>
         </div>
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={() => {
-            if (activeTab === 'course' && selectedCourseId) {
-              fetchCourseFeedbacks(coursePagination.current, coursePagination.pageSize)
-            } else if (activeTab === 'teacher') {
-              fetchTeacherFeedbacks(teacherPagination.current, teacherPagination.pageSize)
-            }
-          }}
-          loading={courseFeedbackLoading || teacherFeedbackLoading}
-        >
-          Làm mới
-        </Button>
-      </div>
+      </Card>
 
       {/* Feedback Violations Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -865,7 +863,7 @@ const FeedbackList = () => {
           </TabPane>
         </Tabs>
       </Card>
-    </div>
+    </Space>
   )
 }
 

@@ -356,12 +356,14 @@ const ApprovalCourseTab = () => {
           allowClear
         />
         <Button 
-          icon={<ReloadOutlined />}
+          type="primary"
           onClick={() => {
             setSearchTerm('')
             fetchApprovals(pagination.current, pagination.pageSize)
           }}
+          className="group"
         >
+          <ReloadOutlined className="group-hover:animate-spin"/>
           Làm mới
         </Button>
       </div>
