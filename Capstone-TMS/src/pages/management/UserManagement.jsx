@@ -1,22 +1,24 @@
 import { useState, useEffect } from 'react'
 import { SearchOutlined, PlusOutlined, DeleteOutlined, UserOutlined, TeamOutlined, ClockCircleOutlined, CheckCircleOutlined, 
-         WarningOutlined, StopOutlined, EyeOutlined, EyeInvisibleOutlined} from '@ant-design/icons'
+         WarningOutlined, StopOutlined, EyeOutlined, EyeInvisibleOutlined, ReloadOutlined} from '@ant-design/icons'
 import { PiChalkboardTeacherLight, PiStudentLight } from 'react-icons/pi'
-import { Card, Space, Table, Select, Modal, Input, Popconfirm } from 'antd'
+import { Card, Space, Table, Select, Modal, Input, Popconfirm, Typography, Button } from 'antd'
 import api from '../../config/axios'
 import { RiAdminLine } from 'react-icons/ri'
 import { TfiLayoutCtaCenter } from 'react-icons/tfi'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { toast } from 'react-toastify'
 
+const { Title, Text } = Typography
+
 const UserManagement = () => {
   const ROLE_META = [
-    { key: 'all', label: 'Tất cả', accent: 'from-orange-50 via-amber-50 to-orange-100', border: 'border-orange-200', icon: <UserOutlined className="text-orange-500" /> },
+    { key: 'all', label: 'Tất cả', accent: 'from-slate-50 via-slate-50 to-slate-100', border: 'border-slate-200', icon: <TeamOutlined className="!text-slate-600" /> },
     { key: 'Admin', label: 'Quản trị viên', accent: 'from-rose-50 via-rose-50 to-rose-100', border: 'border-rose-200', icon: <RiAdminLine className="text-rose-500 text-xl" /> },
-    { key: 'Inspector', label: 'Giám định viên', accent: 'from-slate-50 via-slate-50 to-slate-100', border: 'border-slate-200', icon: <TeamOutlined className="text-slate-600" /> },
+    { key: 'Inspector', label: 'Giám định viên', accent: 'from-orange-50 via-amber-50 to-orange-100', border: 'border-orange-200', icon: <UserOutlined className="!text-orange-500" /> },
     { key: 'Center', label: 'Trung tâm', accent: 'from-purple-50 via-purple-50 to-purple-100', border: 'border-purple-200', icon: <TfiLayoutCtaCenter className="text-purple-500" /> },
     { key: 'Teacher', label: 'Giáo viên', accent: 'from-green-50 via-green-50 to-emerald-100', border: 'border-green-200', icon: <PiChalkboardTeacherLight className="text-green-600 text-xl" /> },
-    { key: 'Parent', label: 'Phụ huynh', accent: 'from-yellow-50 via-amber-50 to-yellow-100', border: 'border-yellow-200', icon: <UserOutlined className="text-amber-500" /> },
+    { key: 'Parent', label: 'Phụ huynh', accent: 'from-yellow-50 via-amber-50 to-yellow-100', border: 'border-yellow-200', icon: <UserOutlined className="!text-amber-500" /> },
     { key: 'Student', label: 'Học sinh', accent: 'from-blue-50 via-sky-50 to-blue-100', border: 'border-sky-200', icon: <PiStudentLight className="text-sky-600 text-xl" /> },
   ]
 
@@ -34,7 +36,6 @@ const UserManagement = () => {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedUsers, setSelectedUsers] = useState([])
   const [openModalAdd, setOpenModalAdd] = useState(false)
   const [activeRole, setActiveRole] = useState('all')
   const [roleStats, setRoleStats] = useState({
@@ -50,7 +51,7 @@ const UserManagement = () => {
   const STATUS_LIST = [ 'Pending', 'Active', 'Suspended', 'Deactivated' ]
   const [pagination, setPagination] = useState({
     pageNumber: 1,
-    pageSize: 5,
+    pageSize: 10,
     total: 0,
   });
 
@@ -62,19 +63,31 @@ const UserManagement = () => {
       dataIndex: 'account',
       key: 'acount',
       width: 300,
-      render: (account) => (
-        <div className="flex items-center">
-          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-            <span className="text-gray-600 font-medium">
-              {account.fullName.charAt(0)}
-            </span>
+      render: (account) => {
+        const color = {
+          Admin: { bg: 'bg-red-200', text: 'text-red-600' },
+          Teacher: { bg: 'bg-green-200', text: 'text-green-600'},
+          Student: { bg: 'bg-blue-200', text: 'text-blue-600' },
+          Parent: { bg: 'bg-yellow-200', text: 'text-yellow-600' },
+          Center: { bg: 'bg-purple-200', text: 'text-purple-600' },
+          Inspector: { bg: 'bg-orange-200', text: 'text-orange-600'}
+        }
+        const roleColor = color[account.role] || { bg: 'bg-gray-200', text: 'text-gray-600' }
+
+        return (
+          <div className="flex items-center">
+            <div className={`w-10 h-10 ${roleColor.bg} rounded-full flex items-center justify-center`}>
+              <span className={`${roleColor.text} font-medium`}>
+                {account.fullName.charAt(0)}
+              </span>
+            </div>
+            <div className="ml-4">
+              <div className="text-sm font-medium text-gray-900">{account.fullName}</div>
+              <div className="text-sm text-gray-500">{account.email}</div>
+            </div>
           </div>
-          <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900">{account.fullName}</div>
-            <div className="text-sm text-gray-500">{account.email}</div>
-          </div>
-        </div>
-      )
+        )
+      }
     },
     {
       title: 'Vai trò',
@@ -85,9 +98,8 @@ const UserManagement = () => {
       render: (role) => {
         const background = {
           Admin: 'bg-red-100',
-          Staff: 'bg-blue-100',
           Teacher: 'bg-green-100',
-          Student: 'bg-gray-100',
+          Student: 'bg-blue-100',
           Parent: 'bg-yellow-100',
           Center: 'bg-purple-100',
           Inspector: 'bg-orange-100'
@@ -173,7 +185,7 @@ const UserManagement = () => {
   console.log("users", users)
   const data = users.map(user => ({
     key: user.id,
-    account: { fullName: user.fullName, email: user.email },
+    account: { fullName: user.fullName, email: user.email, role: user.role },
     role: user.role,
     phone: user.phoneNumber,
     status: user.status,
@@ -491,20 +503,24 @@ const UserManagement = () => {
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
       {/* Header */}
-      <Card className="bg-gradient-to-r from-orange-50 via-white to-purple-50 border-none shadow-sm">
+      <Card className="!bg-gradient-to-r !from-orange-500 !to-purple-600 !rounded-xl shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <p className="text-sm uppercase tracking-wide text-orange-500 font-semibold">Quản trị hệ thống</p>
-            <h2 className="text-2xl font-bold text-gray-900">Quản lý người dùng</h2>
-            <p className="text-gray-600">Theo dõi vai trò, trạng thái và thao tác nhanh với tài khoản.</p>
+            <Title level={2} className="!text-white !m-0 !font-bold">
+              <UserOutlined /> Quản lý tài khoản
+            </Title>
+            <Text className="!text-white/90 !text-base">
+              Theo dõi vai trò, trạng thái và thao tác nhanh với tài khoản.
+            </Text>
           </div>
-          <button 
+          <motion.button 
+            whileTap={{ scale: 0.95 }}
             onClick={() => setOpenModalAdd(true)}
-            className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg shadow hover:shadow-md transition-all"
+            className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg shadow hover:shadow-xl transition-shadow"
           >
             <PlusOutlined />
             <span>Tạo NV Giám Định</span>
-          </button>
+          </motion.button>
         </div>
       </Card>
 
@@ -543,50 +559,51 @@ const UserManagement = () => {
       </Card>
 
       {/* Filters */}
-      <Card>
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm theo tên hoặc email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-            <div className="text-right text-sm text-gray-500">
-              Vai trò đang xem: <span className="font-semibold text-gray-800">{ROLE_META.find(r => r.key === activeRole)?.label}</span>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Content */}
       <Card className="shadow-sm border border-gray-100">
-        <Table
-          rowSelection={{
-            selectedRowKeys: selectedUsers,
-            onChange: (selectedRowKeys) => setSelectedUsers(selectedRowKeys),
-          }}
-          columns={columns}
-          dataSource={filteredData}
-          rowKey="key"
-          loading={loading}
-          pagination={{
-            current: pagination.pageNumber,
-            pageSize: pagination.pageSize,
-            total: pagination.total,
-            showSizeChanger: true,
-            pageSizeOptions: ['5', '10', '20'],
-            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`,
-            onChange: (page, pageSize) => fetchUsers(activeRole, page, pageSize),
-          }}
-          scroll={{ x: "max-content", y: pagination.pageSize === 5 ? undefined : 75 * 5 }}
-        />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <Input
+            className="search-input"
+            size="large"
+            placeholder="Tìm kiếm theo tên hoặc email..."
+            prefix={<SearchOutlined className="search-icon" />}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            allowClear
+          />
+          <span className="text-sm text-gray-500 whitespace-nowrap">
+            Vai trò đang xem: <span className="font-semibold text-gray-800">{ROLE_META.find(r => r.key === activeRole)?.label}</span>
+          </span>
+          <Button
+            type="primary"
+            onClick={() => {
+              setSearchTerm('')
+              fetchUsers(activeRole, pagination.pageNumber, pagination.pageSize)
+            }}
+            className="group"
+          >
+            <ReloadOutlined className="group-hover:animate-spin" />
+            Làm mới
+          </Button>
+        </div>
+        <div className="mt-6 rounded-lg shadow-sm">
+          <Table
+            columns={columns}
+            dataSource={filteredData}
+            rowKey="key"
+            loading={loading}
+            pagination={{
+              current: pagination.pageNumber,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`,
+              onChange: (page, pageSize) => fetchUsers(activeRole, page, pageSize),
+              className: "!mr-2"
+            }}
+            scroll={{ x: "max-content", y: 75 * 5 }}
+          />
+        </div>
       </Card>
 
       {/* Add User Modal */}

@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import {
-  SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, CheckCircleOutlined, ClockCircleOutlined,
-  WarningOutlined, StopOutlined
-} from '@ant-design/icons'
-import { Card, DatePicker, Input, Modal, Select, Space, Table, Tooltip, Divider } from 'antd'
+import { SearchOutlined, EditOutlined, DeleteOutlined, EyeOutlined, CheckCircleOutlined, ClockCircleOutlined, WarningOutlined, StopOutlined, ReloadOutlined, TeamOutlined } from '@ant-design/icons'
+import { Card, DatePicker, Input, Modal, Select, Space, Table, Tooltip, Divider, Typography, Button } from 'antd'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import api from '../../config/axios'
 import dayjs from 'dayjs'
@@ -12,6 +9,7 @@ import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 
 dayjs.extend(utc);
+const { Title, Text } = Typography;
 
 
 const generateEmailBody = ({ center, inspectorName, scheduledDate }) => {
@@ -82,6 +80,36 @@ const generateEmailBody = ({ center, inspectorName, scheduledDate }) => {
   )
 }
 
+const generateEmailBodyUI = ({ center, inspectorName, scheduledDate }) => {
+  const inspectorDisplay = inspectorName || "Đang cập nhật";
+  const scheduleDisplay = scheduledDate ? dayjs(scheduledDate).format("DD/MM/YYYY") : "Đang cập nhật";
+  const centerName = center?.centerName || "Trung tâm";
+  const ownerName = center?.ownerName;
+  const greetingTarget = ownerName || (centerName ? `đại diện trung tâm ${centerName}` : "quý trung tâm");
+
+  return (
+    `
+                        Thông Báo Lịch Giám Định
+                           Hệ thống TutorLink
+
+      Kính gửi ${greetingTarget},
+
+      Chúng tôi xin thông báo lịch giám định mới cho ${centerName}.
+
+      Người giám định: ${inspectorDisplay}
+
+      Ngày giám định: ${scheduleDisplay}
+
+      Vui lòng chuẩn bị đầy đủ hồ sơ, cơ sở vật chất và phản hồi ngay nếu cần điều chỉnh lịch.
+
+      Trân trọng,
+      TutorLink
+
+      © ${new Date().getFullYear()} TutorLink – Hệ thống quản lý trung tâm & giám định.
+    `
+  )
+}
+
 const CenterManagement = () => {
   const { user, logout, loading: authLoading } = useAuth()
   const initialFormData = {
@@ -98,7 +126,7 @@ const CenterManagement = () => {
 
   const createInitialPagination = () => ({
     pageNumber: 1,
-    pageSize: 5,
+    pageSize: 10,
     total: 0,
   })
 
@@ -128,6 +156,7 @@ const CenterManagement = () => {
 
   const [centersPagination, setCentersPagination] = useState(createInitialPagination)
   const [activePagination, setActivePagination] = useState(createInitialPagination)
+  const [pendingPagination, setPendingPagination] = useState(createInitialPagination)
   const [rejectedPagination, setRejectedPagination] = useState(createInitialPagination)
 
   const centerStatus = [
@@ -184,49 +213,11 @@ const CenterManagement = () => {
       render: (status) => getStatusBadge(status)
     },
     {
-      title: "Thống kê",
-      dataIndex: "statistics",
-      key: "statistics",
-      width: 100,
-    },
-    {
       title: "Đánh giá",
       dataIndex: "evaluation",
       key: "evaluation",
       width: 100,
     },
-    {
-      title: "Thao tác",
-      dataIndex: "action",
-      key: "action",
-      width: 250,
-      render: (_center) => (
-        <div className="flex items-center gap-2">
-          <Tooltip title="Chỉnh sửa">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-1 text-lg text-blue-600 hover:bg-blue-50 rounded"
-            >
-              <EyeOutlined />
-            </motion.button>
-          </Tooltip>
-          <Tooltip title="Tạo giám định">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-1 text-lg text-blue-600 hover:bg-blue-50 rounded"
-              // onClick={() => handleCreateAppraisal(center)}
-            >
-              <EditOutlined />
-            </motion.button>
-          </Tooltip>
-          <button className="p-1 text-red-600 hover:bg-red-50 rounded">
-            <DeleteOutlined />
-          </button>
-        </div>
-      )
-    }
   ]
 
   // column for table pending status
@@ -235,7 +226,6 @@ const CenterManagement = () => {
       title: "Trung tâm",
       dataIndex: "centerInfo",
       key: "centerInfo",
-      width: 300,
       render: (centerInfo) => (
         <div>
           <div className="text-sm font-medium text-gray-900">{centerInfo.centerName}</div>
@@ -248,7 +238,6 @@ const CenterManagement = () => {
       title: "Thông tin liên hệ",
       dataIndex: "informtion",
       key: "informtion",
-      width: 300,
       render: (information) => (
         <div>
           <div className="text-sm font-medium text-gray-900">{information.ownerName}</div>
@@ -261,26 +250,12 @@ const CenterManagement = () => {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      width: 200,
       render: (status) => getStatusBadge(centerStatus[status])
-    },
-    {
-      title: "Thống kê",
-      dataIndex: "statistics",
-      key: "statistics",
-      width: 100,
-    },
-    {
-      title: "Đánh giá",
-      dataIndex: "evaluation",
-      key: "evaluation",
-      width: 100,
     },
     {
       title: "Thao tác",
       dataIndex: "action",
       key: "action",
-      width: 250,
       render: (center) => (
         <div className="flex items-center gap-2">
           <Tooltip title="Xem chi tiết">
@@ -297,7 +272,7 @@ const CenterManagement = () => {
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              className="p-1 text-lg text-blue-600 hover:bg-blue-50 rounded cursor-pointer"
+              className="p-1 text-lg text-yellow-600 hover:bg-yellow-50 rounded cursor-pointer"
               onClick={() => handleCreateAppraisal(center)}
             >
               <EditOutlined />
@@ -637,7 +612,7 @@ const CenterManagement = () => {
     const firstCenter = selectedCenters[0] || {}
     setFormEmailData({
       subject: `Thông báo lịch giám định - ${firstCenter.centerName || "Trung tâm"}`,
-      body: generateEmailBody({
+      body: generateEmailBodyUI({
         center: firstCenter,
         inspectorName,
         scheduledDate: formData.scheduledDate
@@ -673,13 +648,6 @@ const CenterManagement = () => {
       return []
     }
   }
-
-  // const filteredCenters = centers.filter(center => {
-  //   const matchesSearch = center.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //                        center.address.toLowerCase().includes(searchTerm.toLowerCase())
-  //   const matchesStatus = filterStatus === 'all' || center.status === filterStatus
-  //   return matchesSearch && matchesStatus
-  // })
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -775,10 +743,10 @@ const CenterManagement = () => {
     console.log('center in ViewAppraisal:', center);
 
     try {
-    const apiResponse = await api.get(`/CenterVerification/request/${center.verificationId}`)
-    console.log("apiResponse in ViewAppraisal:", apiResponse.data)
-    setFormViewData(apiResponse.data)
-    setOpenModeViewlAppraisal(true)
+      const apiResponse = await api.get(`/CenterVerification/request/${center.verificationId}`)
+      console.log("apiResponse in ViewAppraisal:", apiResponse.data)
+      setFormViewData(apiResponse.data)
+      setOpenModeViewlAppraisal(true)
     } catch (error) {
       console.error("error in ViewAppraisal:", error)
       if (error.code === 'ERR_NETWORK') {
@@ -832,7 +800,7 @@ const CenterManagement = () => {
 
     try {
       const inspectorName = inspectors.find((inspector) => inspector.id === formData.inspectorId)?.fullName || ""
-      
+
       const createRequests = selectedCenters.map(center => {
         const payload = {
           centerProfileId: center.centerId,
@@ -861,7 +829,7 @@ const CenterManagement = () => {
 
         return;
       }
-      
+
       // Gửi email riêng cho từng trung tâm
       const emailRequests = selectedCenters.map(center => {
         const emailBody = generateEmailBody({
@@ -880,12 +848,12 @@ const CenterManagement = () => {
 
       try {
         const emailResults = await Promise.all(emailRequests)
-        console.log("apiRes sendEmail:", emailResults )
+        console.log("apiRes sendEmail:", emailResults)
       } catch (emailError) {
         console.error("Email sending error:", emailError)
         toast.warning("Đã tạo lịch giám định, nhưng một số email gửi thất bại.")
       }
-      
+
       toast.success(`Đã tạo lịch giám định cho ${selectedCenters.length} trung tâm.`)
       setOpenModelAppraisal(false)
       setFormData(initialFormData)
@@ -895,7 +863,7 @@ const CenterManagement = () => {
       setPendingSelectedCenters([])
     } catch (error) {
       console.log("Unexpected error:", error);
-      toast.error("Đã xảy ra lỗi không mong muốn."); 
+      toast.error("Đã xảy ra lỗi không mong muốn.");
     } finally {
       setModalLoading(false)
       await fetchPendingCenters(1, DEFAULT_PENDING_PAGE_SIZE)
@@ -994,6 +962,14 @@ const CenterManagement = () => {
     }))
   }
 
+  const handlePendingPaginationChange = (page, pageSize) => {
+    setPendingPagination(prev => ({
+      ...prev,
+      pageNumber: pageSize !== prev.pageSize ? 1 : page,
+      pageSize
+    }))
+  }
+
   const handleRejectedPaginationChange = (page, pageSize) => {
     setRejectedPagination(prev => ({
       ...prev,
@@ -1009,22 +985,18 @@ const CenterManagement = () => {
       ) : (
         <>
           {/* Header */}
-          <Card>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Quản lý trung tâm</h2>
-                <p className="text-gray-600">Quản lý các trung tâm dạy kèm đăng ký</p>
-              </div>
-              <button className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
-                <PlusOutlined />
-                <span>Thêm trung tâm</span>
-              </button>
-            </div>
+          <Card className="!bg-gradient-to-r !from-[#26aaaa] !to-[#71e3e3] !rounded-xl shadow-xl">
+            <Title level={2} className="!text-white !m-0 !font-bold">
+              <TeamOutlined /> Quản lý trung tâm
+            </Title>
+            <Text className="!text-white/90 !text-base">
+              Kiểm tra và phê duyệt các trung tâm dạy kèm đăng ký.
+            </Text>
           </Card>
 
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <motion.button 
+            <motion.button
               type="button"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -1034,7 +1006,7 @@ const CenterManagement = () => {
               <div className="text-2xl font-bold text-gray-900">{centersPagination.total}</div>
               <div className="text-sm text-gray-600">Tổng trung tâm</div>
             </motion.button>
-            <motion.button 
+            <motion.button
               type="button"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -1046,7 +1018,7 @@ const CenterManagement = () => {
               </div>
               <div className="text-sm text-gray-600">Đang hoạt động</div>
             </motion.button>
-            <motion.button 
+            <motion.button
               type="button"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -1058,7 +1030,7 @@ const CenterManagement = () => {
               </div>
               <div className="text-sm text-gray-600">Chờ duyệt</div>
             </motion.button>
-            <motion.button 
+            <motion.button
               type="button"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -1072,26 +1044,42 @@ const CenterManagement = () => {
             </motion.button>
           </div>
 
-          {/* Filters */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Tìm kiếm theo tên hoặc địa chỉ..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Centers table */}
           <Card>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <Input
+                className="search-input"
+                size="large"
+                placeholder="Tìm kiếm theo tên hoặc địa chỉ..."
+                prefix={<SearchOutlined className="search-icon" />}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                allowClear
+              />
+              <Button
+                type="primary"
+                onClick={() => {
+                  if (filterStatus === "all") {
+                    setSearchTerm('')
+                    fetchCenters(centersPagination.pageNumber, centersPagination.pageSize)
+                  } else if (filterStatus === "pending") {
+                    setSearchTerm('')
+                    fetchPendingCenters(pendingPagination.pageNumber, pendingPagination.pageSize)
+                  } else if (filterStatus === "active") {
+                    setSearchTerm('')
+                    fetchCentersWithStatus(4, activePagination.pageNumber, activePagination.pageSize)
+                  } else if (filterStatus === "rejected") {
+                    setSearchTerm('')
+                    fetchCentersWithStatus(3, rejectedPagination.pageNumber, rejectedPagination.pageSize)
+                  }
+                }}
+                className="group"
+              >
+                <ReloadOutlined className="group-hover:animate-spin" />
+                Làm mới
+              </Button>
+            </div>
+            <div className="mt-6 rounded-lg shadow-sm">
               {filterStatus === "all" &&
                 <Table
                   columns={columns}
@@ -1103,17 +1091,18 @@ const CenterManagement = () => {
                     pageSize: centersPagination.pageSize,
                     total: centersPagination.total,
                     showSizeChanger: true,
-                    pageSizeOptions: ['5', '10', '20'],
+                    pageSizeOptions: ['10', '20', '50', '100'],
                     showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`,
                     onChange: handleCentersPaginationChange,
+                    className: "!mr-2"
                   }}
-                  scroll={{ x: "max-content", y: centersPagination.pageSize === 5 ? undefined : 75 * 5 }}
+                  scroll={{ x: "max-content", y: 75 * 5 }}
                 />
               }
-              
+
               {filterStatus === "pending" &&
                 <>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-3">
                     <span className="text-sm text-gray-600">
                       {pendingSelectedRowKeys.length ? `${pendingSelectedRowKeys.length} trung tâm đã chọn` : "Chưa chọn trung tâm nào"}
                     </span>
@@ -1121,11 +1110,10 @@ const CenterManagement = () => {
                       type="button"
                       onClick={() => handleCreateAppraisal(pendingSelectedCenters)}
                       disabled={!pendingSelectedCenters.length}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        pendingSelectedCenters.length
-                          ? "bg-orange-500 text-white hover:bg-orange-600 cursor-pointer"
-                          : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                      }`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pendingSelectedCenters.length
+                        ? "bg-orange-500 text-white hover:bg-orange-600 cursor-pointer"
+                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                        }`}
                     >
                       Tạo giám định cho lựa chọn
                     </button>
@@ -1136,6 +1124,17 @@ const CenterManagement = () => {
                     rowKey="key"
                     loading={loadingStates.pending}
                     rowSelection={pendingRowSelection}
+                    pagination={{
+                      current: pendingPagination.pageNumber,
+                      pageSize: pendingPagination.pageSize,
+                      total: pendingPagination.total,
+                      showSizeChanger: true,
+                      pageSizeOptions: ['10', '20', '50', '100'],
+                      showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`,
+                      onChange: handlePendingPaginationChange,
+                      className: "!mr-2"
+                    }}
+                    scroll={{ x: "max-content", y: 75 * 5 }}
                   />
                 </>
               }
@@ -1151,11 +1150,12 @@ const CenterManagement = () => {
                     pageSize: activePagination.pageSize,
                     total: activePagination.total,
                     showSizeChanger: true,
-                    pageSizeOptions: ['5', '10', '20'],
+                    pageSizeOptions: ['10', '20', '50', '100'],
                     showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`,
                     onChange: handleActivePaginationChange,
+                    className: "!mr-2"
                   }}
-                  scroll={{ x: "max-content", y: activePagination.pageSize === 5 ? undefined : 75 * 5 }}
+                  scroll={{ x: "max-content", y: 75 * 5 }}
                 />
               }
 
@@ -1170,13 +1170,15 @@ const CenterManagement = () => {
                     pageSize: rejectedPagination.pageSize,
                     total: rejectedPagination.total,
                     showSizeChanger: true,
-                    pageSizeOptions: ['5', '10', '20'],
+                    pageSizeOptions: ['10', '20', '50', '100'],
                     showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`,
                     onChange: handleRejectedPaginationChange,
+                    className: "!mr-2"
                   }}
-                  scroll={{ x: "max-content", y: rejectedPagination.pageSize === 5 ? undefined : 75 * 5 }}
+                  scroll={{ x: "max-content", y: 75 * 5 }}
                 />
-              }            
+              }
+            </div>
           </Card>
 
           {console.log("formData before modal:", formData)}
@@ -1217,39 +1219,41 @@ const CenterManagement = () => {
                 }
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Người giám định :</label>
-                <Select
-                  value={formData.inspectorId}
-                  onChange={(value) => handleFormChange("inspectorId", value)}
-                  options={inspectors.map(inspector => ({
-                    value: inspector.id, label: inspector.fullName
-                  }))}
-                  placeholder="Chọn người giám định"
-                />
-                {errors.inspectorId &&
-                  <p className="mt-1 text-sm text-red-600">{errors.inspectorId}</p>
-                }
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Người giám định :</label>
+                  <Select
+                    value={formData.inspectorId}
+                    onChange={(value) => handleFormChange("inspectorId", value)}
+                    options={inspectors.map(inspector => ({
+                      value: inspector.id, label: inspector.fullName
+                    }))}
+                    placeholder="Chọn người giám định"
+                  />
+                  {errors.inspectorId &&
+                    <p className="mt-1 text-sm text-red-600">{errors.inspectorId}</p>
+                  }
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Ngày giám định :</label>
-                <DatePicker
-                  value={formData.scheduledDate ? dayjs(formData.scheduledDate, "YYYY-MM-DD") : null}
-                  onChange={(date) => {
-                    const formattedDate = date ? dayjs(date).hour(12).minute(0).second(0).utc().toISOString() : ""
-                    setFormData({ ...formData, scheduledDate: formattedDate });
-                    if (errors.scheduledDate) {
-                      setErrors({ ...errors, scheduledDate: "" });
-                    }
-                  }}
-                  placeholder="DD-MM-YYYY"
-                  format="DD-MM-YYYY"
-                  disabledDate={(current) => current && current < dayjs().startOf("day")}
-                />
-                {errors.scheduledDate &&
-                  <p className="mt-1 text-sm text-red-600">{errors.scheduledDate}</p>
-                }
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Ngày giám định :</label>
+                  <DatePicker
+                    value={formData.scheduledDate ? dayjs(formData.scheduledDate, "YYYY-MM-DD") : null}
+                    onChange={(date) => {
+                      const formattedDate = date ? dayjs(date).hour(12).minute(0).second(0).utc().toISOString() : ""
+                      setFormData({ ...formData, scheduledDate: formattedDate });
+                      if (errors.scheduledDate) {
+                        setErrors({ ...errors, scheduledDate: "" });
+                      }
+                    }}
+                    placeholder="DD-MM-YYYY"
+                    format="DD-MM-YYYY"
+                    disabledDate={(current) => current && current < dayjs().startOf("day")}
+                  />
+                  {errors.scheduledDate &&
+                    <p className="mt-1 text-sm text-red-600">{errors.scheduledDate}</p>
+                  }
+                </div>
               </div>
 
               <Divider className="my-1" />
@@ -1296,7 +1300,7 @@ const CenterManagement = () => {
             width={800}
           >
             {console.log("formViewData", formViewData)}
-            {formViewData && 
+            {formViewData &&
               <div className="space-y-6">
                 {/* Header Section */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
@@ -1349,31 +1353,28 @@ const CenterManagement = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                       <label className="block text-sm font-medium text-gray-600 mb-2">Các tài liệu</label>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        formViewData.isDocumentsVerified 
-                          ? "bg-green-100 text-green-800" 
-                          : "bg-red-100 text-red-800"
-                      }`}>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${formViewData.isDocumentsVerified
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                        }`}>
                         {formViewData.isDocumentsVerified ? "✓ Đạt" : "✗ Không đạt"}
                       </span>
                     </div>
                     <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                       <label className="block text-sm font-medium text-gray-600 mb-2">Các chứng chỉ</label>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        formViewData.isLicenseValid 
-                          ? "bg-green-100 text-green-800" 
-                          : "bg-red-100 text-red-800"
-                      }`}>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${formViewData.isLicenseValid
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                        }`}>
                         {formViewData.isLicenseValid ? "✓ Đạt" : "✗ Không đạt"}
                       </span>
                     </div>
                     <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                       <label className="block text-sm font-medium text-gray-600 mb-2">Vị trí</label>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        formViewData.isLocationVerified 
-                          ? "bg-green-100 text-green-800" 
-                          : "bg-red-100 text-red-800"
-                      }`}>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${formViewData.isLocationVerified
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                        }`}>
                         {formViewData.isLocationVerified ? "✓ Đạt" : "✗ Không đạt"}
                       </span>
                     </div>
@@ -1415,8 +1416,8 @@ const CenterManagement = () => {
                         {formViewData.verificationPhotos.map((photo, index) => (
                           <div key={index} className="relative aspect-square bg-gray-100 rounded-lg border border-gray-200 overflow-hidden group">
                             {typeof photo === 'string' && (photo.startsWith('http') || photo.startsWith('/')) ? (
-                              <img 
-                                src={photo} 
+                              <img
+                                src={photo}
                                 alt={`Verification ${index + 1}`}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                                 onError={(e) => {
@@ -1450,7 +1451,7 @@ const CenterManagement = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   <div>
                     <h4 className="text-base font-semibold text-gray-800 flex items-center gap-2 mb-2">
                       <span className="w-1 h-5 bg-blue-500 rounded"></span>

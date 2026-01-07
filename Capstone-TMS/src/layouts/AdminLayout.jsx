@@ -47,12 +47,6 @@ const ROLE_MENUS = {
       path: '/admin/courses'
     },
     {
-      key: '/admin/classes',
-      icon: <BookOutlined />,
-      label: 'Quản lý lớp học',
-      path: '/admin/classes'
-    },
-    {
       key: '/admin/subjects',
       icon: <BookOutlined />,
       label: 'Quản lý môn học',

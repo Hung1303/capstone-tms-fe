@@ -244,12 +244,14 @@ const SuspendCourseTab = () => {
           allowClear
         />
         <Button
-          icon={<ReloadOutlined />}
+          type="primary"
           onClick={() => {
             setSearchTerm('')
             fetchActiveCourses(pagination.pageNumber, pagination.pageSize)
           }}
+          className="group"
         >
+          <ReloadOutlined className="group-hover:animate-spin"/>
           Làm mới
         </Button>
       </div>
@@ -264,8 +266,7 @@ const SuspendCourseTab = () => {
             total: pagination.total,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} của ${total} khóa học`,
+            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} khóa học`,
             onChange: (page, pageSize) => {
               handlePageChange(page, pageSize)
             },

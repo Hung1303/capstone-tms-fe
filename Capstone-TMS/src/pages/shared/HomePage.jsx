@@ -307,7 +307,7 @@ const HomePage = () => {
                 {/* Vị trí các trung tâm */}
                 <section id="centers-map" className="scroll-mt-20 max-w-6xl mx-auto px-4 py-16">
                     <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-8">Vị trí các trung tâm</h2>
-                    <div style={{ height: '800px', borderRadius: '12px', overflow: 'auto' }}>
+                    <div style={{ height: '800px', borderRadius: '12px', overflow: 'auto', position: 'relative', zIndex: 1 }}>
                         <ParentCentersMap />
                     </div>
                 </section>
