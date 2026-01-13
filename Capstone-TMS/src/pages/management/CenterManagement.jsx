@@ -649,6 +649,40 @@ const CenterManagement = () => {
     }
   }
 
+  // Filter data based on searchTerm
+  const normalizedSearch = searchTerm.toLowerCase().trim()
+
+  const filterBySearch = (data = [], search, fields = []) => {
+    if (!search) return data
+
+    return data.filter(item =>
+      fields.some(field => {
+        const value = field(item)?.toLowerCase?.() || ''
+        return value.includes(search)
+      })
+    )
+  }
+
+  const filteredData = filterBySearch(data, normalizedSearch, [
+    item => item.centerInfo?.centerName,
+    item => item.centerInfo?.address,
+  ])
+
+  const filteredPendingTableData = filterBySearch(pendingTableData, normalizedSearch, [
+    item => item.centerInfo?.centerName,
+    item => item.centerInfo?.address,
+  ])
+  
+  const filteredActiveTableData = filterBySearch(activeTableData, normalizedSearch, [
+    item => item.centerInfo?.centerName,
+    item => item.centerInfo?.address,
+  ])
+  
+  const filteredRejectedTableData = filterBySearch(rejectedTableData, normalizedSearch, [
+    item => item.centerInfo?.centerName,
+    item => item.centerInfo?.address,
+  ])
+
   const getStatusBadge = (status) => {
     const statusConfig = {
       Active: {
@@ -910,7 +944,7 @@ const CenterManagement = () => {
     } catch (error) {
       console.error("error decision:", error)
       const message = error.response.data.message;
-      if (message.includes("Verification request is not ready for admin decision")) {
+      if (message.includes("Yêu cầu xác minh chưa sẵn sàng cho quyết định của quản trị viên.")) {
         toast.error("Tạm thời chưa thể quyết định.")
       }
     } finally {
@@ -1083,7 +1117,7 @@ const CenterManagement = () => {
               {filterStatus === "all" &&
                 <Table
                   columns={columns}
-                  dataSource={data}
+                  dataSource={filteredData}
                   rowKey="key"
                   loading={loadingStates.centers}
                   pagination={{
@@ -1120,7 +1154,7 @@ const CenterManagement = () => {
                   </div>
                   <Table
                     columns={pendingTableColumns}
-                    dataSource={pendingTableData}
+                    dataSource={filteredPendingTableData}
                     rowKey="key"
                     loading={loadingStates.pending}
                     rowSelection={pendingRowSelection}
@@ -1142,7 +1176,7 @@ const CenterManagement = () => {
               {filterStatus === "active" &&
                 <Table
                   columns={activeTableColumns}
-                  dataSource={activeTableData}
+                  dataSource={filteredActiveTableData}
                   rowKey="key"
                   loading={loadingStates.active}
                   pagination={{
@@ -1162,7 +1196,7 @@ const CenterManagement = () => {
               {filterStatus === "rejected" &&
                 <Table
                   columns={rejectedTableColumns}
-                  dataSource={rejectedTableData}
+                  dataSource={filteredRejectedTableData}
                   rowKey="key"
                   loading={loadingStates.rejected}
                   pagination={{

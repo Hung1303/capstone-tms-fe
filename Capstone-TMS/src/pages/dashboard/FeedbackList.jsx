@@ -642,9 +642,7 @@ const FeedbackList = () => {
                       }}
                       loading={loadingCourses}
                       showSearch
-                      filterOption={(input, option) =>
-                        (option?.children || '').toLowerCase().includes(input.toLowerCase())
-                      }
+                      optionFilterProp="children"
                       allowClear
                     >
                       {availableCourses.map(course => (
@@ -759,9 +757,7 @@ const FeedbackList = () => {
                         }}
                         loading={loadingTeachers}
                         showSearch
-                        filterOption={(input, option) =>
-                          (option?.children || '').toLowerCase().includes(input.toLowerCase())
-                        }
+                        optionFilterProp="children"
                         allowClear
                       >
                         {availableTeachers.map(teacher => (

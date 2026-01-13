@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { EyeOutlined, FilterOutlined, ReloadOutlined, CheckCircleOutlined, ClockCircleOutlined, WarningOutlined, StopOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { Card, DatePicker, Input, Modal, Select, Space, Table, Tooltip, Upload } from 'antd'
+import { EyeOutlined, FilterOutlined, ReloadOutlined, CheckCircleOutlined, ClockCircleOutlined, WarningOutlined, StopOutlined, EditOutlined, DeleteOutlined, PlusOutlined, TeamOutlined, SearchOutlined, SendOutlined } from '@ant-design/icons'
+import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Tooltip, Typography, Upload, Image, Popconfirm } from 'antd'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
@@ -9,10 +9,11 @@ import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 
 dayjs.extend(utc)
+const { Title, Text } = Typography
 
 const initialPagination = {
   pageNumber: 1,
-  pageSize: 5,
+  pageSize: 10,
   total: 0
 }
 
@@ -26,20 +27,32 @@ const verificationStatus = [
 
 const statusFilterOptions = [
   { label: 'Tất cả trung tâm', value: 'all' },
-  { label: 'Giám định đang chờ', value: 'pending' },
+  { label: 'Tất cả đơn giám định', value: 'pending' },
   // { label: 'Đang xử lý', value: 'inProgress' },
   { label: 'Giám định hoàn tất', value: 'completed' },
   { label: 'Giám định không đạt', value: 'failed' },
   // { label: 'Đã kết luận', value: 'finalized' }
 ]
 
+const verificationStatusFilterOptions = [
+  { label: 'Tất cả trạng thái', value: 'all' },
+  { label: 'Chờ duyệt', value: '0' },
+  { label: 'Đang xử lý', value: '1' },
+  { label: 'Hoàn thành', value: '2' },
+  // { label: 'Không đạt', value: '3' },
+  // { label: 'Đã hoàn tất', value: '4' }
+]
+
 const CenterInspectionManagement = () => {
   const { logout, loading } = useAuth()
   const [statusFilter, setStatusFilter] = useState('all')
+  const [verificationStatusFilter, setVerificationStatusFilter] = useState('all')
   const [modalLoading, setModalLoading] = useState(false)
-
+  const [searchTerm, setSearchTerm] = useState('')
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editTargetVerificationId, setEditTargetVerificationId] = useState(null)
+  const [previewImage, setPreviewImage] = useState('')
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const [editForm, setEditForm] = useState({
     completedDate: null,
@@ -120,6 +133,15 @@ const CenterInspectionManagement = () => {
     fetchPendingCenters(centersPagination.pageNumber, centersPagination.pageSize);
   }, [fetchPendingCenters, centersPagination.pageNumber, centersPagination.pageSize])
 
+  // Reset pagination to page 1 when searchTerm changes
+  useEffect(() => {
+    if (statusFilter === "all") {
+      setCentersPagination(prev => ({ ...prev, pageNumber: 1 }))
+    } else if (statusFilter === "pending") {
+      setPendingPagination(prev => ({ ...prev, pageNumber: 1 }))
+    }
+  }, [searchTerm, statusFilter])
+
   const statusSummary = useMemo(() => {
     const summary = {
       all: centers.length,
@@ -146,7 +168,7 @@ const CenterInspectionManagement = () => {
         icon: <ClockCircleOutlined />
       },
       Completed: {
-        label: 'Hoàn tất',
+        label: 'Hoàn thành',
         className: 'bg-green-100 text-green-700',
         icon: <CheckCircleOutlined />
       },
@@ -156,7 +178,7 @@ const CenterInspectionManagement = () => {
         icon: <WarningOutlined />
       },
       Finalized: {
-        label: 'Đã kết luận',
+        label: 'Đã hoàn tất',
         className: 'bg-blue-100 text-blue-700',
         icon: <CheckCircleOutlined />
       }
@@ -348,12 +370,56 @@ const CenterInspectionManagement = () => {
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              className="p-1 text-lg text-blue-600 hover:bg-blue-50 rounded cursor-pointer"
+              className="p-1 text-lg text-blue-400 hover:text-blue-600 rounded cursor-pointer"
               onClick={() => handleUpdateAppraisal(center)}
             >
               <EditOutlined />
             </motion.button>
           </Tooltip>
+
+          {center.status !== 2 && (
+            <Popconfirm
+              title={
+                <div className="flex items-center gap-2">
+                  <SendOutlined style={{ color: center.status !== 0 ? "#22c55e" : "#f97316" }}
+                  />
+                  <span className="font-semibold">Xác nhận gửi đơn</span>
+                </div>
+              }
+              description={
+                <div className="mt-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span>Trạng thái đơn:</span>
+                    <span
+                      className={`font-semibold ${center.status !== 0 ? "text-green-500" : "text-orange-500"
+                        }`}
+                    >
+                      {center.status !== 0 ? "Đã sẵn sàng" : "Chưa sẵn sàng"}
+                    </span>
+                  </div>
+
+                  {center.status === 0 && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      ⚠️ Vui lòng hoàn tất thông tin trước khi gửi duyệt.
+                    </div>
+                  )}
+                </div>
+              }
+              onConfirm={() => handleSendAppraisal(center)}
+              okText="Gửi"
+              cancelText="Hủy"
+              icon={null}
+              okButtonProps={{ disabled: center.status === 0 }}
+            >
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                className="p-1 text-lg text-green-400 hover:text-green-600 rounded cursor-pointer"
+              >
+                <SendOutlined />
+              </motion.button>
+            </Popconfirm>
+          )}
         </div>
       )
     }
@@ -379,13 +445,46 @@ const CenterInspectionManagement = () => {
     action: { status: center.status, verificationId: center.verificationId }
   }))
 
+  // Filter data based on searchTerm
+  const normalizedSearch = searchTerm.toLowerCase().trim()
+
+  const filterBySearch = (data = [], search, fields = []) => {
+    if (!search) return data
+
+    return data.filter(item =>
+      fields.some(field => {
+        const value = field(item)?.toLowerCase?.() || ''
+        return value.includes(search)
+      })
+    )
+  }
+
+  const filteredData = filterBySearch(data, normalizedSearch, [
+    item => item.centerInfo?.centerName,
+    item => item.centerInfo?.address,
+  ])
+
+  const filteredPendingTableData = filterBySearch(pendingTableData, normalizedSearch, [
+    item => item.centerInfo?.centerName,
+    item => item.inspectorName,
+  ]).filter(item => {
+    if (verificationStatusFilter === 'all') return true
+    return item.status === parseInt(verificationStatusFilter)
+  })
+
   const handleStatusCardClick = (statusKey) => {
     setStatusFilter(statusKey)
+    // Reset verification status filter when switching tabs
+    setVerificationStatusFilter('all')
   }
 
   const handleRefresh = async () => {
-    await fetchPendingCenters(centersPagination.pageNumber, centersPagination.pageSize)
-    await fetchCenters(centersPagination.pageNumber, centersPagination.pageSize)
+    setSearchTerm('')
+    if (statusFilter === "all") {
+      await fetchCenters(centersPagination.pageNumber, centersPagination.pageSize)
+    } else if (statusFilter === "pending") {
+      await fetchPendingCenters(pendingPagination.pageNumber, pendingPagination.pageSize)
+    }
   }
 
   const handleCentersPaginationChange = (page, pageSize) => {
@@ -417,17 +516,32 @@ const CenterInspectionManagement = () => {
       console.log('Edit Verification Response:', response.data)
       const data = response.data
 
+      // Helper function to convert relative URLs to absolute URLs
+      const getImageUrl = (url) => {
+        if (!url) return ''
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+          return url
+        }
+        // If relative URL, convert to absolute
+        const baseUrl = 'https://tms-api-tcgn.onrender.com'
+        return url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`
+      }
+
       setEditTargetVerificationId(center.verificationId)
       setEditForm({
         completedDate: data.completedDate ? dayjs(data.completedDate) : null,
         inspectorNotes: data.inspectorNotes || '',
         verificationFiles: Array.isArray(data.verificationPhotos)
-          ? data.verificationPhotos.map((url, index) => ({
-            uid: String(index),
-            name: `Ảnh ${index + 1}`,
-            status: 'done',
-            url
-          }))
+          ? data.verificationPhotos.map((url, index) => {
+            const imageUrl = getImageUrl(url)
+            return {
+              uid: `-${index}`,
+              name: `Ảnh ${index + 1}`,
+              status: 'done',
+              url: imageUrl,
+              thumbUrl: imageUrl
+            }
+          })
           : [],
         documentChecklistText: Array.isArray(data.documentChecklist) ? data.documentChecklist.join('\n') : '',
         isLocationVerified: !!data.isLocationVerified,
@@ -443,6 +557,34 @@ const CenterInspectionManagement = () => {
       }
     } finally {
       setModalLoading(false)
+    }
+  }
+
+  const handleSendAppraisal = async (center) => {
+    if (!center?.verificationId) {
+      toast.error('Không tìm thấy thông tin giám định để gửi đi. Thử lại sau.')
+      return
+    }
+    console.log('Sending center verification:', center)
+
+    try {
+      const response = await api.put(`/CenterVerification/request/${center.verificationId}/complete`)
+      console.log('Send Verification Response:', response.data)
+      toast.success(response.data.message)
+    } catch (error) {
+      console.error('Error loading verification for edit:', error)
+      const errorRes = error.response?.data
+
+      if (error.code === 'ERR_NETWORK') {
+        logout();
+      }
+
+      if (errorRes.message.includes("Thất bại trong việc xác minh")) {
+        toast.error("Bạn đã gửi rồi.")
+      }
+    } finally {
+      await fetchPendingCenters(centersPagination.pageNumber, centersPagination.pageSize)
+      await fetchCenters(centersPagination.pageNumber, centersPagination.pageSize)
     }
   }
 
@@ -493,155 +635,19 @@ const CenterInspectionManagement = () => {
     }
   }
 
-  // const renderEditModal = () => (
-  //   <Modal
-  //     title="Chỉnh sửa giám định"
-  //     open={editModalOpen}
-  //     onCancel={() => setEditModalOpen(false)}
-  //     onOk={handleSubmitEdit}
-  //     okText="Lưu thay đổi"
-  //     cancelText="Hủy"
-  //     confirmLoading={modalLoading}
-  //     width={720}
-  //   >
-  //     <div className="space-y-5 py-2">
-  //       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  //         <div>
-  //           <label className="block text-sm font-medium text-gray-700 mb-1">Ngày hoàn tất</label>
-  //           <DatePicker
-  //             className="w-full"
-  //             value={editForm.completedDate}
-  //             onChange={(value) => handleEditFormChange("completedDate", value)}
-  //             format="DD/MM/YYYY"
-  //             disabledDate={(current) => current && current < editForm.scheduledDate}
-  //             disabled={editForm.scheduledDate && editForm.scheduledDate.isAfter(dayjs())}
-  //           />
-  //           {editForm.scheduledDate && editForm.scheduledDate.isAfter(dayjs()) && (
-  //             <p className="mt-1 text-xs text-gray-500">
-  //               Chưa tới ngày giám định ({editForm.scheduledDate.format('DD/MM/YYYY')}).
-  //             </p>
-  //           )}
-  //         </div>
-  //         <div className="grid grid-cols-1 gap-2">
-  //           <div className="flex items-center justify-between">
-  //             <span className="text-sm text-gray-700">Vị trí đạt yêu cầu</span>
-  //             <Select
-  //               style={{ width: 120 }}
-  //               value={editForm.isLocationVerified ? "true" : "false"}
-  //               onChange={(val) => handleEditFormChange("isLocationVerified", val === 'true')}
-  //               options={[
-  //                 { label: 'Đạt', value: 'true' },
-  //                 { label: 'Không đạt', value: 'false' }
-  //               ]}
-  //             />
-  //           </div>
-  //           <div className="flex items-center justify-between">
-  //             <span className="text-sm text-gray-700">Hồ sơ tài liệu</span>
-  //             <Select
-  //               style={{ width: 120 }}
-  //               value={editForm.isDocumentsVerified ? 'true' : 'false'}
-  //               onChange={(val) => handleEditFormChange('isDocumentsVerified', val === 'true')}
-  //               options={[
-  //                 { label: 'Đạt', value: 'true' },
-  //                 { label: 'Không đạt', value: 'false' }
-  //               ]}
-  //             />
-  //           </div>
-  //           <div className="flex items-center justify-between">
-  //             <span className="text-sm text-gray-700">Giấy phép hợp lệ</span>
-  //             <Select
-  //               style={{ width: 120 }}
-  //               value={editForm.isLicenseValid ? 'true' : 'false'}
-  //               onChange={(val) => handleEditFormChange('isLicenseValid', val === 'true')}
-  //               options={[
-  //                 { label: 'Đạt', value: 'true' },
-  //                 { label: 'Không đạt', value: 'false' }
-  //               ]}
-  //             />
-  //           </div>
-  //         </div>
-  //       </div>
-
-  //       <div>
-  //         <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú giám định viên</label>
-  //         <Input.TextArea
-  //           rows={4}
-  //           value={editForm.inspectorNotes}
-  //           onChange={(e) => handleEditFormChange('inspectorNotes', e.target.value)}
-  //           placeholder="Nhập ghi chú tổng quan về kết quả giám định..."
-  //         />
-  //       </div>
-
-  //       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  //         <div>
-  //           <label className="block text-sm font-medium text-gray-700 mb-1">
-  //             Danh sách tài liệu (mỗi dòng một mục)
-  //           </label>
-  //           <Input.TextArea
-  //             rows={5}
-  //             value={editForm.documentChecklistText}
-  //             onChange={(e) => handleEditFormChange('documentChecklistText', e.target.value)}
-  //             placeholder={'Ví dụ:\nGiấy phép kinh doanh\nHợp đồng thuê mặt bằng'}
-  //           />
-  //         </div>
-  //         <div>
-  //           <label className="block text-sm font-medium text-gray-700 mb-1">
-  //             Ảnh giám định
-  //           </label>
-  //           <Upload
-  //             listType="picture-card"
-  //             multiple
-  //             fileList={editForm.verificationFiles}
-  //             beforeUpload={() => false}
-  //             onChange={({ fileList }) => handleEditFormChange('verificationFiles', fileList)}
-  //           >
-  //             {editForm.verificationFiles.length >= 8 ? null : (
-  //               <div>
-  //                 <PlusOutlined />
-  //                 <div style={{ marginTop: 8 }}>Tải ảnh</div>
-  //               </div>
-  //             )}
-  //           </Upload>
-  //         </div>
-  //       </div>
-  //     </div>
-  //   </Modal>
-  // )
-
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
       {loading ? (
         <div>Loading...</div>
       ) : (
         <>
-          <Card>
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Quản lý giám định</h1>
-                <p className="text-gray-600">Theo dõi, sắp xếp và phê duyệt các lịch giám định</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Tooltip title="Lọc trạng thái">
-                  <Select
-                    value={statusFilter}
-                    options={statusFilterOptions}
-                    onChange={handleStatusCardClick}
-                    suffixIcon={<FilterOutlined />}
-                    style={{ minWidth: 180 }}
-                  />
-                </Tooltip>
-                <Tooltip title="Làm mới dữ liệu">
-                  <motion.button
-                    whileHover={{ rotate: 90 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleRefresh}
-                    className="p-2 rounded-full bg-gray-100 text-gray-600 hover:text-orange-500"
-                  >
-                    <ReloadOutlined />
-                  </motion.button>
-                </Tooltip>
-              </div>
-            </div>
+          <Card className="!bg-gradient-to-r !from-[#dfb018] !to-[#ffd549] !rounded-xl shadow-xl">
+            <Title level={2} className="!text-white !m-0 !font-bold">
+              <TeamOutlined /> Xác thực trung tâm
+            </Title>
+            <Text className="!text-white/90 !text-base">
+              Kiểm tra và phê duyệt các trung tâm dạy kèm đăng ký.
+            </Text>
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -661,49 +667,86 @@ const CenterInspectionManagement = () => {
           </div>
 
           <Card>
-            {statusFilter === "all" &&
-              <Table
-                columns={columns}
-                dataSource={data}
-                rowKey="key"
-                loading={loadingStates.centers}
-                pagination={{
-                  current: centersPagination.pageNumber,
-                  pageSize: centersPagination.pageSize,
-                  total: centersPagination.total,
-                  showSizeChanger: true,
-                  pageSizeOptions: ['5', '10', '20'],
-                  showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`,
-                  onChange: handleCentersPaginationChange,
-                }}
-                scroll={{ x: "max-content", y: centersPagination.pageSize === 5 ? undefined : 75 * 5 }}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <Input
+                className="search-input"
+                size="large"
+                placeholder="Tìm kiếm theo tên hoặc địa chỉ..."
+                prefix={<SearchOutlined className="search-icon" />}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                allowClear
               />
-            }
+              {statusFilter === "pending" && (
+                <Select
+                  size="large"
+                  style={{ width: 200 }}
+                  placeholder="Lọc theo trạng thái"
+                  value={verificationStatusFilter}
+                  onChange={setVerificationStatusFilter}
+                  options={verificationStatusFilterOptions}
+                />
+              )}
+              <Button
+                type="primary"
+                onClick={handleRefresh}
+                className="group"
+              >
+                <ReloadOutlined className="group-hover:animate-spin" />
+                Làm mới
+              </Button>
+            </div>
+            <div className="mt-6 rounded-lg shadow-sm">
+              {statusFilter === "all" &&
+                <Table
+                  columns={columns}
+                  dataSource={filteredData}
+                  rowKey="key"
+                  loading={loadingStates.centers}
+                  pagination={{
+                    current: centersPagination.pageNumber,
+                    pageSize: centersPagination.pageSize,
+                    total: centersPagination.total,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['10', '20', '50', '100'],
+                    showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`,
+                    onChange: handleCentersPaginationChange,
+                    className: "!mr-2"
+                  }}
+                  scroll={{ x: "max-content", y: 75 * 5 }}
+                />
+              }
 
-            {statusFilter === "pending" &&
-              <Table
-                columns={pendingTableColumns}
-                dataSource={pendingTableData}
-                rowKey="key"
-                loading={loadingStates.pending}
-                pagination={{
-                  current: pendingPagination.pageNumber,
-                  pageSize: pendingPagination.pageSize,
-                  total: pendingPagination.total,
-                  showSizeChanger: true,
-                  pageSizeOptions: ['5', '10', '20'],
-                  showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`,
-                  onChange: handlePendingPaginationChange,
-                }}
-                scroll={{ x: "max-content", y: pendingPagination.pageSize === 5 ? undefined : 75 * 5 }}
-              />
-            }
+              {statusFilter === "pending" &&
+                <Table
+                  columns={pendingTableColumns}
+                  dataSource={filteredPendingTableData}
+                  rowKey="key"
+                  loading={loadingStates.pending}
+                  pagination={{
+                    current: pendingPagination.pageNumber,
+                    pageSize: pendingPagination.pageSize,
+                    total: pendingPagination.total,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['10', '20', '50', '100'],
+                    showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`,
+                    onChange: handlePendingPaginationChange,
+                    className: "!mr-2"
+                  }}
+                  scroll={{ x: "max-content", y: 75 * 5 }}
+                />
+              }
+            </div>
           </Card>
 
           <Modal
             title="Chỉnh sửa giám định"
             open={editModalOpen}
-            onCancel={() => setEditModalOpen(false)}
+            onCancel={() => {
+              setEditModalOpen(false)
+              setPreviewOpen(false)
+              setPreviewImage('')
+            }}
             onOk={handleSubmitEdit}
             okText="Lưu thay đổi"
             cancelText="Hủy"
@@ -801,6 +844,10 @@ const CenterInspectionManagement = () => {
                     fileList={editForm.verificationFiles}
                     beforeUpload={() => false}
                     onChange={({ fileList }) => handleEditFormChange('verificationFiles', fileList)}
+                    onPreview={(file) => {
+                      setPreviewImage(file.url || file.thumbUrl)
+                      setPreviewOpen(true)
+                    }}
                   >
                     {editForm.verificationFiles.length >= 8 ? null : (
                       <div>
@@ -809,6 +856,17 @@ const CenterInspectionManagement = () => {
                       </div>
                     )}
                   </Upload>
+                  {previewImage && (
+                    <Image
+                      wrapperStyle={{ display: 'none' }}
+                      preview={{
+                        visible: previewOpen,
+                        onVisibleChange: (visible) => setPreviewOpen(visible),
+                        mask: 'Xem ảnh'
+                      }}
+                      src={previewImage}
+                    />
+                  )}
                 </div>
               </div>
             </div>
