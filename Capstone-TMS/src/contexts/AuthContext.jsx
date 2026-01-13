@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import api from '../config/axios'
 import { jwtDecode } from 'jwt-decode'
+import * as signalR from "@microsoft/signalr";
+import { toast } from 'react-toastify';
 
 const AuthContext = createContext()
 
@@ -71,6 +73,40 @@ export const AuthProvider = ({ children }) => {
 
     setLoading(false)
   }, [])
+
+  useEffect(() => {
+    if (!user) {
+      console.log("No user.");
+      return;
+    }
+
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl("https://tms-api-tcgn.onrender.com/hubs/notify", {
+        accessTokenFactory: () => localStorage.getItem("token")
+      })
+      .configureLogging(signalR.LogLevel.Information)
+      .withAutomaticReconnect()
+      .build();
+
+    connection.start()
+              .then(() => console.log("SignalR connected"))
+              .catch(err => console.error("SignalR error", err));
+
+    connection.on("accountBannedPermanent", () => {
+      toast.error("Tài khoản của bạn đã bị khóa vĩnh viễn.");
+      logout();
+      window.location.href = "/login";
+    })
+
+    connection.on("accountSuspended", data => {
+      console.log("Account suspended data:", data);
+      toast.error(`Tài khoản của bạn đã bị khóa trong ${data.days} ngày.`);
+      logout();
+      window.location.href = "/login";
+    })
+
+    return () => connection.stop();
+  }, [user]);
 
   useEffect(() => {
     const interceptor = api.interceptors.response.use(
