@@ -16,7 +16,8 @@ import {
   StarOutlined,
   GiftOutlined,
   EnvironmentOutlined,
-  MessageOutlined
+  MessageOutlined,
+  FileMarkdownOutlined
 } from '@ant-design/icons'
 
 // Menu configuration cho từng role
@@ -57,6 +58,12 @@ const ROLE_MENUS = {
       icon: <GiftOutlined />,
       label: 'Quản lý gói',
       path: '/admin/subscriptions'
+    },
+    {
+      key: '/admin/blog-approval',
+      icon: <FileMarkdownOutlined />,
+      label: 'Duyệt Blog',
+      path: '/admin/blog-approval'
     },
     {
       key: '/admin/feedbacks',
@@ -161,6 +168,12 @@ const ROLE_MENUS = {
       path: '/center/courses'
     },
     {
+      key: '/center/blog',
+      icon: <FileMarkdownOutlined />,
+      label: 'Quản lý Blog',
+      path: '/center/blog'
+    },
+    {
       key: '/center/subscription',
       icon: <GiftOutlined />,
       label: 'Gói dịch vụ',
@@ -183,6 +196,12 @@ const ROLE_MENUS = {
       icon: <CalendarOutlined />,
       label: 'Lên lịch',
       path: '/center/schedule'
+    },
+    {
+      key: '/center/consultation',
+      icon: <MessageOutlined />,
+      label: 'Tư vấn',
+      path: '/center/consultation'
     },
     {
       key: '/center/feedbacks',
@@ -259,6 +278,12 @@ const ROLE_MENUS = {
       icon: <CalendarOutlined />,
       label: 'Lịch học',
       path: '/parent/schedule'
+    },
+    {
+      key: '/parent/consultation',
+      icon: <MessageOutlined />,
+      label: 'Tư vấn',
+      path: '/parent/consultation'
     },
     {
       key: '/parent/grades',

@@ -1,13 +1,16 @@
 import { router } from './router/router'
 import { RouterProvider } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
+import ConsultationProvider from './contexts/ConsultationContext';
 
 function App() {
 
   return (
     <>
       <ToastContainer />
-      <RouterProvider router={router}/>
+      <ConsultationProvider>
+        <RouterProvider router={router}/>
+      </ConsultationProvider>
     </>
   )
 }

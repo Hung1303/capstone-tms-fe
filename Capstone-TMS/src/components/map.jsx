@@ -25,8 +25,12 @@ const MapHandler = ({ selectedCenter, markerRefs }) => {
   const map = useMap();
 
   useEffect(() => {
-    if (selectedCenter && selectedCenter.latitude && selectedCenter.longitude) {
-      const { latitude, longitude, id } = selectedCenter;
+    if (selectedCenter && selectedCenter.id) {
+      const latitude = selectedCenter.latitude || 10.762622;
+      const longitude = selectedCenter.longitude || 106.660172;
+      const { id } = selectedCenter;
+
+      console.log('MapHandler - Flying to:', { latitude, longitude, id });
 
       // 1. Bay đến vị trí
       map.flyTo([latitude, longitude], 16, {
@@ -34,13 +38,18 @@ const MapHandler = ({ selectedCenter, markerRefs }) => {
       });
 
       // 2. Tìm marker và mở popup
-      const marker = markerRefs.current[id];
-      if (marker) {
-        // Đợi 1 chút cho map bắt đầu hiệu ứng bay rồi mới mở popup để tránh bị lag hoặc đóng ngay lập tức
-        setTimeout(() => {
+      setTimeout(() => {
+        console.log('MapHandler - Looking for marker:', id);
+        console.log('MapHandler - Available markers:', Object.keys(markerRefs.current));
+        
+        const marker = markerRefs.current[id];
+        if (marker) {
+          console.log('MapHandler - Found marker, opening popup');
           marker.openPopup();
-        }, 200);
-      }
+        } else {
+          console.log('MapHandler - Marker not found');
+        }
+      }, 800);
     }
   }, [selectedCenter, map, markerRefs]);
 
@@ -195,7 +204,7 @@ const ParentCentersMap = () => {
     if (window.innerWidth < 768) setIsSidebarOpen(false);
   };
 
-  const handleViewCourses = (center) => navigate(`/parent/centers?centerId=${center.id}`);
+  const handleViewCourses = (center) => navigate(`/courses`);
 
   const handleGetDirection = async (center) => {
     if (!userPos) return alert("Cần bật định vị!");
@@ -272,7 +281,10 @@ const ParentCentersMap = () => {
                 position={[lat, lng]}
                 // QUAN TRỌNG: Gán ref của marker vào object markerRefs
                 ref={(ref) => {
-                  if (ref) markerRefs.current[center.id] = ref;
+                  console.log('Marker ref assigned for:', center.id, ref ? 'SUCCESS' : 'FAILED');
+                  if (ref) {
+                    markerRefs.current[center.id] = ref;
+                  }
                 }}
               >
                 <Popup maxWidth={300}>

@@ -6,6 +6,7 @@ import AuthPage from "../pages/auth/AuthPage";
 // Shared pages (Public)
 import HomePage from "../pages/shared/HomePage";
 import Centers from "../pages/shared/Centers";
+import Course from "../pages/shared/Course";
 import FindTutor from "../pages/shared/FindTutor";
 import NewClasses from "../pages/shared/NewClasses";
 import Contact from "../pages/shared/Contact";
@@ -67,6 +68,10 @@ import EnrollmentManagement from "../pages/management/EnrollmentManagement";
 import PaymentSuccess from "../pages/shared/PaymentSuccess";
 import PaymentFailure from "../pages/shared/PaymentFailure";
 import ApprovalCourseTab from "../pages/management/ApprovalCourseTab";
+import CenterConsultation from "../pages/management/CenterConsultation";
+import ParentConsultation from "../pages/management/ParentConsultation";
+import BlogManagement from "../pages/management/BlogManagement";
+import BlogApproval from "../pages/management/BlogApproval";
 
 export const router = createBrowserRouter([
 
@@ -91,6 +96,7 @@ export const router = createBrowserRouter([
         children: [
             { index: true, element: <HomePage /> },
             { path: "centers", element: <Centers /> },
+            { path: "courses", element: <Course /> },
             { path: "find-tutor", element: <FindTutor /> },
             { path: "new-classes", element: <NewClasses /> },
             { path: "contact", element: <Contact /> },
@@ -120,6 +126,7 @@ export const router = createBrowserRouter([
             { path: "classes", element: <ClassManagement /> },
             { path: "subjects", element: <SubjectManagement /> },
             { path: "subscriptions", element: <SubscriptionManagement /> },
+            { path: "blog-approval", element: <BlogApproval /> },
             { path: "feedbacks", element: <FeedbackList /> },
         ],
     },
@@ -173,10 +180,12 @@ export const router = createBrowserRouter([
         children: [
             { index: true, element: <CenterDashboard /> },
             { path: "courses", element: <CourseManagement /> },
+            { path: "blog", element: <BlogManagement /> },
             { path: "subscription", element: <CenterSubscription /> },
             { path: "schedule", element: <CenterScheduleAssignment /> },
             { path: "teachers", element: <TeacherManagement /> },
             { path: "enrollments", element: <EnrollmentManagement /> },
+            { path: "consultation", element: <CenterConsultation /> },
             { path: "feedbacks", element: <FeedbackList /> },
         ],
     },
@@ -216,6 +225,7 @@ export const router = createBrowserRouter([
             { path: "centers", element: <ParentCenters /> },
             { path: "courses", element: <ParentCourses /> },
             { path: "schedule", element: <ParentSchedule /> },
+            { path: "consultation", element: <ParentConsultation /> },
             { path: "grades", element: <ParentGrades /> },
         ],
     },

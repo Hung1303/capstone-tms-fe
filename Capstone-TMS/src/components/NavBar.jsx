@@ -45,6 +45,29 @@ const NavBar = () => {
         setOpenSubMenu(null)
     }
 
+    const getDashboardPath = () => {
+        if (!user) return "/login";
+        
+        switch (user.role) {
+            case 'Admin':
+                return "/admin";
+            case 'Center':
+                return "/center";
+            case 'Teacher':
+                return "/teacher";
+            case 'Student':
+                return "/student";
+            case 'Parent':
+                return "/parent";
+            case 'Staff':
+                return "/staff";
+            case 'Inspector':
+                return "/inspector";
+            default:
+                return "/";
+        }
+    };
+
     const handleLogout = () => {
         logout()
         navigate("/login")
@@ -201,7 +224,11 @@ const NavBar = () => {
                                 {isDropdownOpen && (
                                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 z-50">
                                         <button
-                                            onClick={() => navigate("/parent")}
+                                            onClick={() => {
+                                                const dashboardPath = getDashboardPath();
+                                                navigate(dashboardPath);
+                                                setIsDropdownOpen(false);
+                                            }}
                                             className="cursor-pointer flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100"
                                         >
                                             <DashboardOutlined className="mr-2 h-4 w-4" />

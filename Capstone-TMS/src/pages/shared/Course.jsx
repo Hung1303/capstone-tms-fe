@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react"
-import { Button, Card, Col, Divider, Empty, List, Row, Space, Tag, Typography, message } from "antd"
-import { DeleteOutlined, ShoppingCartOutlined } from "@ant-design/icons"
+import { Button, Card, Col, Divider, Empty, List, Row, Space, Tag, Typography, message, Modal } from "antd"
+import { DeleteOutlined, ShoppingCartOutlined, LockOutlined } from "@ant-design/icons"
 import { useNavigate } from "react-router-dom"
 import dayjs from "dayjs"
 import api from "../../config/axios"
 import { useCart } from "../../hooks/useCart"
+import { useAuth } from "../../contexts/AuthContext"
 
 const teachingMethodLabel = {
   1: "Offline",
@@ -26,6 +27,7 @@ const Course = () => {
   const [loading, setLoading] = useState(false)
   const { cartItems, addItem, removeItem, totalTuition } = useCart()
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   const fetchCourses = async (pageNumber = 1, pageSize = 8) => {
     setLoading(true)
@@ -45,6 +47,26 @@ const Course = () => {
   }, [])
 
   const handleAddToCart = (course) => {
+    // Kiểm tra nếu người dùng chưa đăng nhập
+    if (!user) {
+      Modal.confirm({
+        title: "Yêu cầu đăng nhập",
+        content: "Bạn cần đăng nhập để thêm khóa học vào giỏ hàng. Bạn có muốn đăng nhập ngay không?",
+        okText: "Đăng nhập",
+        cancelText: "Hủy",
+        onOk() {
+          navigate("/login")
+        },
+      })
+      return
+    }
+
+    // Kiểm tra nếu người dùng không phải là Parent
+    if (user.role !== "Parent") {
+      message.error("Chỉ phụ huynh mới có thể thêm khóa học vào giỏ hàng")
+      return
+    }
+
     const added = addItem(course)
     if (added) {
       message.success("Đã thêm vào giỏ hàng")
@@ -82,8 +104,16 @@ const Course = () => {
                   <div><Typography.Text strong>Học phí:</Typography.Text> {formatCurrency(course.tuitionFee)}</div>
                   <div><Typography.Text strong>Sĩ số:</Typography.Text> {course.capacity} học viên</div>
                 </Space>
-                <Button type="primary" block icon={<ShoppingCartOutlined />} onClick={() => handleAddToCart(course)} disabled={inCart}>
-                  {inCart ? "Đã trong giỏ" : "Thêm vào giỏ"}
+                <Button 
+                  type="primary" 
+                  block 
+                  icon={user?.role === "Parent" ? <ShoppingCartOutlined /> : <LockOutlined />}
+                  onClick={() => handleAddToCart(course)} 
+                  disabled={inCart || (user && user.role !== "Parent")}
+                  danger={user && user.role !== "Parent"}
+                  className="h-auto whitespace-normal py-2"
+                >
+                  {inCart ? "Đã trong giỏ" : user?.role === "Parent" ? "Thêm vào giỏ" : "Chỉ phụ huynh mới có thể\nthêm khóa học vào giỏ"}
                 </Button>
               </Space>
             </Card>

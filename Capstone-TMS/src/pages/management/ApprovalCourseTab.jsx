@@ -174,8 +174,8 @@ const ApprovalCourseTab = () => {
         }
       }
 
-      // Body là ghi chú (String JSON)
-      const body = JSON.stringify(decisionReason)
+      // Body là ghi chú (String)
+      const body = decisionReason || ''
       
       console.log(`Submitting PUT to /ApprovalRequests/${decidingId}`)
       console.log('Params:', config.params)
@@ -440,13 +440,10 @@ const ApprovalCourseTab = () => {
 
           <div>
             <label className="block font-medium mb-2 text-gray-700">
-                {decidingAction === 'approve' ? 'Ghi chú duyệt (tùy chọn):' : 'Lý do từ chối (bắt buộc):'}
-                {decidingAction === 'reject' && <span className="text-red-500 ml-1">*</span>}
+                {decidingAction === 'approve' ? 'Ghi chú duyệt (tùy chọn):' : 'Lý do từ chối (tùy chọn):'}
             </label>
             <textarea
-              className={`w-full p-3 border rounded-md focus:ring-2 focus:outline-none transition-all ${
-                  decidingAction === 'reject' && !decisionReason.trim() ? 'border-red-300 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200'
-              }`}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all"
               rows={4}
               placeholder={decidingAction === 'approve' ? "Nhập ghi chú..." : "Nhập lý do từ chối..."}
               value={decisionReason}
