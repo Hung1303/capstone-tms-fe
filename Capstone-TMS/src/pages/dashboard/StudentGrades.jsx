@@ -1,21 +1,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import { TrophyOutlined, StarOutlined, MessageOutlined, BookOutlined, UserOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
-import { Card, Table, Tag, Button, Modal, Form, Input, Rate, Spin, Empty, InputNumber } from 'antd'
+import { Card, Table, Tag, Button, Modal, Form, Input, Rate, Spin, Empty, Space, Typography } from 'antd'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
 import dayjs from 'dayjs'
 import 'dayjs/locale/vi'
 import * as signalR from "@microsoft/signalr";
-import { useNavigate } from 'react-router-dom'
 
 dayjs.locale('vi')
 
+const { Title, Text } = Typography
 const { TextArea } = Input
 
 const StudentGrades = () => {
   const { user } = useAuth()
-  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [courseResults, setCourseResults] = useState([])
   const [filteredResults, setFilteredResults] = useState([])
@@ -26,7 +25,7 @@ const StudentGrades = () => {
   const [submittingFeedback, setSubmittingFeedback] = useState(false)
 
 
-  // Lấy danh sách điểm từ API
+  // Lấy danh sách điểm
   const fetchCourseResults = useCallback(async () => {
     if (!user.studentProfileId) {
       setCourseResults([])
@@ -98,36 +97,6 @@ const StudentGrades = () => {
     return () => connection.stop();
   }, []);
 
-  useEffect(() => {
-    const connection = new signalR.HubConnectionBuilder()
-      .withUrl("https://tms-api-tcgn.onrender.com/hubs/notify", {
-        accessTokenFactory: () => localStorage.getItem("token")
-      })
-      .configureLogging(signalR.LogLevel.Information)
-      .withAutomaticReconnect()
-      .build();
-
-    connection.start()
-              .then(() => console.log("SignalR connected"))
-              .catch(err => console.error("SignalR error", err));
-
-    connection.on("accountBannedPermanent", () => {
-      localStorage.removeItem("token");
-      navigate("/login");
-      toast.error("Tài khoản của bạn đã bị khóa vĩnh viễn.");
-    })
-
-    connection.on("accountSuspended", data => {
-      console.log("Account suspended data:", data);
-      localStorage.removeItem("token");
-      navigate("/login");
-      toast.error(`Tài khoản của bạn đã bị khóa trong ${data.days} ngày.`);
-    })
-
-    return () => connection.stop();
-  }, []);
-
-
   // Filter kết quả
   useEffect(() => {
     let result = [...courseResults]
@@ -185,7 +154,6 @@ const StudentGrades = () => {
     setFeedbackModalVisible(true)
   }
 
-  // console.log("user:", user)
   const handleSubmitFeedback = async (values) => {
     if (!selectedResult || !selectedResult.courseId) {
       toast.error('Thông tin khóa học không hợp lệ')
