@@ -89,3 +89,54 @@ export const deleteBlogPost = async (blogId) => {
     throw error
   }
 }
+
+// Like blog post
+export const likeBlogPost = async (blogId) => {
+  try {
+    const response = await api.post(`/BlogPost/${blogId}/like`)
+    return response.data
+  } catch (error) {
+    console.error('Lỗi khi like blog:', error)
+    throw error
+  }
+}
+
+// Unlike blog post
+export const unlikeBlogPost = async (blogId) => {
+  try {
+    const response = await api.delete(`/BlogPost/${blogId}/like`)
+    return response.data
+  } catch (error) {
+    console.error('Lỗi khi unlike blog:', error)
+    throw error
+  }
+}
+
+// Comment blog post
+export const commentBlogPost = async (blogId, content) => {
+  try {
+    const response = await api.post(`/BlogPost/${blogId}/comment`, {
+      content: content
+    })
+    return response.data
+  } catch (error) {
+    console.error('Lỗi khi comment blog:', error)
+    throw error
+  }
+}
+
+// Lấy danh sách comments của blog post
+export const getBlogComments = async (blogId, pageNumber = 1, pageSize = 10) => {
+  try {
+    const response = await api.get(`/BlogPost/${blogId}/comments`, {
+      params: {
+        pageNumber: pageNumber,
+        pageSize: pageSize
+      }
+    })
+    return response.data
+  } catch (error) {
+    console.error('Lỗi khi lấy comments:', error)
+    throw error
+  }
+}

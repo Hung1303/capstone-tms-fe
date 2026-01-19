@@ -71,24 +71,6 @@ const ROLE_MENUS = {
       label: 'Danh sách Feedback',
       path: '/admin/feedbacks'
     },
-    // {
-    //   key: '/admin/schedule',
-    //   icon: <CalendarOutlined />,
-    //   label: 'Lịch học',
-    //   path: '/admin/schedule'
-    // },
-    // {
-    //   key: '/admin/reports',
-    //   icon: <BarChartOutlined />,
-    //   label: 'Báo cáo',
-    //   path: '/admin/reports'
-    // },
-    // {
-    //   key: '/admin/course-approval',
-    //   icon: <CheckCircleOutlined />,
-    //   label: 'Duyệt khóa học',
-    //   path: '/admin/course-approval'
-    // },
   ],
   Staff: [
     {

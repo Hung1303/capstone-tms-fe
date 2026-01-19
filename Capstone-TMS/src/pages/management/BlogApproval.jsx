@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Table, Button, Space, message, Tag, Drawer, Tabs } from 'antd'
 import { CheckCircleOutlined, CloseCircleOutlined, EyeOutlined } from '@ant-design/icons'
+import { toast } from 'react-toastify'
 import api from '../../config/axios'
+import BlogPostCardAdmin from '../../components/BlogPostCardAdmin'
 
 const BlogApproval = () => {
   const [blogs, setBlogs] = useState([])
@@ -44,11 +46,17 @@ const BlogApproval = () => {
   const handleApproveBlog = async (blogId) => {
     try {
       await api.put(`/BlogPost/Approve/${blogId}`)
-      message.success('Duyệt blog thành công')
+      toast.success('✓ Duyệt blog thành công', {
+        position: 'top-right',
+        autoClose: 3000,
+      })
       fetchBlogs()
     } catch (error) {
       console.error('Lỗi duyệt blog:', error)
-      message.error('Duyệt blog thất bại')
+      toast.error('✗ Duyệt blog thất bại', {
+        position: 'top-right',
+        autoClose: 3000,
+      })
     }
   }
 
@@ -57,11 +65,17 @@ const BlogApproval = () => {
       await api.put(`/BlogPost/Reject/${blogId}`, {
         reason: rejectReason
       })
-      message.success('Từ chối blog thành công')
+      toast.success('✓ Từ chối blog thành công', {
+        position: 'top-right',
+        autoClose: 3000,
+      })
       fetchBlogs()
     } catch (error) {
       console.error('Lỗi từ chối blog:', error)
-      message.error('Từ chối blog thất bại')
+      toast.error('✗ Từ chối blog thất bại', {
+        position: 'top-right',
+        autoClose: 3000,
+      })
     }
   }
 
@@ -72,7 +86,7 @@ const BlogApproval = () => {
 
   const getStatusTag = (status) => {
     const statusMap = {
-      'Draft': { color: 'default', text: 'Chờ duyệt' },
+      'Draft': { color: 'gold', text: 'Chờ duyệt' },
       'Published': { color: 'green', text: 'Đã duyệt' },
       'Rejected': { color: 'red', text: 'Bị từ chối' },
     }
@@ -88,39 +102,26 @@ const BlogApproval = () => {
   const publishedBlogs = getFilteredBlogs('Published')
   const rejectedBlogs = getFilteredBlogs('Rejected')
 
-  const columns = [
+  // Cột cho tab "Chờ duyệt" và "Bị từ chối" (không có ngày tạo)
+  const columnsWithoutDate = [
     {
       title: 'Tiêu đề',
       dataIndex: 'title',
       key: 'title',
-      width: 200,
+      width: 300,
       ellipsis: true,
     },
     {
       title: 'Trung tâm',
       dataIndex: 'centerName',
       key: 'centerName',
-      width: 150,
+      width: 200,
       ellipsis: true,
-    },
-    {
-      title: 'Mô tả',
-      dataIndex: 'description',
-      key: 'description',
-      width: 250,
-      ellipsis: true,
-    },
-    {
-      title: 'Ngày tạo',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 150,
-      render: (date) => new Date(date).toLocaleDateString('vi-VN'),
     },
     {
       title: 'Hành động',
       key: 'action',
-      width: 250,
+      width: 200,
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -157,13 +158,68 @@ const BlogApproval = () => {
     },
   ]
 
+  // Cột cho tab "Đã duyệt" (có ngày tạo)
+  const columnsWithDate = [
+    {
+      title: 'Tiêu đề',
+      dataIndex: 'title',
+      key: 'title',
+      width: 250,
+      ellipsis: true,
+    },
+    {
+      title: 'Trung tâm',
+      dataIndex: 'centerName',
+      key: 'centerName',
+      width: 180,
+      ellipsis: true,
+    },
+    {
+      title: 'Ngày đăng',
+      dataIndex: 'publishAt',
+      key: 'publishAt',
+      width: 150,
+      render: (date) => {
+        if (!date) return '-'
+        try {
+          return new Date(date).toLocaleDateString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        } catch (e) {
+          return '-'
+        }
+      },
+    },
+    {
+      title: 'Hành động',
+      key: 'action',
+      width: 100,
+      render: (_, record) => (
+        <Space size="small">
+          <Button
+            type="primary"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => handleViewBlog(record)}
+          >
+            Xem
+          </Button>
+        </Space>
+      ),
+    },
+  ]
+
   const tabItems = [
     {
       key: 'pending',
       label: `Chờ duyệt (${pendingBlogs.length})`,
       children: (
         <Table
-          columns={columns}
+          columns={columnsWithoutDate}
           dataSource={pendingBlogs}
           loading={loading}
           rowKey="blogId"
@@ -176,7 +232,7 @@ const BlogApproval = () => {
       label: `Đã duyệt (${publishedBlogs.length})`,
       children: (
         <Table
-          columns={columns}
+          columns={columnsWithDate}
           dataSource={publishedBlogs}
           loading={loading}
           rowKey="blogId"
@@ -189,7 +245,7 @@ const BlogApproval = () => {
       label: `Bị từ chối (${rejectedBlogs.length})`,
       children: (
         <Table
-          columns={columns}
+          columns={columnsWithoutDate}
           dataSource={rejectedBlogs}
           loading={loading}
           rowKey="blogId"
@@ -216,51 +272,41 @@ const BlogApproval = () => {
         title="Chi tiết Blog"
         onClose={() => setIsDrawerVisible(false)}
         open={isDrawerVisible}
-        width={600}
+        width={700}
       >
         {viewingBlog && (
-          <div>
-            <div className="mb-4">
-              <h2 className="text-xl font-bold mb-2">{viewingBlog.title}</h2>
-              <p className="text-gray-600 mb-2">
-                <strong>Trung tâm:</strong> {viewingBlog.centerName}
-              </p>
-              <p className="text-gray-600 mb-4">{viewingBlog.description}</p>
-              <div className="mb-4">
-                {getStatusTag(viewingBlog.status)}
-              </div>
-              <p className="text-sm text-gray-500">
-                Ngày tạo: {new Date(viewingBlog.createdAt).toLocaleDateString('vi-VN')}
-              </p>
-            </div>
-            <div className="border-t pt-4">
-              <h3 className="font-bold mb-2">Nội dung</h3>
-              <p className="whitespace-pre-wrap">{viewingBlog.content}</p>
-            </div>
+          <div className="space-y-4">
+            {/* Hiển thị blog card (không có like/comment) */}
+            <BlogPostCardAdmin 
+              blog={viewingBlog}
+              showCenterLink={false}
+            />
+            
+            {/* Nút hành động */}
             {viewingBlog.status === 'Draft' && (
-              <div className="border-t pt-4 mt-4">
-                <Space>
-                  <Button
-                    type="primary"
-                    icon={<CheckCircleOutlined />}
-                    onClick={() => {
-                      handleApproveBlog(viewingBlog.blogId)
-                      setIsDrawerVisible(false)
-                    }}
-                  >
-                    Duyệt
-                  </Button>
-                  <Button
-                    danger
-                    icon={<CloseCircleOutlined />}
-                    onClick={() => {
-                      handleRejectBlog(viewingBlog.blogId)
-                      setIsDrawerVisible(false)
-                    }}
-                  >
-                    Từ chối
-                  </Button>
-                </Space>
+              <div className="border-t pt-4 mt-4 flex gap-2">
+                <Button
+                  type="primary"
+                  icon={<CheckCircleOutlined />}
+                  onClick={() => {
+                    handleApproveBlog(viewingBlog.blogId)
+                    setIsDrawerVisible(false)
+                  }}
+                  block
+                >
+                  Duyệt bài viết
+                </Button>
+                <Button
+                  danger
+                  icon={<CloseCircleOutlined />}
+                  onClick={() => {
+                    handleRejectBlog(viewingBlog.blogId)
+                    setIsDrawerVisible(false)
+                  }}
+                  block
+                >
+                  Từ chối
+                </Button>
               </div>
             )}
           </div>

@@ -121,15 +121,18 @@ const Centers = () => {
                     className="h-full shadow-lg hover:shadow-2xl transition-all duration-300 rounded-lg overflow-hidden"
                     onClick={() => handleViewDetails(center)}
                     cover={
-                      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 h-32 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="text-5xl font-bold text-white mb-2">
-                            {center.centerName.charAt(0).toUpperCase()}
-                          </div>
-                          <Tag color="green" className="text-xs">
-                            Đang hoạt động
-                          </Tag>
-                        </div>
+                      <div 
+                        className="h-32 flex items-center justify-center relative overflow-hidden"
+                        style={{
+                          backgroundImage: 'url(https://images.unsplash.com/photo-1710429026883-524947152fb1?q=80&w=1331&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                        }}
+                      >
+                        {/* Overlay */}
+                        <div className="absolute inset-0 bg-black/40"></div>
+                        
+                    
                       </div>
                     }
                   >

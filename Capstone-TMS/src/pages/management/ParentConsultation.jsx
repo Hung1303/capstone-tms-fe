@@ -143,8 +143,8 @@ const ParentConsultation = () => {
       {/* Sidebar - Danh sách phiên */}
       <div className="w-96 bg-white border-r border-gray-200 flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-4">
+        <div className="p-3 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-3">
             <h1 className="text-2xl font-bold text-gray-900">Tin nhắn</h1>
             <div className="flex gap-2">
               <Button
@@ -230,14 +230,6 @@ const ParentConsultation = () => {
                       <p className="text-xs text-gray-600 truncate">
                         Chủ sở hữu: {session.centerOwnerName}
                       </p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <span className={`inline-block w-2 h-2 rounded-full ${
-                          session.status === 'Active' ? 'bg-green-500' : 'bg-gray-400'
-                        }`}></span>
-                        <span className="text-xs text-gray-500">
-                          {session.status === 'Active' ? 'Đang hoạt động' : 'Đã kết thúc'}
-                        </span>
-                      </div>
                     </div>
                   </div>
                 </div>
