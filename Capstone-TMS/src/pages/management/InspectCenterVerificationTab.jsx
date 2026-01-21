@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { EyeOutlined, FilterOutlined, ReloadOutlined, CheckCircleOutlined, ClockCircleOutlined, WarningOutlined, StopOutlined, EditOutlined, DeleteOutlined, PlusOutlined, TeamOutlined, SearchOutlined, SendOutlined } from '@ant-design/icons'
-import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Tooltip, Typography, Upload, Image, Popconfirm } from 'antd'
+import { ReloadOutlined, CheckCircleOutlined, ClockCircleOutlined, WarningOutlined, StopOutlined, EditOutlined, PlusOutlined, SearchOutlined, SendOutlined } from '@ant-design/icons'
+import { Button, Card, DatePicker, Input, Modal, Select, Space, Table, Tooltip, Upload, Image, Popconfirm, Progress } from 'antd'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
@@ -9,7 +9,6 @@ import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 
 dayjs.extend(utc)
-const { Title, Text } = Typography
 
 const initialPagination = {
   pageNumber: 1,
@@ -29,8 +28,8 @@ const statusFilterOptions = [
   { label: 'Tất cả trung tâm', value: 'all' },
   { label: 'Tất cả đơn giám định', value: 'pending' },
   // { label: 'Đang xử lý', value: 'inProgress' },
-  { label: 'Giám định hoàn tất', value: 'completed' },
-  { label: 'Giám định không đạt', value: 'failed' },
+  // { label: 'Giám định hoàn tất', value: 'completed' },
+  // { label: 'Giám định không đạt', value: 'failed' },
   // { label: 'Đã kết luận', value: 'finalized' }
 ]
 
@@ -43,7 +42,7 @@ const verificationStatusFilterOptions = [
   // { label: 'Đã hoàn tất', value: '4' }
 ]
 
-const CenterInspectionManagement = () => {
+const InspectCenterVerificaitonTab = () => {
   const { logout, loading } = useAuth()
   const [statusFilter, setStatusFilter] = useState('all')
   const [verificationStatusFilter, setVerificationStatusFilter] = useState('all')
@@ -53,6 +52,9 @@ const CenterInspectionManagement = () => {
   const [editTargetVerificationId, setEditTargetVerificationId] = useState(null)
   const [previewImage, setPreviewImage] = useState('')
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [fileList, setFileList] = useState([])
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploading, setUploading] = useState(false)
 
   const [editForm, setEditForm] = useState({
     completedDate: null,
@@ -347,7 +349,7 @@ const CenterInspectionManagement = () => {
       title: "Đánh giá",
       dataIndex: "sideAdmin",
       key: "sideAdmin",
-      width: 200,
+      width: 150,
       render: (sideAdmin) => (
         <div>
           <div className="text-sm font-medium text-gray-900">
@@ -371,7 +373,7 @@ const CenterInspectionManagement = () => {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               className="p-1 text-lg text-blue-400 hover:text-blue-600 rounded cursor-pointer"
-              onClick={() => handleUpdateAppraisal(center)}
+              onClick={() =>  handleUpdateAppraisal(center)}
             >
               <EditOutlined />
             </motion.button>
@@ -503,6 +505,69 @@ const CenterInspectionManagement = () => {
     }))
   }
 
+  const MAX_FILE_SIZE = 5 * 1024 * 1024 
+  // const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
+
+  const beforeUpload = (file) => {
+    // if (!ALLOWED_TYPES.includes(file.type)) {
+    //   toast.error("Chỉ cho phép ảnh JPG, PNG, WEBP")
+    //   return Upload.LIST_IGNORE
+    // }
+
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("Ảnh không được vượt quá 5MB")
+      return Upload.LIST_IGNORE
+    }
+
+    return false // chặn auto upload
+  }
+
+  const uploadVerificationFiles = async () => {
+    console.log("Starting upload of files:", fileList)
+    if (!fileList.length) return
+
+    const formData = new FormData()
+    console.log("Uploading files:", fileList)
+    fileList.forEach(file => {
+      console.log("originFileObj:", file.originFileObj)
+      formData.append("imgs", file.originFileObj)
+    })
+
+    for (const pair of formData.entries()) {
+      console.log(pair[0], pair[1])
+    }
+    console.log("FormData prepared for upload:", formData)
+    try {
+      setUploading(true)
+
+      const res = await api.post("/Image/multiple", formData, {
+        onUploadProgress: (progressEvent) => {
+          const percent = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          )
+          setUploadProgress(percent)
+        },
+      })
+
+      const uploadedFiles = res.data.map((url, index) => ({
+        uid: fileList[index].uid,
+        name: fileList[index].name,
+        status: "done",
+        url,
+        thumbUrl: url,
+      }))
+
+      handleEditFormChange("verificationFiles", uploadedFiles)
+      toast.success("Upload thành công")
+    } catch (err) {
+      console.error(err)
+      toast.error("Upload thất bại")
+    } finally {
+      setUploading(false)
+      setUploadProgress(0)
+    }
+  }
+
   const handleUpdateAppraisal = async (center) => {
     if (!center?.verificationId) {
       toast.error('Không tìm thấy thông tin giám định để chỉnh sửa')
@@ -516,39 +581,28 @@ const CenterInspectionManagement = () => {
       console.log('Edit Verification Response:', response.data)
       const data = response.data
 
-      // Helper function to convert relative URLs to absolute URLs
-      const getImageUrl = (url) => {
-        if (!url) return ''
-        if (url.startsWith('http://') || url.startsWith('https://')) {
-          return url
-        }
-        // If relative URL, convert to absolute
-        const baseUrl = 'https://tms-api-tcgn.onrender.com'
-        return url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`
-      }
+      const mappedFiles = Array.isArray(data.verificationPhotos)
+      ? data.verificationPhotos.map((url, index) => ({
+          uid: `loaded-${index}`,
+          name: `Ảnh ${index + 1}`,
+          status: 'done',
+          url: url,
+          thumbUrl: url
+        }))
+      : []
 
       setEditTargetVerificationId(center.verificationId)
       setEditForm({
         completedDate: data.completedDate ? dayjs(data.completedDate) : null,
         inspectorNotes: data.inspectorNotes || '',
-        verificationFiles: Array.isArray(data.verificationPhotos)
-          ? data.verificationPhotos.map((url, index) => {
-            const imageUrl = getImageUrl(url)
-            return {
-              uid: `-${index}`,
-              name: `Ảnh ${index + 1}`,
-              status: 'done',
-              url: imageUrl,
-              thumbUrl: imageUrl
-            }
-          })
-          : [],
+        verificationFiles: mappedFiles,
         documentChecklistText: Array.isArray(data.documentChecklist) ? data.documentChecklist.join('\n') : '',
         isLocationVerified: !!data.isLocationVerified,
         isDocumentsVerified: !!data.isDocumentsVerified,
         isLicenseValid: !!data.isLicenseValid,
         scheduledDate: data.scheduledDate ? dayjs(data.scheduledDate) : null,
       })
+      setFileList(mappedFiles)
       setEditModalOpen(true)
     } catch (error) {
       console.error('Error loading verification for edit:', error)
@@ -602,13 +656,14 @@ const CenterInspectionManagement = () => {
     }
 
     setModalLoading(true)
+    console.log('Submitting edit for verification ID:', editForm)
 
     const payload = {
       completedDate: editForm.completedDate,
       inspectorNotes: editForm.inspectorNotes,
       verificationPhotos: Array.isArray(editForm.verificationFiles)
         ? editForm.verificationFiles
-          .map(file => file.url || file.name)
+          .map(file => file.url.img_url)
           .filter(Boolean)
         : [],
       documentChecklist: editForm.documentChecklistText
@@ -619,6 +674,7 @@ const CenterInspectionManagement = () => {
       isDocumentsVerified: !!editForm.isDocumentsVerified,
       isLicenseValid: !!editForm.isLicenseValid
     }
+    console.log('Update Verification Payload:', payload)
 
     try {
       const apiResponse = await api.put(`/CenterVerification/request/${editTargetVerificationId}`, payload)
@@ -635,21 +691,14 @@ const CenterInspectionManagement = () => {
     }
   }
 
+  console.log("FileList", fileList)
+
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
       {loading ? (
         <div>Loading...</div>
       ) : (
         <>
-          <Card className="!bg-gradient-to-r !from-[#dfb018] !to-[#ffd549] !rounded-xl shadow-xl">
-            <Title level={2} className="!text-white !m-0 !font-bold">
-              <TeamOutlined /> Xác thực trung tâm
-            </Title>
-            <Text className="!text-white/90 !text-base">
-              Kiểm tra và phê duyệt các trung tâm dạy kèm đăng ký.
-            </Text>
-          </Card>
-
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             {statusFilterOptions.map(option => (
               <motion.button
@@ -689,8 +738,8 @@ const CenterInspectionManagement = () => {
               )}
               <Button
                 type="primary"
-                onClick={handleRefresh}
                 className="group"
+                onClick={handleRefresh}
               >
                 <ReloadOutlined className="group-hover:animate-spin" />
                 Làm mới
@@ -733,7 +782,7 @@ const CenterInspectionManagement = () => {
                     onChange: handlePendingPaginationChange,
                     className: "!mr-2"
                   }}
-                  scroll={{ x: "max-content", y: 75 * 5 }}
+                  scroll={{ x: "max-content", ...(filteredPendingTableData.length > 5 ? {y: 75*5} : "") }}
                 />
               }
             </div>
@@ -841,18 +890,21 @@ const CenterInspectionManagement = () => {
                   <Upload
                     listType="picture-card"
                     multiple
-                    fileList={editForm.verificationFiles}
-                    beforeUpload={() => false}
-                    onChange={({ fileList }) => handleEditFormChange('verificationFiles', fileList)}
+                    fileList={fileList}
+                    beforeUpload={beforeUpload}
+                    onChange={({ fileList }) => {
+                      setFileList(fileList)
+                      handleEditFormChange("verificationFiles", fileList)
+                    }}
                     onPreview={(file) => {
                       setPreviewImage(file.url || file.thumbUrl)
                       setPreviewOpen(true)
                     }}
                   >
-                    {editForm.verificationFiles.length >= 8 ? null : (
+                    {fileList.length < 8 && (
                       <div>
                         <PlusOutlined />
-                        <div style={{ marginTop: 8 }}>Tải ảnh</div>
+                        <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
                       </div>
                     )}
                   </Upload>
@@ -867,6 +919,18 @@ const CenterInspectionManagement = () => {
                       src={previewImage}
                     />
                   )}
+                  {uploading && (
+                    <Progress percent={uploadProgress} status="active" />
+                  )}
+
+                  <Button
+                    type="primary"
+                    onClick={uploadVerificationFiles}
+                    disabled={!fileList.length}
+                    loading={uploading}
+                  >
+                    Upload ảnh
+                  </Button>
                 </div>
               </div>
             </div>
@@ -877,4 +941,4 @@ const CenterInspectionManagement = () => {
   )
 }
 
-export default CenterInspectionManagement
+export default InspectCenterVerificaitonTab

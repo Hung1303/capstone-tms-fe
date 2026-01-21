@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, UserOutlined, PhoneOutlined, MailOutlined, StarOutlined,
+import { SearchOutlined, PlusOutlined, EditOutlined, EyeOutlined, UserOutlined, PhoneOutlined, MailOutlined, StarOutlined,
          UploadOutlined, FileExcelOutlined } from '@ant-design/icons'
-import { Modal, Button, Tag, Popconfirm, Form, Input, InputNumber, Progress, Upload, Table, Space, Tooltip, Card } from 'antd'
+import { Modal, Button, Tag, Popconfirm, Form, Input, InputNumber, Progress, Upload, Table, Space, Tooltip, Card, Select } from 'antd'
+import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { toast } from 'react-toastify'
 import * as XLSX from 'xlsx'
 import api from '../../config/axios'
@@ -145,8 +146,8 @@ const TeacherManagement = () => {
     console.log('Editing teacher:', teacher)
     setSelectedTeacher(teacher)
     editForm.setFieldsValue({
-      email: teacher.email || '',
-      phoneNumber: teacher.phoneNumber || '',
+      email: teacher.user.email || '',
+      phoneNumber: teacher.user.phoneNumber || '',
       subjects: teacher.subject || teacher.subjects || '',
       bio: teacher.bio || ''
     })
@@ -269,7 +270,7 @@ const TeacherManagement = () => {
       toast.success('Đã thêm giáo viên thành công')
       setAddModalVisible(false)
       form.resetFields()
-      fetchTeachers()
+      fetchTeachers(pagination.pageNumber, pagination.pageSize)
     } catch (error) {
       console.error('Error creating teacher:', error)
 
@@ -315,6 +316,54 @@ const TeacherManagement = () => {
       setSubmitting(false)
     }
   }
+
+  // const handleCreateVerification = (teacher) => {
+  //   console.log('Creating verification for teacher:', teacher)
+  //   createVerifyForm.setFieldsValue({
+  //     teacherProfileId: teacher.profileId,
+  //     notes: ""
+  //   })
+  //   setCreateModalOpen(true)
+  // }
+
+  // const handleSubmitVerification = async () => {
+  //   try {
+  //     const values = await createVerifyForm.validateFields()
+  //     setCreateVerifyLoading(true)
+      
+  //     const payload = {
+  //       teacherProfileId: values.teacherProfileId,
+  //       notes: values.notes || ''
+  //     }
+      
+  //     console.log('Creating verification with payload:', payload)
+  //     const response = await api.post('/teacher-verifications', payload)
+  //     console.log('Create verification response:', response.data)
+      
+  //     toast.success('Tạo yêu cầu kiểm định thành công')
+  //     setCreateModalOpen(false)
+  //     createVerifyForm.resetFields()
+      
+  //     fetchTeachers(pagination.pageNumber, pagination.pageSize)
+  //   } catch (error) {
+  //     console.error('Error creating verification:', error)
+
+  //     // if (error.code === 'ERR_NETWORK') {
+  //     //   logout()
+  //     // } 
+
+  //     const errorMessage = error.response?.data?.message || 'Không thể tạo yêu cầu kiểm định'
+  //     toast.error(errorMessage)
+      
+  //   } finally {
+  //     setCreateVerifyLoading(false)
+  //   }
+  // }
+
+  // const handleCancel = () => {
+  //   setCreateModalOpen(false)
+  //   form.resetFields()
+  // }
 
   const handleUploadExcel = () => {
     setUploadModalVisible(true)
@@ -439,7 +488,7 @@ const TeacherManagement = () => {
 
       if (results.success > 0) {
         toast.success(`Đã thêm thành công ${results.success} giáo viên`)
-        fetchTeachers()
+        fetchTeachers(pagination.pageNumber, pagination.pageSize)
       }
 
       if (results.failed > 0) {
@@ -546,20 +595,20 @@ const TeacherManagement = () => {
     {
       title: 'Khóa học',
       key: 'courses',
-      render: (_, teacher) => (
+      render: (_, record) => (
         <div className="text-sm text-gray-900">
-          {teacher.courses.length || 0} khóa học
+          {record.courses.length || 0} khóa học
         </div>
       ),
     },
     {
       title: 'Đánh giá',
       key: 'rating',
-      render: (_, teacher) => (
+      render: (_, record) => (
         <div className="flex items-center gap-1">
           <StarOutlined className="text-yellow-400" />
           <span className="text-sm font-medium text-gray-900">
-            {teacher.rating ? teacher.rating.toFixed(1) : 'N/A'}
+            {record.rating ? record.rating.toFixed(1) : 'N/A'}
           </span>
         </div>
       ),
@@ -567,22 +616,33 @@ const TeacherManagement = () => {
     {
       title: 'Thao tác',
       key: 'actions',
-      render: (_, teacher) => (
+      render: (_, record) => (
         <Space size="small">
           <Tooltip title="Xem chi tiết">
             <Button
               type="link"
               icon={<EyeOutlined className="!text-blue-500 !text-lg hover:!text-blue-400 active:!text-blue-600"/>}
-              onClick={() => handleViewTeacher(teacher)}
+              onClick={() => handleViewTeacher(record)}
             />
           </Tooltip>
           <Tooltip title="Chỉnh sửa">
             <Button
               type="link"
               icon={<EditOutlined className="!text-yellow-500 !text-lg hover:!text-yellow-400 active:!text-yellow-600"/>}
-              onClick={() => handleEditTeacher(teacher)}
+              onClick={() => handleEditTeacher(record)}
             />
           </Tooltip>
+          {/* <Tooltip title="Tạo yêu cầu kiểm định">
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.8 }}
+              onClick={() => handleCreateVerification(record)}
+              className="cursor-pointer text-lg text-green-500 hover:text-green-600"
+            >
+            <SendOutlined />
+          </motion.button>
+        </Tooltip> */}
           {/* <Popconfirm
             title="Bạn có chắc chắn muốn xóa giáo viên này?"
             onConfirm={() => handleDeleteTeacher(teacher.id)}
@@ -604,11 +664,7 @@ const TeacherManagement = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Quản lý giáo viên</h2>
-          <p className="text-gray-600">Quản lý thông tin giáo viên và khóa học</p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
         <div className="flex gap-2">
           <button
             className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
@@ -649,40 +705,41 @@ const TeacherManagement = () => {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm theo tên, email, số điện thoại hoặc môn học..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-          <select
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <Input
+            className="search-input"
+            size="large"
+            placeholder="ìm kiếm theo tên, email, số điện thoại hoặc môn học..."
+            prefix={<SearchOutlined className="search-icon" />}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            allowClear
+          />
+          <Select
             value={filterSubject}
-            onChange={(e) => setFilterSubject(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            onChange={(value) => setFilterSubject(value)}
+            placeholder="Tất cả môn học"
+            style={{ width: 200, textAlign: 'center' }}
+            allowClear
           >
-            <option value="all">Tất cả môn học</option>
+            <Select.Option value="all">Tất cả môn học</Select.Option>
             {getUniqueSubjects().map(subject => (
-              <option key={subject} value={subject}>{subject}</option>
+              <Select.Option key={subject} value={subject}>{subject}</Select.Option>
             ))}
-          </select>
-          <select
+          </Select>
+          <Select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            onChange={(value) => setFilterStatus(value)}
+            placeholder="Tất cả trạng thái"
+            style={{ width: 200, textAlign: 'center' }}
+            allowClear
           >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="Active">Hoạt động</option>
-            <option value="Inactive">Không hoạt động</option>
-            <option value="Pending">Chờ duyệt</option>
-            <option value="Suspended">Tạm khóa</option>
-          </select>
+            <Select.Option value="all">Tất cả trạng thái</Select.Option>
+            <Select.Option value="Active">Hoạt động</Select.Option>
+            <Select.Option value="Inactive">Không hoạt động</Select.Option>
+            <Select.Option value="Pending">Chờ duyệt</Select.Option>
+            <Select.Option value="Suspended">Tạm khóa</Select.Option>
+          </Select>
         </div>
       </div>
 
@@ -1186,6 +1243,43 @@ const TeacherManagement = () => {
           )}
         </div>
       </Modal>
+
+      {/* Create Verification Modal */}
+      {/* <Modal
+        title="Tạo yêu cầu kiểm định giáo viên"
+        open={createModalOpen}
+        onOk={handleSubmitVerification}
+        onCancel={handleCancel}
+        confirmLoading={createVerifyLoading}
+        okText="Tạo yêu cầu"
+        cancelText="Hủy"
+        width={600}
+      >
+        <Form
+          form={createVerifyForm}
+          layout="vertical"
+          className="mt-4"
+        >
+          <Form.Item
+            name="teacherProfileId"
+            label="ID Giáo viên"
+            rules={[{ required: true, message: 'Vui lòng chọn giáo viên' }]}
+            hidden
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="notes"
+            label="Ghi chú"
+          >
+            <Input.TextArea
+              rows={4}
+              placeholder="Nhập ghi chú (tùy chọn)..."
+            />
+          </Form.Item>
+        </Form>
+      </Modal> */}
     </div>
   )
 }

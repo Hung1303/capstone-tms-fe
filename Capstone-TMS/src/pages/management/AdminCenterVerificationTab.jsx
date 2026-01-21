@@ -110,7 +110,7 @@ const generateEmailBodyUI = ({ center, inspectorName, scheduledDate }) => {
   )
 }
 
-const CenterManagement = () => {
+const AdminCenterVerificationTab = () => {
   const { user, logout, loading: authLoading } = useAuth()
   const initialFormData = {
     centerProfileId: "",
@@ -1018,16 +1018,6 @@ const CenterManagement = () => {
         <div>Loading...</div>
       ) : (
         <>
-          {/* Header */}
-          <Card className="!bg-gradient-to-r !from-[#26aaaa] !to-[#71e3e3] !rounded-xl shadow-xl">
-            <Title level={2} className="!text-white !m-0 !font-bold">
-              <TeamOutlined /> Quản lý trung tâm
-            </Title>
-            <Text className="!text-white/90 !text-base">
-              Kiểm tra và phê duyệt các trung tâm dạy kèm đăng ký.
-            </Text>
-          </Card>
-
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <motion.button
@@ -1540,4 +1530,4 @@ const CenterManagement = () => {
   )
 }
 
-export default CenterManagement
+export default AdminCenterVerificationTab
