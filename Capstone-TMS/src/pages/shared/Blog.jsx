@@ -1,148 +1,33 @@
 import { useEffect, useState } from 'react'
-import { Card, Input, Typography, Avatar, Button, Spin, Empty, Tooltip, Image, Divider, message } from 'antd'
-import { 
-  SearchOutlined, 
-  LikeOutlined, 
-  MessageOutlined, 
-  ShareAltOutlined, 
-  MoreOutlined, 
-  UserOutlined 
-} from '@ant-design/icons'
+import { Input, Typography, Spin, Empty, message, Card, Tag, Button, Space } from 'antd'
+import { SearchOutlined, ShoppingCartOutlined, LockOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
+import dayjs from 'dayjs'
 import api from '../../config/axios'
+import BlogPostCard from '../../components/BlogPostCard'
+import { useCart } from '../../hooks/useCart'
+import { useAuth } from '../../contexts/AuthContext'
 
-const { Title, Text, Paragraph } = Typography
+const { Title, Text } = Typography
 
-// Component con để hiển thị từng bài post (giúp code gọn hơn)
-const BlogPost = ({ blog }) => {
-  const [isExpanded, setIsExpanded] = useState(false)
-
-  // Xử lý ngày tháng an toàn
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Vừa xong';
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return 'Ngày không xác định';
-      return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    } catch (e) {
-      return 'Vừa xong';
-    }
-  };
-
-  // Tạo màu ngẫu nhiên cho Avatar dựa trên tên
-  const stringToColor = (string) => {
-    let hash = 0;
-    for (let i = 0; i < string.length; i++) {
-      hash = string.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const c = (hash & 0x00ffffff).toString(16).toUpperCase();
-    return '#' + '00000'.substring(0, 6 - c.length) + c;
-  };
-
-  const avatarColor = stringToColor(blog.centerName || 'Center');
-
-  return (
-    <Card
-      className="mb-4 shadow-sm hover:shadow-md transition-shadow rounded-lg border-gray-200"
-      bodyStyle={{ padding: '12px 16px 4px 16px' }} // Tinh chỉnh padding cho giống FB
-    >
-      {/* Header: Avatar + Tên + Ngày */}
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex gap-3">
-          <Avatar 
-            size={40} 
-            style={{ backgroundColor: avatarColor, verticalAlign: 'middle' }}
-            icon={<UserOutlined />}
-          >
-            {blog.centerName ? blog.centerName.charAt(0).toUpperCase() : 'C'}
-          </Avatar>
-          <div className="flex flex-col">
-            <Text strong className="text-base leading-tight cursor-pointer hover:underline">
-              {blog.centerName || 'Trung tâm giáo dục'}
-            </Text>
-            <Tooltip title={new Date(blog.createdAt).toLocaleString('vi-VN')}>
-              <Text type="secondary" className="text-xs cursor-pointer hover:underline">
-                {formatDate(blog.createdAt)}
-              </Text>
-            </Tooltip>
-          </div>
-        </div>
-        <Button type="text" shape="circle" icon={<MoreOutlined />} />
-      </div>
-
-      {/* Nội dung bài viết */}
-      <div className="mb-3">
-        {blog.title && (
-          <Title level={5} className="!mb-2 !font-bold">
-            {blog.title}
-          </Title>
-        )}
-        
-        <div className="text-gray-800 text-[15px] whitespace-pre-wrap leading-relaxed">
-          {isExpanded ? (
-            blog.content
-          ) : (
-            <Paragraph 
-              ellipsis={{ 
-                rows: 3, 
-                expandable: false, 
-              }} 
-              className="!mb-0"
-            >
-              {blog.content}
-            </Paragraph>
-          )}
-          
-          {/* Nút Xem thêm / Thu gọn thông minh */}
-          {blog.content && blog.content.length > 150 && (
-            <span 
-              onClick={() => setIsExpanded(!isExpanded)} 
-              className="text-blue-600 font-medium cursor-pointer hover:underline ml-1"
-            >
-              {isExpanded ? 'Thu gọn' : 'Xem thêm'}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Hình ảnh (Nếu có) hoặc Placeholder nếu muốn giao diện đẹp hơn */}
-      <div className="-mx-4 mb-2">
-        {blog.thumbnailUrl ? (
-          <Image
-            width="100%"
-            height={300}
-            src={blog.thumbnailUrl}
-            alt="Post content"
-            className="object-cover"
-            fallback="https://via.placeholder.com/600x300?text=TutorLink+Education"
-          />
-        ) : (
-            // Nếu không có ảnh, có thể ẩn đi hoặc hiển thị một dải màu nhẹ để phân cách
-            null
-        )}
-      </div>
-
-      <Divider className="!my-2" />
-
-      {/* Thanh hành động (Like/Comment/Share) */}
-      <div className="flex justify-around items-center py-1">
-        <Button type="text" icon={<LikeOutlined />} className="flex-1 text-gray-600 font-medium hover:bg-gray-100">
-          Thích
-        </Button>
-        <Button type="text" icon={<MessageOutlined />} className="flex-1 text-gray-600 font-medium hover:bg-gray-100">
-          Bình luận
-        </Button>
-        <Button type="text" icon={<ShareAltOutlined />} className="flex-1 text-gray-600 font-medium hover:bg-gray-100">
-          Chia sẻ
-        </Button>
-      </div>
-    </Card>
-  )
+const statusLabel = {
+  0: { text: "Nháp", color: "default" },
+  1: { text: "Chờ duyệt", color: "gold" },
+  2: { text: "Đang mở", color: "green" },
+  3: { text: "Tạm dừng", color: "red" }
 }
+
+const formatCurrency = (value) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value)
 
 const Blog = () => {
   const [blogs, setBlogs] = useState([])
   const [loading, setLoading] = useState(false)
+  const [courses, setCourses] = useState([])
+  const [coursesLoading, setCoursesLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { addItem, cartItems } = useCart()
 
   const fetchBlogs = async () => {
     setLoading(true)
@@ -153,12 +38,11 @@ const Blog = () => {
           pageSize: 100,
         }
       })
-      // Xử lý linh hoạt cấu trúc trả về
       const blogData = response.data?.blogs || response.data || []
       
       // Filter bài đã published
       const publishedBlogs = Array.isArray(blogData) 
-        ? blogData.filter(blog => blog.status === 'Published') 
+        ? blogData.filter(blog => blog.status === 'Published')
         : []
         
       setBlogs(publishedBlogs)
@@ -170,8 +54,27 @@ const Blog = () => {
     }
   }
 
+  const fetchCourses = async () => {
+    setCoursesLoading(true)
+    try {
+      const response = await api.get('/Course/Published/Courses', {
+        params: {
+          pageNumber: 1,
+          pageSize: 5,
+        }
+      })
+      const courseData = response.data?.data || []
+      setCourses(Array.isArray(courseData) ? courseData : [])
+    } catch (error) {
+      console.error('Lỗi khi tải khóa học:', error)
+    } finally {
+      setCoursesLoading(false)
+    }
+  }
+
   useEffect(() => {
     fetchBlogs()
+    fetchCourses()
   }, [])
 
   const filteredBlogs = blogs.filter(blog => {
@@ -183,9 +86,29 @@ const Blog = () => {
     )
   })
 
+  const handleAddToCart = (course) => {
+    if (!user) {
+      message.error('Vui lòng đăng nhập để thêm khóa học vào giỏ hàng')
+      navigate('/login')
+      return
+    }
+
+    if (user.role !== 'Parent') {
+      message.error('Chỉ phụ huynh mới có thể thêm khóa học vào giỏ hàng')
+      return
+    }
+
+    const added = addItem(course)
+    if (added) {
+      message.success('Đã thêm vào giỏ hàng')
+    } else {
+      message.info('Khóa học đã có trong giỏ')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#f0f2f5] py-6">
-      <div className="max-w-2xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-4">
         
         {/* Header Section */}
         <div className="mb-6 text-center">
@@ -208,28 +131,107 @@ const Blog = () => {
             />
         </div>
 
-        {/* Content Stream */}
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Spin size="large" tip="Đang tải bản tin..." />
+        {/* Main Content - 2 Columns */}
+        <div className="grid grid-cols-3 gap-6">
+          {/* Left Column: Blogs (2/3) */}
+          <div className="col-span-2">
+            {loading ? (
+              <div className="flex justify-center items-center py-20">
+                <Spin size="large" tip="Đang tải bản tin..." />
+              </div>
+            ) : filteredBlogs.length === 0 ? (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={searchTerm ? 'Không tìm thấy bài viết phù hợp' : 'Chưa có bài viết nào'}
+                className="bg-white p-8 rounded-lg shadow-sm"
+              />
+            ) : (
+              <div className="space-y-4">
+                {filteredBlogs.map((blog) => (
+                  <BlogPostCard key={blog.blogId} blog={blog} onBlogUpdate={fetchBlogs} showCenterLink={true} />
+                ))}
+                
+                <div className="text-center py-6">
+                    <Text type="secondary">Bạn đã xem hết tin tức</Text>
+                </div>
+              </div>
+            )}
           </div>
-        ) : filteredBlogs.length === 0 ? (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={searchTerm ? 'Không tìm thấy bài viết phù hợp' : 'Chưa có bài viết nào'}
-            className="bg-white p-8 rounded-lg shadow-sm"
-          />
-        ) : (
-          <div className="space-y-4">
-            {filteredBlogs.map((blog) => (
-              <BlogPost key={blog.blogId} blog={blog} />
-            ))}
-            
-            <div className="text-center py-6">
-                <Text type="secondary">Bạn đã xem hết tin tức</Text>
-            </div>
+
+          {/* Right Column: Courses (1/3) */}
+          <div className="col-span-1">
+            <Card className="shadow-sm rounded-lg border-gray-200 sticky top-24">
+              <Title level={5} className="!mb-4">Khóa học mới</Title>
+
+              {coursesLoading ? (
+                <Spin />
+              ) : courses.length === 0 ? (
+                <Empty description="Chưa có khóa học" size="small" />
+              ) : (
+                <div className="space-y-3">
+                  {courses.map((course) => {
+                    const status = statusLabel[course.status] || { text: "Không xác định", color: "default" }
+                    const inCart = cartItems.some((item) => item.id === course.id)
+                    
+                    return (
+                      <div
+                        key={course.id}
+                        className="border rounded-lg p-3 hover:shadow-md transition-shadow"
+                      >
+                        {/* Course Header */}
+                        <div className="mb-2">
+                          <div className="flex justify-between items-start gap-2 mb-1">
+                            <Text strong className="line-clamp-2 text-sm flex-1">
+                              {course.title}
+                            </Text>
+                            <Tag color={status.color} className="text-xs whitespace-nowrap">
+                              {status.text}
+                            </Tag>
+                          </div>
+                          <Text type="secondary" className="text-xs">
+                            {course.subject}
+                          </Text>
+                        </div>
+
+                        {/* Course Info */}
+                        <div className="space-y-1 mb-3 text-xs text-gray-600">
+                          <div>🗺 {course.location}</div>
+                          <div> Lớp {course.gradeLevel}</div>
+                          <div> {formatCurrency(course.tuitionFee)}</div>
+                          <div> {dayjs(course.startDate).format("DD/MM/YYYY")}</div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <Space className="w-full" size={6}>
+                          <Button
+                            type="primary"
+                            size="small"
+                            block
+                            onClick={() => navigate('/courses')}
+                            className="flex-1"
+                          >
+                            Xem chi tiết
+                          </Button>
+                      
+                        </Space>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* View All Courses Button */}
+              <Button
+                type="default"
+                block
+                className="mt-4"
+                onClick={() => navigate('/courses')}
+              >
+                Xem tất cả khóa học
+              </Button>
+            </Card>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

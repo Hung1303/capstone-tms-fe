@@ -48,12 +48,12 @@ const ROLE_MENUS = {
       label: 'Duyệt Blog',
       path: '/admin/blog-approval'
     },
-    // {
-    //   key: '/admin/feedbacks',
-    //   icon: <MessageOutlined />,
-    //   label: 'Danh sách Feedback',
-    //   path: '/admin/feedbacks'
-    // },
+    {
+      key: '/admin/feedbacks',
+      icon: <MessageOutlined />,
+      label: 'Danh sách Feedback',
+      path: '/admin/feedbacks'
+    },
   ],
   Staff: [
     {

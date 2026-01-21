@@ -15,13 +15,16 @@ const menuData = [
     {
         label: 'Các khóa học',
         path: '/courses',
+    },
+    {
+        label: 'Blog',
+        path: '/blog',
     }
 ]
 
 const moreMenu = [
     { label: 'Tuyển dụng', path: '/recruitment' },
     { label: 'Giới thiệu', path: '/about' },
-    { label: 'Blog', path: '/blog' },
     { label: 'Hỏi đáp', path: '/faq' },
 ]
 

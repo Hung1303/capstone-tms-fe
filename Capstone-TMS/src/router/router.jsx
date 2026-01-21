@@ -13,6 +13,9 @@ import Contact from "../pages/shared/Contact";
 import Recruitment from "../pages/shared/Recruitment";
 import About from "../pages/shared/About";
 import Blog from "../pages/shared/Blog";
+import CenterBlog from "../pages/shared/CenterBlog";
+import BlogDetail from "../pages/shared/BlogDetail";
+import CourseDetail from "../pages/shared/CourseDetail";
 import FAQ from "../pages/shared/FAQ";
 import RegisterCenter from "../pages/shared/RegisterCenter";
 
@@ -102,6 +105,10 @@ export const router = createBrowserRouter([
             { path: "register-center", element: <RegisterCenter /> },
             { path: "about", element: <About /> },
             { path: "blog", element: <Blog /> },
+            { path: "blog/:blogId", element: <BlogDetail /> },
+            { path: "blog/center/:centerProfileId", element: <CenterBlog /> },
+            { path: "courses", element: <Course /> },
+            { path: "courses/:courseId", element: <CourseDetail /> },
             { path: "faq", element: <FAQ /> },
         ],
     },

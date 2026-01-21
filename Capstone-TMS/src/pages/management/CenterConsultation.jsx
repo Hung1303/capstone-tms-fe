@@ -77,12 +77,6 @@ const CenterConsultation = () => {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 p-4 shadow-sm">
         <h1 className="text-2xl font-bold text-gray-800">Tư vấn với Phụ huynh</h1>
-        <div className="flex items-center gap-2 mt-2">
-          <Badge
-            status="success"
-            text="Sẵn sàng"
-          />
-        </div>
       </div>
 
       {/* Error Alert */}
@@ -100,11 +94,8 @@ const CenterConsultation = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* Sessions List */}
         <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-3 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-800">Danh sách tư vấn</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              {sessions.length} phiên tư vấn
-            </p>
           </div>
 
           {loading && sessions.length === 0 ? (

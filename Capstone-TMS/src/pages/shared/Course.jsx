@@ -84,14 +84,21 @@ const Course = () => {
           <Col key={course.id} xs={24} sm={12} lg={8}>
             <Card
               title={
-                <Space direction="vertical" size={4}>
-                  <Typography.Text strong className="text-base">{course.title}</Typography.Text>
+                <Space direction="vertical" size={4} className="w-full">
+                  <Typography.Text 
+                    strong 
+                    className="text-base cursor-pointer hover:text-blue-600 hover:underline"
+                    onClick={() => navigate(`/courses/${course.id}`)}
+                  >
+                    {course.title}
+                  </Typography.Text>
                   <Typography.Text type="secondary">{course.subject}</Typography.Text>
                 </Space>
               }
               extra={<Tag color={status.color}>{status.text}</Tag>}
               loading={loading}
-              className="shadow-sm hover:shadow-md transition-shadow h-full"
+              className="shadow-sm hover:shadow-md transition-shadow h-full cursor-pointer"
+              onClick={() => navigate(`/courses/${course.id}`)}
             >
               <Space direction="vertical" size={10} className="w-full">
                 <Typography.Paragraph ellipsis={{ rows: 2 }}>{course.description || "Chưa có mô tả"}</Typography.Paragraph>
