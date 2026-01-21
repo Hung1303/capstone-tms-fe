@@ -37,13 +37,11 @@ import FeedbackList from "../pages/dashboard/FeedbackList";
 
 // Management pages
 import UserManagement from "../pages/management/UserManagement";
-import CenterManagement from "../pages/management/CenterManagement";
 import ClassManagement from "../pages/management/ClassManagement";
 import StudentManagement from "../pages/management/StudentManagement";
 import ScheduleManagement from "../pages/management/ScheduleManagement";
 import SubjectManagement from "../pages/management/SubjectManagement";
 import CourseManagement from "../pages/management/CourseManagement";
-import TeacherCourseApproval from "../pages/management/TeacherCourseApproval";
 import StaffCourseConfirmation from "../pages/management/StaffCourseConfirmation";
 import SubscriptionManagement from "../pages/management/SubscriptionManagement";
 import CenterSubscription from "../pages/management/CenterSubscription";
@@ -60,13 +58,10 @@ import AdminLayout from "../layouts/AdminLayout";
 // Components
 import ProtectedRoute from "../components/ProtectedRoute";
 import ChildrenManagement from "../pages/management/ChildrenManagement";
-import CenterInspectionManagement from "../pages/management/CenterInspectionManagement";
 import AdminCourseManagement from "../pages/management/AdminCourseManagement";
 import ParentCenters from "../pages/dashboard/ParentCenters";
 import ParentCourses from "../pages/dashboard/ParentCourses";
 import ParentSchedule from "../pages/dashboard/ParentSchedule";
-import ParentCentersMap from "../components/map";
-import { AuthProvider } from "../contexts/AuthContext";
 import EnrollmentManagement from "../pages/management/EnrollmentManagement";
 import PaymentSuccess from "../pages/shared/PaymentSuccess";
 import PaymentFailure from "../pages/shared/PaymentFailure";
@@ -75,6 +70,9 @@ import CenterConsultation from "../pages/management/CenterConsultation";
 import ParentConsultation from "../pages/management/ParentConsultation";
 import BlogManagement from "../pages/management/BlogManagement";
 import BlogApproval from "../pages/management/BlogApproval";
+import AdminVerification from "../pages/management/AdminVerification";
+import InspectorVerification from "../pages/management/InspectorVerification";
+import TeacherManagementMain from "../pages/management/TeacherManagementMain";
 
 export const router = createBrowserRouter([
 
@@ -128,7 +126,7 @@ export const router = createBrowserRouter([
         children: [
             { index: true, element: <AdminDashboard /> },
             { path: "users", element: <UserManagement /> },
-            { path: "centers", element: <CenterManagement /> },
+            { path: "verify", element: <AdminVerification /> },
             { path: "courses", element: <AdminCourseManagement /> },
             { path: "classes", element: <ClassManagement /> },
             { path: "subjects", element: <SubjectManagement /> },
@@ -168,7 +166,7 @@ export const router = createBrowserRouter([
         ),
         children: [
             { index: true, element: <StaffDashboard /> },
-            { path: "center", element: <CenterInspectionManagement /> },
+            { path: "verify", element: <InspectorVerification /> },
             { path: "course-approval", element: <ApprovalCourseTab /> },
             { path: "feedbacks", element: <FeedbackList /> },
         ],
@@ -190,7 +188,7 @@ export const router = createBrowserRouter([
             { path: "blog", element: <BlogManagement /> },
             { path: "subscription", element: <CenterSubscription /> },
             { path: "schedule", element: <CenterScheduleAssignment /> },
-            { path: "teachers", element: <TeacherManagement /> },
+            { path: "teachers", element: <TeacherManagementMain /> },
             { path: "enrollments", element: <EnrollmentManagement /> },
             { path: "consultation", element: <CenterConsultation /> },
             { path: "feedbacks", element: <FeedbackList /> },

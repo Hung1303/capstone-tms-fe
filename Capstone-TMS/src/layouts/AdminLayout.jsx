@@ -1,24 +1,7 @@
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'
-import { AuthProvider, useAuth } from '../contexts/AuthContext'
-import { 
-  DashboardOutlined,
-  UserOutlined,
-  TeamOutlined,
-  BookOutlined,
-  CalendarOutlined,
-  BarChartOutlined,
-  SettingOutlined,
-  LogoutOutlined,
-  CheckCircleOutlined,
-  FileTextOutlined,
-  DollarOutlined,
-  BellOutlined,
-  StarOutlined,
-  GiftOutlined,
-  EnvironmentOutlined,
-  MessageOutlined,
-  FileMarkdownOutlined
-} from '@ant-design/icons'
+import { useAuth } from '../contexts/AuthContext'
+import { DashboardOutlined, UserOutlined, TeamOutlined, BookOutlined, CalendarOutlined, BarChartOutlined, LogoutOutlined, CheckCircleOutlined,
+         FileTextOutlined, GiftOutlined, MessageOutlined, FileMarkdownOutlined, SafetyOutlined } from '@ant-design/icons'
 
 // Menu configuration cho từng role
 const ROLE_MENUS = {
@@ -36,10 +19,10 @@ const ROLE_MENUS = {
       path: '/admin/users'
     },
     {
-      key: '/admin/centers',
-      icon: <TeamOutlined />,
-      label: 'Quản lý trung tâm',
-      path: '/admin/centers'
+      key: '/admin/verify',
+      icon: <SafetyOutlined />,
+      label: 'Quản lý xác thực',
+      path: '/admin/verify'
     },
     {
       key: '/admin/courses',
@@ -118,10 +101,10 @@ const ROLE_MENUS = {
       path: '/inspector'
     },
     {
-      key: '/inspector/center',
-      icon: <TeamOutlined />,
-      label: 'Xác thực trung tâm',
-      path: '/inspector/center'
+      key: '/inspector/verify',
+      icon: <SafetyOutlined />,
+      label: 'Quản lý xác thực',
+      path: '/inspector/verify'
     },
     {
       key: '/inspector/course-approval',
@@ -298,30 +281,11 @@ const ROLE_MENUS = {
       icon: <FileTextOutlined />,
       label: 'Điểm số',
       path: '/student/grades'
-    },
-    // {
-    //   key: '/student/attendance',
-    //   icon: <CheckCircleOutlined />,
-    //   label: 'Điểm danh',
-    //   path: '/student/attendance'
-    // },
-    // {
-    //   key: '/student/homework',
-    //   icon: <FileTextOutlined />,
-    //   label: 'Bài tập',
-    //   path: '/student/homework'
-    // },
-    // {
-    //   key: '/student/materials',
-    //   icon: <FileTextOutlined />,
-    //   label: 'Tài liệu',
-    //   path: '/student/materials'
-    // }
+    }
   ]
 }
 
 const AdminLayout = () => {
-  // const [collapsed, setCollapsed] = useState(false)
   const { user, logout } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()

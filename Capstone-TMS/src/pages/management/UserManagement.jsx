@@ -139,7 +139,7 @@ const UserManagement = () => {
             value={record.status}
             onChange={(val) => handleChangeStatus(record.key, val)}
             style={{ width: 155, textAlign: "center" }}
-            disabled={record.role === "Center" ? true : false}
+            disabled={record.role === "Center" || record.role === "Teacher" ? true : false}
             options={[
               { value: 'Pending', label: 'Chờ duyệt', disabled: true },
               { value: 'Active', label: 'Hoạt động' },
@@ -155,29 +155,33 @@ const UserManagement = () => {
       key: 'actions',
       width: 100,
       align: 'center',
-      render: (_, record) => (
-        <div className="flex items-center justify-center gap-2">
-          <Popconfirm
-            title="Xác nhận xóa"
-            description={`Bạn có chắc chắn muốn xóa người dùng "${record.account.fullName}"?`}
-            onConfirm={() => handleDeleteUser(record.key)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okType="danger"
-            icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />}
-          >
-            <motion.button
-              type="button"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className="cursor-pointer p-1 text-lg text-red-600 hover:bg-red-50 rounded"
-              onClick={(e) => e.stopPropagation()}
+      render: (_, record) => {
+        if (record.role !== "Admin") {
+
+          return (
+            <Popconfirm
+              title="Xác nhận xóa"
+              description={`Bạn có chắc chắn muốn xóa người dùng "${record.account.fullName}"?`}
+              onConfirm={() => handleDeleteUser(record.key)}
+              okText="Xóa"
+              cancelText="Hủy"
+              okType="danger"
+              icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />}
+              placement='topLeft'
             >
-              <DeleteOutlined />
-            </motion.button>
-          </Popconfirm>
-        </div>
-      )
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                className="cursor-pointer p-1 text-lg text-red-600 hover:bg-red-50 rounded"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <DeleteOutlined />
+              </motion.button>
+            </Popconfirm>
+          )
+        }
+      }
     }
   ]
 
@@ -651,14 +655,14 @@ const UserManagement = () => {
 							</div>
 
 							<div>
-								<label className="block text-sm font-medium text-slate-700 mb-2">Tên đăng nhập :</label>
+								<label className="block text-sm font-medium text-slate-700 mb-2">Tên tài khoản :</label>
 								<Input
 									name="userName"
 									type="text"
 									value={formData.userName}
 									onChange={(e) => handleChange("userName", e.target.value)}
 									className="!w-full !px-4 !py-2 !border-2"
-									placeholder="Nhập tên đăng nhập"
+									placeholder="Nhập tên tài khoản"
 								/>
 								{errors.userName &&
 									<p className="mt-1 text-sm text-red-600">{errors.userName}</p>
