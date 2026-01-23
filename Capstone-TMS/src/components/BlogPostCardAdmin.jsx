@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Card, Typography, Avatar, Button, Divider, Image } from 'antd'
-import { MoreOutlined, UserOutlined } from '@ant-design/icons'
+import { Card, Typography, Avatar, Button, Divider, Image, Row, Col, Empty } from 'antd'
+import { MoreOutlined, UserOutlined, PlayCircleOutlined } from '@ant-design/icons'
 
 const { Title, Text, Paragraph } = Typography
 
-const BlogPostCardAdmin = ({ blog, showCenterLink = false }) => {
+const BlogPostCardAdmin = ({ blog = false }) => {
   const [isExpanded, setIsExpanded] = useState(false)
 
   // Xử lý ngày tháng an toàn
@@ -36,6 +36,35 @@ const BlogPostCardAdmin = ({ blog, showCenterLink = false }) => {
   }
 
   const avatarColor = stringToColor(blog.centerName || 'Center')
+
+  // Lấy danh sách ảnh và video từ images array
+  const getMediaItems = () => {
+    const mediaItems = []
+    
+    // Thêm ảnh/video từ mảng images
+    if (blog.images && Array.isArray(blog.images) && blog.images.length > 0) {
+      blog.images.forEach((item) => {
+        // Kiểm tra xem có phải video không (dựa vào URL hoặc tên file)
+        const isVideo = item.img_url?.includes('/video/upload/') || 
+                       item.name?.toLowerCase().endsWith('.mp4') ||
+                       item.name?.toLowerCase().endsWith('.webm') ||
+                       item.name?.toLowerCase().endsWith('.mov')
+        
+        mediaItems.push({
+          url: item.img_url,
+          type: isVideo ? 'video' : 'image',
+          name: item.name
+        })
+      })
+    }
+    
+    return mediaItems
+  }
+
+  const mediaItems = getMediaItems()
+  const images = mediaItems.filter(m => m.type === 'image')
+  const videos = mediaItems.filter(m => m.type === 'video')
+  const hasMedia = mediaItems.length > 0
 
   return (
     <Card
@@ -98,19 +127,69 @@ const BlogPostCardAdmin = ({ blog, showCenterLink = false }) => {
         </div>
       </div>
 
-      {/* Hình ảnh (Nếu có) */}
-      <div className="-mx-4 mb-2">
-        {blog.imageUrl ? (
-          <Image
-            width="100%"
-            height={300}
-            src={blog.imageUrl}
-            alt="Post content"
-            className="object-cover"
-            fallback="https://via.placeholder.com/600x300?text=TutorLink+Education"
+      {/* Hiển thị Ảnh và Video */}
+      {hasMedia && (
+        <div className="-mx-4 mb-2">
+          {/* Ảnh */}
+          {images.length > 0 && (
+            <div className="mb-3">
+              <p className="text-xs text-gray-500 px-4 mb-2">
+                📸 Ảnh ({images.length})
+              </p>
+              <Row gutter={[8, 8]} className="px-4">
+                {images.map((image, index) => (
+                  <Col key={index} xs={24} sm={12} md={8}>
+                    <Image
+                      width="100%"
+                      height={150}
+                      src={image.url}
+                      alt={image.name || `Image ${index + 1}`}
+                      className="object-cover rounded"
+                      fallback="https://via.placeholder.com/300x150?text=No+Image"
+                    />
+                  </Col>
+                ))}
+              </Row>
+            </div>
+          )}
+
+          {/* Video */}
+          {videos.length > 0 && (
+            <div className="mb-3">
+              <p className="text-xs text-gray-500 px-4 mb-2">
+                🎥 Video ({videos.length})
+              </p>
+              <Row gutter={[8, 8]} className="px-4">
+                {videos.map((video, index) => (
+                  <Col key={index} xs={24} sm={12} md={8}>
+                    <div className="relative bg-gray-900 rounded overflow-hidden" style={{ height: '150px' }}>
+                      <video
+                        width="100%"
+                        height="150"
+                        controls
+                        className="object-cover"
+                        src={video.url}
+                      >
+                        Trình duyệt của bạn không hỗ trợ video
+                      </video>
+                    </div>
+                  </Col>
+                ))}
+              </Row>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Nếu không có media */}
+      {!hasMedia && (
+        <div className="-mx-4 mb-2 px-4">
+          <Empty 
+            description="Không có ảnh hoặc video" 
+            style={{ margin: '20px 0' }}
           />
-        ) : null}
-      </div>
+        </div>
+      )}
 
       <Divider className="!my-2" />
     </Card>

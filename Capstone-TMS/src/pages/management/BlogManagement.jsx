@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Table, Button, Modal, Form, Input, Space, message, Tag, Popconfirm, Drawer, Select, Upload } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, UploadOutlined } from '@ant-design/icons'
+import { Table, Button, Modal, Form, Input, Space, message, Tag, Popconfirm, Drawer, Select, Upload, Card, Row, Col } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, UploadOutlined, CloseOutlined } from '@ant-design/icons'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../config/axios'
 import BlogPostCard from '../../components/BlogPostCard'
+import { createBlogPost, updateBlogPost } from '../../services/blogService'
 
 const BlogManagement = () => {
   const { user } = useAuth()
@@ -16,9 +17,12 @@ const BlogManagement = () => {
   const [editingBlog, setEditingBlog] = useState(null)
   const [viewingBlog, setViewingBlog] = useState(null)
   const [form] = Form.useForm()
-  const [selectedImageFile, setSelectedImageFile] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // State cho quản lý ảnh/video
+  const [mediaFiles, setMediaFiles] = useState([]) // { id, file, preview, type, isThumbnail }
+  const [selectedThumbnailId, setSelectedThumbnailId] = useState(null)
+  const [mediaIdCounter, setMediaIdCounter] = useState(0)
 
   const fetchCourses = async () => {
     setCoursesLoading(true)
@@ -31,6 +35,50 @@ const BlogManagement = () => {
     } finally {
       setCoursesLoading(false)
     }
+  }
+
+  // Hàm thêm file media (ảnh/video)
+  const handleAddMedia = (file) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const newMedia = {
+        id: mediaIdCounter,
+        file: file,
+        preview: e.target.result,
+        type: file.type.startsWith('video') ? 'video' : 'image',
+        isThumbnail: mediaFiles.length === 0 // File đầu tiên mặc định là thumbnail
+      }
+      
+      setMediaFiles([...mediaFiles, newMedia])
+      setMediaIdCounter(mediaIdCounter + 1)
+      
+      // Nếu là file đầu tiên, tự động chọn làm thumbnail
+      if (mediaFiles.length === 0) {
+        setSelectedThumbnailId(newMedia.id)
+      }
+    }
+    reader.readAsDataURL(file)
+    return false
+  }
+
+  // Hàm xóa file media
+  const handleRemoveMedia = (mediaId) => {
+    const updatedMedia = mediaFiles.filter(m => m.id !== mediaId)
+    setMediaFiles(updatedMedia)
+    
+    // Nếu xóa thumbnail, chọn file đầu tiên làm thumbnail mới
+    if (selectedThumbnailId === mediaId) {
+      if (updatedMedia.length > 0) {
+        setSelectedThumbnailId(updatedMedia[0].id)
+      } else {
+        setSelectedThumbnailId(null)
+      }
+    }
+  }
+
+  // Hàm chọn thumbnail
+  const handleSelectThumbnail = (mediaId) => {
+    setSelectedThumbnailId(mediaId)
   }
 
   const fetchBlogs = async () => {
@@ -71,13 +119,15 @@ const BlogManagement = () => {
         content: blog.content,
         courseId: blog.courseId,
       })
-      setImagePreview(blog.imageUrl || null)
     } else {
       setEditingBlog(null)
       form.resetFields()
-      setSelectedImageFile(null)
-      setImagePreview(null)
     }
+    
+    // Reset media files
+    setMediaFiles([])
+    setSelectedThumbnailId(null)
+    setMediaIdCounter(0)
     setIsModalVisible(true)
   }
 
@@ -85,49 +135,76 @@ const BlogManagement = () => {
     setIsModalVisible(false)
     setEditingBlog(null)
     form.resetFields()
-    setSelectedImageFile(null)
-    setImagePreview(null)
+    setMediaFiles([])
+    setSelectedThumbnailId(null)
+    setMediaIdCounter(0)
   }
 
   const handleSubmit = async (values) => {
+    console.log('=== handleSubmit START ===')
+    console.log('handleSubmit called with values:', values)
+    console.log('mediaFiles:', mediaFiles)
+    console.log('mediaFiles.length:', mediaFiles.length)
+    
     try {
       setIsSubmitting(true)
-      const formData = new FormData()
+      console.log('✅ setIsSubmitting(true)')
       
-      formData.append('title', values.title)
-      formData.append('content', values.content)
-      formData.append('courseId', values.courseId || '')
-      
-      // Thêm file ảnh nếu có
-      if (selectedImageFile) {
-        formData.append('img', selectedImageFile)
+      // Kiểm tra có ít nhất một file media
+      if (mediaFiles.length === 0) {
+        console.log('❌ No media files')
+        message.error('Vui lòng thêm ít nhất một ảnh hoặc video')
+        setIsSubmitting(false)
+        return
       }
-
+      
+      console.log('✅ Media files check passed')
+      
+      // Tách ảnh và video
+      const images = mediaFiles.filter(m => m.type === 'image').map(m => m.file)
+      const videos = mediaFiles.filter(m => m.type === 'video').map(m => m.file)
+      
+      console.log('✅ Images count:', images.length)
+      console.log('✅ Videos count:', videos.length)
+      
+      // Lấy file thumbnail được chọn (nếu có)
+      const thumbnailMedia = mediaFiles.find(m => m.id === selectedThumbnailId)
+      
+      console.log('✅ Thumbnail media found:', !!thumbnailMedia)
+      console.log('Preparing blog data...')
+      const blogData = {
+        title: values.title,
+        content: values.content,
+        courseId: values.courseId || '',
+        images: images,
+        videos: videos
+      }
+      
+      console.log('✅ Blog data prepared:', blogData)
+      
       if (editingBlog) {
         // Cập nhật blog
-        await api.put(`/BlogPost/Update/${editingBlog.blogId}`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        })
+        console.log('🔄 Updating blog...')
+        await updateBlogPost(editingBlog.blogId, blogData)
         message.success('Cập nhật blog thành công')
       } else {
         // Tạo blog mới
-        await api.post(`/BlogPost/${user.centerProfileId}`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        })
+        console.log('🆕 Creating new blog...')
+        console.log('centerProfileId:', user.centerProfileId)
+        const result = await createBlogPost(user.centerProfileId, blogData)
+        console.log('✅ Blog created successfully:', result)
         message.success('Tạo blog thành công')
       }
       
+      console.log('✅ Closing modal and fetching blogs')
       handleCloseModal()
       fetchBlogs()
     } catch (error) {
-      console.error('Lỗi chi tiết:', error)
+      console.error('❌ Lỗi chi tiết:', error)
       const errorMsg = error.response?.data?.message || error.message || 'Có lỗi xảy ra'
       message.error(editingBlog ? `Cập nhật blog thất bại: ${errorMsg}` : `Tạo blog thất bại: ${errorMsg}`)
     } finally {
+      console.log('=== handleSubmit END ===')
       setIsSubmitting(false)
     }
   }
@@ -150,18 +227,6 @@ const BlogManagement = () => {
     setIsDrawerVisible(true)
   }
 
-  // Hàm chọn ảnh (chỉ lưu tạm thời, không upload ngay)
-  const handleImageSelect = (file) => {
-    setSelectedImageFile(file)
-    
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      setImagePreview(e.target.result)
-    }
-    reader.readAsDataURL(file)
-    
-    return false
-  }
 
   const getStatusTag = (status) => {
     const statusMap = {
@@ -174,30 +239,6 @@ const BlogManagement = () => {
   }
 
   const columns = [
-    {
-      title: 'Ảnh',
-      dataIndex: 'imageUrl',
-      key: 'imageUrl',
-      width: 100,
-      render: (imageUrl) => (
-        imageUrl ? (
-          <img
-            src={imageUrl}
-            alt="thumbnail"
-            style={{
-              width: '80px',
-              height: '60px',
-              objectFit: 'cover',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-            onClick={() => window.open(imageUrl, '_blank')}
-          />
-        ) : (
-          <span className="text-gray-400">Không có ảnh</span>
-        )
-      ),
-    },
     {
       title: 'Tiêu đề',
       dataIndex: 'title',
@@ -324,7 +365,7 @@ const BlogManagement = () => {
         open={isModalVisible}
         onCancel={handleCloseModal}
         footer={null}
-        width={700}
+        width={900}
       >
         <Form
           form={form}
@@ -359,33 +400,99 @@ const BlogManagement = () => {
             </Select>
           </Form.Item>
 
-          <Form.Item label="Hình ảnh Thumbnail">
-            <div className="space-y-3">
-              <Upload
-                maxCount={1}
-                accept="image/*"
-                beforeUpload={handleImageSelect}
-                showUploadList={false}
-              >
-                <Button icon={<UploadOutlined />} block>
-                  Chọn ảnh
-                </Button>
-              </Upload>
-              
-              {imagePreview && (
-                <div className="border rounded-lg p-2">
-                  <p className="text-sm text-gray-600 mb-2">Ảnh đã chọn:</p>
-                  <img
-                    src={imagePreview}
-                    alt="Thumbnail preview"
-                    style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '4px' }}
-                  />
-                  {selectedImageFile && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      {selectedImageFile.name}
-                    </p>
-                  )}
+          <Form.Item label="Ảnh và Video">
+            <div className="space-y-4">
+              {/* Upload Section */}
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                <Upload
+                  multiple
+                  accept="image/*,video/*"
+                  beforeUpload={handleAddMedia}
+                  showUploadList={false}
+                  maxCount={10}
+                >
+                  <Button icon={<UploadOutlined />} block>
+                    Chọn ảnh hoặc video (tối đa 10 file)
+                  </Button>
+                </Upload>
+                <p className="text-xs text-gray-500 mt-2">
+                  Hỗ trợ: JPG, PNG, GIF, MP4, WebM, v.v.
+                </p>
+              </div>
+
+              {/* Media List */}
+              {mediaFiles.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold mb-3">
+                    Ảnh/Video đã chọn ({mediaFiles.length})
+                  </p>
+                  <Row gutter={[16, 16]}>
+                    {mediaFiles.map((media) => (
+                      <Col key={media.id} xs={24} sm={12} md={8}>
+                        <Card
+                          hoverable
+                          className="relative"
+                          style={{
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {/* Media Preview */}
+                          <div className="relative bg-gray-100 rounded overflow-hidden">
+                            {media.type === 'image' ? (
+                              <img
+                                src={media.preview}
+                                alt="preview"
+                                style={{
+                                  width: '100%',
+                                  height: '150px',
+                                  objectFit: 'cover',
+                                }}
+                              />
+                            ) : (
+                              <video
+                                src={media.preview}
+                                style={{
+                                  width: '100%',
+                                  height: '150px',
+                                  objectFit: 'cover',
+                                }}
+                              />
+                            )}
+
+                            {/* Delete Button */}
+                            <Button
+                              type="text"
+                              danger
+                              size="small"
+                              icon={<CloseOutlined />}
+                              className="absolute top-1 right-1 bg-white"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                handleRemoveMedia(media.id)
+                              }}
+                            />
+                          </div>
+
+                          {/* File Info */}
+                          <div className="mt-2">
+                            <p className="text-xs text-gray-600 truncate">
+                              {media.file.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {(media.file.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                        </Card>
+                      </Col>
+                    ))}
+                  </Row>
                 </div>
+              )}
+
+              {mediaFiles.length === 0 && (
+                <p className="text-center text-gray-400 py-4">
+                  Chưa có ảnh/video nào. Hãy thêm ít nhất một file.
+                </p>
               )}
             </div>
           </Form.Item>

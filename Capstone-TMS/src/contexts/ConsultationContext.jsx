@@ -38,7 +38,7 @@ const ConsultationProvider = ({ children }) => {
         try {
           await consultationService.connect(token);
           setIsConnected(true);
-        } catch (err) {
+        } catch (_) {
           console.warn('SignalR unavailable, fallback to API');
           setIsConnected(false);
         }
@@ -66,7 +66,7 @@ const ConsultationProvider = ({ children }) => {
     try {
       const data = await consultationService.getUserSessions();
       setSessions(data || []);
-    } catch (err) {
+    } catch (_) {
       setError('Không thể tải danh sách phiên tư vấn');
     }
   }, []);
@@ -135,9 +135,9 @@ const ConsultationProvider = ({ children }) => {
       const list = Array.isArray(data) ? data : data.messages || [];
       setMessages(list);
       return list;
-    } catch (err) {
+    } catch (_) {
       setError('Lỗi tải tin nhắn');
-      throw err;
+      throw _;
     } finally {
       setLoading(false);
     }

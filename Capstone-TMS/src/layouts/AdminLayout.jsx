@@ -127,6 +127,12 @@ const ROLE_MENUS = {
       path: '/center'
     },
     {
+      key: '/center/management',
+      icon: <SafetyOutlined />,
+      label: 'Quản lý trung tâm',
+      path: '/center/management'
+    },
+    {
       key: '/center/courses',
       icon: <BookOutlined />,
       label: 'Quản lý khóa học',
