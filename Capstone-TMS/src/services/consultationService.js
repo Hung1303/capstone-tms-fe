@@ -1,20 +1,10 @@
 import * as signalR from '@microsoft/signalr';
 import api from '../config/axios';
 
-// Lấy base URL từ axios config
 const API_BASE_URL = 'https://tms-api-tcgn.onrender.com';
- //const API_BASE_URL = 'https://localhost:7181';
 
-// SignalR hub URL - thử nhiều endpoint khác nhau
-// const HUB_URLS = [
-//   `${API_BASE_URL}/api/consultationHub`,
-//   `${API_BASE_URL}/consultationHub`,
-//   `${API_BASE_URL}/api/hubs/consultation`,
-//   `${API_BASE_URL}/hubs/consultation`,
-// ];
 
 const HUB_URL = `${API_BASE_URL}/hubs/signalRServer`;
-//let HUB_URL = HUB_URLS[0]; // Mặc định là endpoint đầu tiên
 
 class ConsultationService {
   constructor() {
@@ -97,21 +87,6 @@ class ConsultationService {
     });
   }
 
-  /* ===========================
-     GROUP MANAGEMENT
-     =========================== */
-
-  // async joinSession(sessionId) {
-  //   if (!this.connection || !this.isConnected) {
-  //     console.warn('SignalR not connected, cannot join group');
-  //     return;
-  //   }
-
-  //   this.currentSessionId = sessionId;
-
-  //   await this.connection.invoke('JoinGroup', sessionId);
-  //   console.log('👥 Joined SignalR group:', sessionId);
-  // }
   async joinSession(sessionId) {
   if (!this.connection || !this.isConnected) {
     console.warn('SignalR not connected, cannot join session');
@@ -172,9 +147,12 @@ class ConsultationService {
 async sendMessageViaAPI(sessionId, content) {
   return api.post(
     `/Consultation/Chat`,
-    content, // 👈 gửi string trực tiếp
+    JSON.stringify(content), // 👈 gửi string được stringify
     {
-      params: { sessionId }
+      params: { sessionId },
+      headers: {
+        'Content-Type': 'application/json',
+      },
     }
   );
 }
