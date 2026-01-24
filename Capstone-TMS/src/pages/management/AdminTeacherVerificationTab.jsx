@@ -153,12 +153,17 @@ const AdminTeacherVerificationTab = () => {
       }
     } catch (error) {
       console.error('Error creating verification:', error)
+      const errorMessage = error.response?.data?.message || 'Không thể tạo yêu cầu kiểm định'
+
       if (error.code === 'ERR_NETWORK') {
-        logout()
-      } else {
-        const errorMessage = error.response?.data?.message || 'Không thể tạo yêu cầu kiểm định'
-        toast.error(errorMessage)
+        toast.error('Không thể kết nối đến máy chủ. Vui lòng thử lại.')
+        return
       }
+      
+      if (errorMessage.includes('Đã có yêu cầu xác minh đang chờ duyệt') ) {
+        toast.error("Bạn đã tạo yêu cầu rồi.")
+      }
+      
     } finally {
       setModalLoading(false)
     }
@@ -187,7 +192,7 @@ const AdminTeacherVerificationTab = () => {
         icon: <CheckCircleOutlined />
       },
       Pending: {
-        label: "Chờ duyệt",
+        label: "Chưa kích hoạt",
         className: "bg-yellow-100 text-yellow-800",
         icon: <ClockCircleOutlined />
       },

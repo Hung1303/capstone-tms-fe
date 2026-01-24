@@ -904,7 +904,7 @@ const InspectCenterVerificaitonTab = () => {
                     {fileList.length < 8 && (
                       <div>
                         <PlusOutlined />
-                        <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                        <div style={{ marginTop: 8 }}>Chọn ảnh</div>
                       </div>
                     )}
                   </Upload>
@@ -929,7 +929,7 @@ const InspectCenterVerificaitonTab = () => {
                     disabled={!fileList.length}
                     loading={uploading}
                   >
-                    Upload ảnh
+                    Tải ảnh lên
                   </Button>
                 </div>
               </div>

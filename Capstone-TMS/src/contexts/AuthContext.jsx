@@ -82,7 +82,8 @@ export const AuthProvider = ({ children }) => {
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl("https://tms-api-tcgn.onrender.com/hubs/notify", {
-        accessTokenFactory: () => localStorage.getItem("token")
+        accessTokenFactory: () => localStorage.getItem("token"),
+        withCredentials: true
       })
       .configureLogging(signalR.LogLevel.Information)
       .withAutomaticReconnect()

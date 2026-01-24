@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { MessageOutlined, BookOutlined, UserOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
-import { Card, Table, Tag, Button, Input, Empty, Tabs, Rate, Select, Space, InputNumber, Typography } from 'antd'
+import { Card, Table, Tag, Button, Input, Empty, Tabs, Rate, Select, Space, Typography } from 'antd'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
@@ -55,7 +55,7 @@ const FeedbackList = () => {
       .build();
 
     connection.start()
-      .then(() => console.log("Admin connected"))
+      .then(() => console.log("Inspector connected"))
       .catch(err => console.error("SignalR error", err));
 
     connection.on("feedbackModerated", (data) => {
@@ -73,10 +73,9 @@ const FeedbackList = () => {
 
   console.log('feedbackViolations:', feedbackViolations)
   console.log('user:', user)
-  // Lấy danh sách khóa học (cho Admin/Center/Teacher)
+  // Lấy danh sách khóa học
   const fetchAvailableCourses = useCallback(async () => {
     if (user?.role === 'Teacher') {
-      // Nếu là Teacher, lấy khóa học của giáo viên
       const teacherId = user?.teacherProfileId || user?.TeacherProfileId
       if (!teacherId) return
 
@@ -92,7 +91,6 @@ const FeedbackList = () => {
         setLoadingCourses(false)
       }
     } else if (user?.role === 'Center') {
-      // Nếu là Center, lấy khóa học của trung tâm
       const centerId = user?.centerProfileId
       if (!centerId) return
 
@@ -123,7 +121,7 @@ const FeedbackList = () => {
     }
   }, [user])
 
-  // Lấy danh sách giáo viên (cho Admin/Center)
+  // Lấy danh sách giáo viên
   const fetchAvailableTeachers = useCallback(async () => {
     if (user?.role === 'Center') {
       const centerId = user?.centerProfileId
@@ -131,7 +129,6 @@ const FeedbackList = () => {
 
       setLoadingTeachers(true)
       try {
-        // Giả sử có API để lấy danh sách giáo viên của trung tâm
         const response = await api.get(`/Users/${centerId}/Teachers?pageNumber=1&pageSize=1000`)
         const teachers = response.data?.teachers || response.data || []
         setAvailableTeachers(Array.isArray(teachers) ? teachers : [])
@@ -142,7 +139,6 @@ const FeedbackList = () => {
         setLoadingTeachers(false)
       }
     } else if (user?.role === 'Inspector' || user?.role === 'Admin') {
-      // Admin có thể lấy tất cả giáo viên
       setLoadingTeachers(true)
       try {
         const response = await api.get(`/Users/Teachers?pageNumber=1&pageSize=1000`)
@@ -209,7 +205,7 @@ const FeedbackList = () => {
   const fetchTeacherFeedbacks = useCallback(async (pageNumber = 1, pageSize = 10) => {
     let teacherId = selectedTeacherProfileId
 
-    // Nếu là Teacher và chưa chọn, dùng teacherProfileId của user
+    // khi là Teacher, dùng teacherProfileId của user
     if (!teacherId && user?.role === 'Teacher') {
       teacherId = user?.teacherProfileId || user?.TeacherProfileId
       setSelectedTeacherProfileId(teacherId)
@@ -270,7 +266,7 @@ const FeedbackList = () => {
     }
   }, [user, selectedTeacherProfileId])
 
-  // Load available courses/teachers khi component mount
+  // Load available courses/teachers
   useEffect(() => {
     fetchAvailableCourses()
     fetchAvailableTeachers()
@@ -429,6 +425,59 @@ const FeedbackList = () => {
     },
   ]
 
+  // Course Feedback Columns For Center And Teacher (No Update Status)
+  const courseFeedbackCeTeColumns = [
+    {
+      title: 'Đánh giá',
+      key: 'rating',
+      width: 120,
+      align: 'center',
+      render: (_, record) => (
+        <div className="flex flex-col items-center gap-1">
+          <Rate disabled value={record.rating || 0} />
+          <span className="text-sm text-gray-600">{record.rating || 0}/5</span>
+        </div>
+      )
+    },
+    {
+      title: 'Nhận xét',
+      key: 'comment',
+      render: (_, record) => (
+        <div className="text-sm text-gray-700">
+          {record.comment || <span className="text-gray-400">Không có nhận xét</span>}
+        </div>
+      )
+    },
+    {
+      title: 'Người đánh giá',
+      key: 'reviewer',
+      width: 200,
+      render: (_, record) => (
+        <div className="text-sm text-gray-600">
+          {record.studentName || record.parentName || "N/A"}
+        </div>
+      )
+    },
+    {
+      title: 'Ngày đánh giá',
+      key: 'createdDate',
+      width: 150,
+      render: (_, record) => (
+        console.log('record:', record),
+        <div className="text-sm text-gray-600">
+          {formatDate(record.createdAt)}
+        </div>
+      )
+    },
+    {
+      title: 'Trạng thái',
+      key: 'status',
+      width: 120,
+      align: 'center',
+      render: (_, record) => getStatusFeedback(record.status)
+    }
+  ]
+
   // Teacher Feedback Columns
   const teacherFeedbackColumns = [
     {
@@ -501,6 +550,68 @@ const FeedbackList = () => {
     },
   ]
 
+  // Teacher Feedback Columns For Center And Teacher (No Update Status)
+  const teacherFeedbackCeTeColumns = [
+    {
+      title: 'Đánh giá',
+      key: 'rating',
+      width: 120,
+      align: 'center',
+      render: (_, record) => (
+        <div className="flex flex-col items-center gap-1">
+          <Rate disabled value={record.rating || 0} />
+          <span className="text-sm text-gray-600">{record.rating || 0}/5</span>
+        </div>
+      )
+    },
+    {
+      title: 'Nhận xét',
+      key: 'comment',
+      render: (_, record) => (
+        <div className="text-sm text-gray-700">
+          {record.comment || <span className="text-gray-400">Không có nhận xét</span>}
+        </div>
+      )
+    },
+    {
+      title: 'Người đánh giá',
+      key: 'reviewer',
+      width: 200,
+      render: (_, record) => (
+        <div className="text-sm text-gray-600">
+          {record.studentName || record.parentName || "N/A"}
+        </div>
+      )
+    },
+    {
+      title: 'Ngày đánh giá',
+      key: 'createdDate',
+      width: 150,
+      render: (_, record) => (
+        <div className="text-sm text-gray-600">
+          {formatDate(record.createdAt)}
+        </div>
+      )
+    },
+    {
+      title: 'Trạng thái',
+      key: 'status',
+      width: 120,
+      align: 'center',
+      render: (_, record) => getStatusFeedback(record.status)
+    }
+  ]
+
+  const isCeTeRole = (role) => ['Center', 'Teacher'].includes(role)
+
+  const courseColumns = isCeTeRole(user?.role)
+    ? courseFeedbackCeTeColumns
+    : courseFeedbackColumns
+
+  const teacherColumns = isCeTeRole(user?.role)
+    ? teacherFeedbackCeTeColumns
+    : teacherFeedbackColumns
+
   // Filter course feedbacks
   const filteredCourseFeedbacks = courseFeedbacks.filter(feedback => {
     console.log('feedback:', feedback)
@@ -555,61 +666,63 @@ const FeedbackList = () => {
       </Card>
 
       {/* Feedback Violations Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Left: Feedback List */}
-        <Card
-          title={
-            <span className="flex items-center gap-2">
-              <MessageOutlined />
-              Feedback vi phạm sau khi kiểm duyệt ({feedbackViolations.length})
-            </span>
-          }
-          size="small"
-        >
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {feedbackViolations.map((violation, index) => (
-              <div
-                key={index}
-                className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="text-sm text-gray-700 mb-1">
-                  <strong>{violation.name}:</strong> {violation.comment || 'Không có comment'}
+      {user?.role === 'Inspector' &&
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Left: Feedback List */}
+          <Card
+            title={
+              <span className="flex items-center gap-2">
+                <MessageOutlined />
+                Feedback vi phạm sau khi kiểm duyệt ({feedbackViolations.length})
+              </span>
+            }
+            size="small"
+          >
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {feedbackViolations.map((violation, index) => (
+                <div
+                  key={index}
+                  className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div className="text-sm text-gray-700 mb-1">
+                    <strong>{violation.name}:</strong> {violation.comment || 'Không có comment'}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {formatDate(violation.moderatedAt)} --- Trạng thái: {getStatusViolation(violation.status)} --- Loại: {violation.targetType === 0 ? 'Khóa học' : 'Giáo viên'}
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500">
-                  {formatDate(violation.moderatedAt)} --- Trạng thái: {getStatusViolation(violation.status)} --- Loại: {violation.targetType === 0 ? 'Khóa học' : 'Giáo viên'}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+              ))}
+            </div>
+          </Card>
 
-        {/* Right: User Names List */}
-        <Card
-          title={
-            <span className="flex items-center gap-2">
-              <UserOutlined />
-              Người dùng vi phạm ({new Set(feedbackViolations.map(v => v.name).filter(Boolean)).size})
-            </span>
-          }
-          size="small"
-        >
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {Array.from(new Set(
-              feedbackViolations
-                .map(v => v.name)
-                .filter(Boolean)
-            )).map((userName, index) => (
-              <div
-                key={index}
-                className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
-              >
-                <UserOutlined className="text-blue-500" />
-                <span className="text-sm text-gray-700">{userName}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
+          {/* Right: User Names List */}
+          <Card
+            title={
+              <span className="flex items-center gap-2">
+                <UserOutlined />
+                Người dùng vi phạm ({new Set(feedbackViolations.map(v => v.name).filter(Boolean)).size})
+              </span>
+            }
+            size="small"
+          >
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {Array.from(new Set(
+                feedbackViolations
+                  .map(v => v.name)
+                  .filter(Boolean)
+              )).map((userName, index) => (
+                <div
+                  key={index}
+                  className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                >
+                  <UserOutlined className="text-blue-500" />
+                  <span className="text-sm text-gray-700">{userName}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      }
 
       {/* Tabs */}
       <Card>
@@ -617,23 +730,20 @@ const FeedbackList = () => {
           {/* Course Feedback Tab */}
           <TabPane
             tab={
-              <span>
-                <BookOutlined />
-                Feedback Khóa học
-              </span>
+              <span><BookOutlined /> Feedback Khóa học</span>
             }
             key="course"
           >
             <div className="space-y-4">
               {/* Course Selection */}
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
-                <div className="flex-1 min-w-0">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {user?.role === 'Admin' ? 'Chọn hoặc nhập ID khóa học' : 'Chọn khóa học'}
+                <div className="flex items-center gap-2 w-full">
+                  <label className="block text-sm font-medium text-gray-700 text-nowrap">
+                    Chọn khóa học:
                   </label>
                   {availableCourses.length > 0 ? (
                     <Select
-                      style={{ width: '100%' }}
+                      style={{ width: '50%' }}
                       placeholder="Chọn khóa học để xem feedback"
                       value={selectedCourseId}
                       onChange={(value) => {
@@ -644,45 +754,27 @@ const FeedbackList = () => {
                       showSearch
                       optionFilterProp="children"
                       allowClear
+                      listHeight={160}
                     >
                       {availableCourses.map(course => (
+                        console.log('course:', course),
                         <Option key={course.id} value={course.id}>
-                          {course.title} - {course.subject}
+                          {course.title} - {course.subject} - {course.teacherName}
                         </Option>
                       ))}
                     </Select>
                   ) : (
-                    <InputNumber
-                      style={{ width: '100%' }}
-                      placeholder="Nhập ID khóa học"
-                      value={selectedCourseId}
-                      onChange={(value) => {
-                        setSelectedCourseId(value)
-                        setCoursePagination(prev => ({ ...prev, current: 1 }))
-                      }}
-                      min={1}
-                    />
+                    <p>Tạm thời chưa có khóa học nào</p>
                   )}
                 </div>
-                {user?.role === 'Admin' && availableCourses.length > 0 && (
-                  <div className="w-full sm:w-auto">
-                    <Button
-                      onClick={() => {
-                        setAvailableCourses([])
-                        setSelectedCourseId(null)
-                      }}
-                    >
-                      Nhập ID trực tiếp
-                    </Button>
-                  </div>
-                )}
               </div>
 
               {/* Search */}
               {selectedCourseId && (
                 <Input
+                  className="search-input"
                   placeholder="Tìm kiếm feedback..."
-                  prefix={<SearchOutlined />}
+                  prefix={<SearchOutlined className="search-icon"/>}
                   value={courseSearchTerm}
                   onChange={(e) => setCourseSearchTerm(e.target.value)}
                   allowClear
@@ -702,28 +794,31 @@ const FeedbackList = () => {
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
               ) : (
-                <Table
-                  columns={courseFeedbackColumns}
-                  dataSource={filteredCourseFeedbacks}
-                  rowKey={(record) => record.feedbackId || record.id || Math.random()}
-                  pagination={{
-                    current: coursePagination.current,
-                    pageSize: coursePagination.pageSize,
-                    total: coursePagination.total,
-                    showSizeChanger: true,
-                    showTotal: (total) => `Tổng ${total} feedback`,
-                    onChange: (page, pageSize) => {
-                      setCoursePagination(prev => ({ ...prev, current: page, pageSize }))
-                      fetchCourseFeedbacks(page, pageSize)
-                    },
-                    onShowSizeChange: (current, size) => {
-                      setCoursePagination(prev => ({ ...prev, current: 1, pageSize: size }))
-                      fetchCourseFeedbacks(1, size)
-                    }
-                  }}
-                  scroll={{ x: 800 }}
-                  loading={courseFeedbackLoading}
-                />
+                <div className="rounded-lg shadow-sm">
+                  <Table
+                    columns={courseColumns}
+                    dataSource={filteredCourseFeedbacks}
+                    rowKey={(record) => record.feedbackId || record.id || Math.random()}
+                    pagination={{
+                      current: coursePagination.current,
+                      pageSize: coursePagination.pageSize,
+                      total: coursePagination.total,
+                      showSizeChanger: true,
+                      showTotal: (total) => `Tổng ${total} feedback`,
+                      onChange: (page, pageSize) => {
+                        setCoursePagination(prev => ({ ...prev, current: page, pageSize }))
+                        fetchCourseFeedbacks(page, pageSize)
+                      },
+                      onShowSizeChange: (current, size) => {
+                        setCoursePagination(prev => ({ ...prev, current: 1, pageSize: size }))
+                        fetchCourseFeedbacks(1, size)
+                      },
+                      className: "!mr-2"
+                    }}
+                    scroll={{ x: "max-content", ...(filteredCourseFeedbacks.length > 5 ? {y: 75 * 5} : "") }}
+                    loading={courseFeedbackLoading}
+                  />
+                </div>
               )}
             </div>
           </TabPane>
@@ -731,10 +826,7 @@ const FeedbackList = () => {
           {/* Teacher Feedback Tab */}
           <TabPane
             tab={
-              <span>
-                <UserOutlined />
-                Feedback Giáo viên
-              </span>
+              <span><UserOutlined /> Feedback Giáo viên</span>
             }
             key="teacher"
           >
@@ -742,13 +834,13 @@ const FeedbackList = () => {
               {/* Teacher Selection */}
               {user?.role !== 'Teacher' && (
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
-                  <div className="flex-1 min-w-0">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {user?.role === 'Admin' ? 'Chọn hoặc nhập ID giáo viên' : 'Chọn giáo viên'}
+                  <div className="flex items-center gap-2 w-full">
+                    <label className="block text-sm font-medium text-gray-700 text-nowrap">
+                      Chọn giáo viên:
                     </label>
                     {availableTeachers.length > 0 ? (
                       <Select
-                        style={{ width: '100%' }}
+                        style={{ width: '50%' }}
                         placeholder="Chọn giáo viên để xem feedback"
                         value={selectedTeacherProfileId}
                         onChange={(value) => {
@@ -759,6 +851,7 @@ const FeedbackList = () => {
                         showSearch
                         optionFilterProp="children"
                         allowClear
+                        listHeight={160} 
                       >
                         {availableTeachers.map(teacher => (
                           console.log('teacher:', teacher),
@@ -768,38 +861,17 @@ const FeedbackList = () => {
                         ))}
                       </Select>
                     ) : (
-                      <InputNumber
-                        style={{ width: '100%' }}
-                        placeholder="Nhập ID giáo viên"
-                        value={selectedTeacherProfileId}
-                        onChange={(value) => {
-                          setSelectedTeacherProfileId(value)
-                          setTeacherPagination(prev => ({ ...prev, current: 1 }))
-                        }}
-                        min={1}
-                      />
+                      <p>Tạm thời chưa có giáo viên nào</p>
                     )}
                   </div>
-                  {user?.role === 'Admin' && availableTeachers.length > 0 && (
-                    <div className="w-full sm:w-auto">
-                      <Button
-                        onClick={() => {
-                          setAvailableTeachers([])
-                          setSelectedTeacherProfileId(null)
-                        }}
-                      >
-                        Nhập ID trực tiếp
-                      </Button>
-                    </div>
-                  )}
                 </div>
               )}
 
               {user?.role === 'Teacher' && selectedTeacherProfileId && (
-                <Card size="small" className="bg-blue-50">
+                <Card size="small" className="!bg-blue-50 !mb-4">
                   <div className="flex items-center gap-2 text-blue-700">
                     <UserOutlined />
-                    <span>Đang xem feedback của bạn</span>
+                    <span>Các feedback về bạn</span>
                   </div>
                 </Card>
               )}
@@ -807,8 +879,9 @@ const FeedbackList = () => {
               {/* Search */}
               {selectedTeacherProfileId && (
                 <Input
+                  className="search-input"
                   placeholder="Tìm kiếm feedback..."
-                  prefix={<SearchOutlined />}
+                  prefix={<SearchOutlined className="search-icon"/>}
                   value={teacherSearchTerm}
                   onChange={(e) => setTeacherSearchTerm(e.target.value)}
                   allowClear
@@ -832,28 +905,31 @@ const FeedbackList = () => {
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
               ) : (
-                <Table
-                  columns={teacherFeedbackColumns}
-                  dataSource={filteredTeacherFeedbacks}
-                  rowKey={(record) => record.feedbackId || record.id || Math.random()}
-                  pagination={{
-                    current: teacherPagination.current,
-                    pageSize: teacherPagination.pageSize,
-                    total: teacherPagination.total,
-                    showSizeChanger: true,
-                    showTotal: (total) => `Tổng ${total} feedback`,
-                    onChange: (page, pageSize) => {
-                      setTeacherPagination(prev => ({ ...prev, current: page, pageSize }))
-                      fetchTeacherFeedbacks(page, pageSize)
-                    },
-                    onShowSizeChange: (current, size) => {
-                      setTeacherPagination(prev => ({ ...prev, current: 1, pageSize: size }))
-                      fetchTeacherFeedbacks(1, size)
-                    }
-                  }}
-                  scroll={{ x: 800 }}
-                  loading={teacherFeedbackLoading}
-                />
+                <div className="rounded-lg shadow-sm">
+                  <Table
+                    columns={teacherColumns}
+                    dataSource={filteredTeacherFeedbacks}
+                    rowKey={(record) => record.feedbackId || record.id || Math.random()}
+                    pagination={{
+                      current: teacherPagination.current,
+                      pageSize: teacherPagination.pageSize,
+                      total: teacherPagination.total,
+                      showSizeChanger: true,
+                      showTotal: (total) => `Tổng ${total} feedback`,
+                      onChange: (page, pageSize) => {
+                        setTeacherPagination(prev => ({ ...prev, current: page, pageSize }))
+                        fetchTeacherFeedbacks(page, pageSize)
+                      },
+                      onShowSizeChange: (current, size) => {
+                        setTeacherPagination(prev => ({ ...prev, current: 1, pageSize: size }))
+                        fetchTeacherFeedbacks(1, size)
+                      },
+                      className: "!mr-2"
+                    }}
+                    scroll={{ x: "max-content", ...(filteredTeacherFeedbacks.length > 5 ? {y: 75 * 5} : "") }}
+                    loading={teacherFeedbackLoading}
+                  />
+                </div>
               )}
             </div>
           </TabPane>
