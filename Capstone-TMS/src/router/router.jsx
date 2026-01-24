@@ -46,7 +46,6 @@ import StaffCourseConfirmation from "../pages/management/StaffCourseConfirmation
 import SubscriptionManagement from "../pages/management/SubscriptionManagement";
 import CenterSubscription from "../pages/management/CenterSubscription";
 import CenterScheduleAssignment from "../pages/management/CenterScheduleAssignment";
-import TeacherManagement from "../pages/management/TeacherManagement";
 
 // Error pages
 import NotFound from "../pages/error/NotFound";

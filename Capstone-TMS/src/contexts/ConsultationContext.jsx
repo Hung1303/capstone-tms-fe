@@ -17,14 +17,30 @@ const ConsultationProvider = ({ children }) => {
   const [currentSession, setCurrentSession] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   /* ============================
-     INIT SIGNALR + LOAD SESSIONS
+      LOAD USER SESSIONS
+     ============================ */
+  const loadUserSessions = useCallback(async () => {
+    try {
+      const data = await consultationService.getUserSessions();
+      setSessions(data || []);
+    } catch (err) {
+      console.error(err);
+      setError('Không thể tải danh sách phiên tư vấn');
+    }
+  }, []);
+
+  /* ============================
+      INIT SIGNALR + LOAD SESSIONS
      ============================ */
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+        setLoading(false);
+        return;
+    }
 
     const init = async () => {
       setLoading(true);
@@ -38,8 +54,8 @@ const ConsultationProvider = ({ children }) => {
         try {
           await consultationService.connect(token);
           setIsConnected(true);
-        } catch (_) {
-          console.warn('SignalR unavailable, fallback to API');
+        } catch (err) {
+          console.warn('SignalR unavailable, fallback to API', err);
           setIsConnected(false);
         }
 
@@ -57,22 +73,10 @@ const ConsultationProvider = ({ children }) => {
     return () => {
       consultationService.disconnect();
     };
-  }, [user]);
+  }, [user, loadUserSessions]);
 
   /* ============================
-     LOAD USER SESSIONS
-     ============================ */
-  const loadUserSessions = useCallback(async () => {
-    try {
-      const data = await consultationService.getUserSessions();
-      setSessions(data || []);
-    } catch (_) {
-      setError('Không thể tải danh sách phiên tư vấn');
-    }
-  }, []);
-
-  /* ============================
-     SIGNALR EVENTS
+      SIGNALR EVENTS
      ============================ */
   useEffect(() => {
     const onMessageReceived = (message) => {
@@ -80,7 +84,13 @@ const ConsultationProvider = ({ children }) => {
     };
 
     const onSessionCreated = (session) => {
-      setSessions((prev) => [session, ...prev]);
+      setSessions((prev) => {
+        // Chống trùng lặp khi nhận tin nhắn realtime:
+        // Nếu đã có session với ID này HOẶC với CenterId này -> bỏ qua hoặc cập nhật
+        const exists = prev.some(s => s.id === session.id);
+        if (exists) return prev;
+        return [session, ...prev];
+      });
     };
 
     const onSessionUpdated = (session) => {
@@ -101,7 +111,7 @@ const ConsultationProvider = ({ children }) => {
   }, []);
 
   /* ============================
-     CREATE SESSION
+      CREATE SESSION (SỬA LỖI DUPLICATE TẠI ĐÂY)
      ============================ */
   const createSession = useCallback(
     async (centerProfileId) => {
@@ -111,11 +121,25 @@ const ConsultationProvider = ({ children }) => {
           user.parentProfileId,
           centerProfileId
         );
-        setSessions((prev) => [session, ...prev]);
+        
+        // --- SỬA LỖI: LOGIC LỌC TRÙNG LẶP MẠNH HƠN ---
+        setSessions((prev) => {
+            // 1. Lọc bỏ tất cả các session cũ có cùng centerId hoặc cùng id với session mới
+            // Điều này đảm bảo trong list chỉ có 1 dòng cho trung tâm này
+            const filtered = prev.filter(s => 
+                s.id !== session.id && 
+                s.centerId !== session.centerId && 
+                s.centerProfileId !== centerProfileId
+            );
+            
+            // 2. Thêm session mới nhất lên đầu danh sách
+            return [session, ...filtered];
+        });
+        
         setCurrentSession(session);
         return session;
       } catch (err) {
-        setError('Lỗi tạo phiên tư vấn');
+        console.error("Lỗi tạo phiên tư vấn:", err);
         throw err;
       } finally {
         setLoading(false);
@@ -125,7 +149,7 @@ const ConsultationProvider = ({ children }) => {
   );
 
   /* ============================
-     FETCH SESSION MESSAGES
+      FETCH SESSION MESSAGES
      ============================ */
   const fetchSessions = useCallback(async (sessionId) => {
     setLoading(true);
@@ -135,54 +159,48 @@ const ConsultationProvider = ({ children }) => {
       const list = Array.isArray(data) ? data : data.messages || [];
       setMessages(list);
       return list;
-    } catch (_) {
+    } catch (err) {
       setError('Lỗi tải tin nhắn');
-      throw _;
+      throw err;
     } finally {
       setLoading(false);
     }
   }, []);
 
   /* ============================
-     SEND MESSAGE (API ONLY)
+      SEND MESSAGE (API ONLY)
      ============================ */
   const sendMessage = useCallback(async (sessionId, content) => {
-  try {
-    setError(null);
+    try {
+      setError(null);
 
-    if (!user?.userId) {
-      throw new Error('User ID not found');
+      if (!user?.userId) {
+        throw new Error('User ID not found');
+      }
+
+      await consultationService.sendMessageViaAPI(
+        sessionId,
+        content
+      );
+
+      await fetchSessions(sessionId);
+
+    } catch (err) {
+      console.error('Send message failed:', err);
+      setError('Lỗi gửi tin nhắn');
+      throw err;
     }
-
-    await consultationService.sendMessageViaAPI(
-  sessionId,
-  content
-);
-
-    // reload messages
-    await fetchSessions(sessionId);
-
-  } catch (err) {
-    console.error('Send message failed:', err);
-    setError('Lỗi gửi tin nhắn');
-    throw err;
-  }
-}, [user?.userId, fetchSessions]);
+  }, [user?.userId, fetchSessions]);
 
   /* ============================
-     SELECT SESSION
+      SELECT SESSION
      ============================ */
-  // const selectSession = useCallback((session) => {
-  //   setCurrentSession(session);
-  //   setMessages([]);
-  // }, []);
-
   const selectSession = useCallback(async (session) => {
-  setCurrentSession(session);
-  setMessages([]);
+    setCurrentSession(session);
+    setMessages([]);
 
-  await consultationService.joinSession(session.id);
-  await fetchSessions(session.id);
+    await consultationService.joinSession(session.id);
+    await fetchSessions(session.id);
   }, [fetchSessions]);
 
   const value = {
@@ -206,7 +224,8 @@ const ConsultationProvider = ({ children }) => {
   );
 };
 
-export const useConsultation = () => {
+// eslint-disable-next-line react-refresh/only-export-components
+export function useConsultation() {
   const context = useContext(ConsultationContext);
   if (!context) {
     throw new Error(
@@ -214,6 +233,6 @@ export const useConsultation = () => {
     );
   }
   return context;
-};
+}
 
 export default ConsultationProvider;

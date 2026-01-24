@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Card, Typography, Avatar, Button, Divider, Image, Row, Col, Empty } from 'antd'
-import { MoreOutlined, UserOutlined, PlayCircleOutlined } from '@ant-design/icons'
+import { MoreOutlined, UserOutlined } from '@ant-design/icons'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -20,7 +20,9 @@ const BlogPostCardAdmin = ({ blog = false }) => {
         hour: '2-digit', 
         minute: '2-digit' 
       })
-    } catch (e) {
+    } catch (error) {
+      // Sửa lỗi đỏ: Log lỗi ra để biến error được sử dụng
+      console.error("Lỗi format ngày:", error)
       return 'Vừa xong'
     }
   }
@@ -46,9 +48,9 @@ const BlogPostCardAdmin = ({ blog = false }) => {
       blog.images.forEach((item) => {
         // Kiểm tra xem có phải video không (dựa vào URL hoặc tên file)
         const isVideo = item.img_url?.includes('/video/upload/') || 
-                       item.name?.toLowerCase().endsWith('.mp4') ||
-                       item.name?.toLowerCase().endsWith('.webm') ||
-                       item.name?.toLowerCase().endsWith('.mov')
+                        item.name?.toLowerCase().endsWith('.mp4') ||
+                        item.name?.toLowerCase().endsWith('.webm') ||
+                        item.name?.toLowerCase().endsWith('.mov')
         
         mediaItems.push({
           url: item.img_url,

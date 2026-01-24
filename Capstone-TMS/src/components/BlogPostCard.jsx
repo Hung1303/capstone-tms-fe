@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, Typography, Avatar, Button, Divider, message, Modal, Form, Input, Empty, Spin, Dropdown } from 'antd'
 import { 
   LikeOutlined, 
@@ -18,10 +18,14 @@ const { Title, Text, Paragraph } = Typography
 const BlogPostCard = ({ blog, showCenterLink = true }) => {
   const { user } = useAuth()
   const navigate = useNavigate()
+  
   const [isExpanded, setIsExpanded] = useState(false)
-  const [isLiked, setIsLiked] = useState(false)
+  
+  // Khởi tạo state từ dữ liệu blog
+  const [isLiked, setIsLiked] = useState(blog.isLikedByCurrentUser || false)
   const [likeCount, setLikeCount] = useState(blog.likeCount || 0)
   const [commentCount, setCommentCount] = useState(blog.commentCount || 0)
+  
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false)
   const [comments, setComments] = useState([])
   const [commentsLoading, setCommentsLoading] = useState(false)
@@ -30,7 +34,13 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
   const [isLoginModalVisible, setIsLoginModalVisible] = useState(false)
   const [isLiking, setIsLiking] = useState(false)
 
-  // Xử lý ngày tháng an toàn
+  // Cập nhật state nếu props blog thay đổi (ví dụ khi load lại list)
+  useEffect(() => {
+    setIsLiked(blog.isLikedByCurrentUser || false)
+    setLikeCount(blog.likeCount || 0)
+    setCommentCount(blog.commentCount || 0)
+  }, [blog])
+
   const formatDate = (dateString) => {
     if (!dateString) return 'Vừa xong'
     try {
@@ -43,12 +53,12 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
         hour: '2-digit', 
         minute: '2-digit' 
       })
-    } catch (e) {
+    } catch (error) {
+      console.error("Lỗi định dạng ngày:", error)
       return 'Vừa xong'
     }
   }
 
-  // Tạo màu ngẫu nhiên cho Avatar dựa trên tên
   const stringToColor = (string) => {
     let hash = 0
     for (let i = 0; i < string.length; i++) {
@@ -60,14 +70,12 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
 
   const avatarColor = stringToColor(blog.centerName || 'Center')
 
-  // Xử lý like/unlike blog
   const handleLike = async () => {
     if (!user) {
       setIsLoginModalVisible(true)
       return
     }
 
-    // Kiểm tra role - chỉ phụ huynh mới được like (role có thể là 'parent' hoặc 'Parent')
     if (user.role?.toLowerCase() !== 'parent') {
       message.error('Chỉ phụ huynh mới có thể thực hiện hành động này')
       return
@@ -78,17 +86,18 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
     try {
       setIsLiking(true)
       if (isLiked) {
+        // Gọi API DELETE để unlike
         await unlikeBlogPost(blog.blogId)
         setIsLiked(false)
-        setLikeCount(likeCount - 1)
+        setLikeCount(prev => Math.max(0, prev - 1))
         message.success('Bỏ thích bài viết')
       } else {
+        // Gọi API POST để like
         await likeBlogPost(blog.blogId)
         setIsLiked(true)
-        setLikeCount(likeCount + 1)
+        setLikeCount(prev => prev + 1)
         message.success('Thích bài viết')
       }
-      // Không gọi onBlogUpdate - chỉ cập nhật local state
     } catch (error) {
       console.error('Lỗi khi like/unlike blog:', error)
       message.error('Không thể thực hiện hành động này')
@@ -97,7 +106,6 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
     }
   }
 
-  // Lấy danh sách comments
   const fetchComments = async () => {
     setCommentsLoading(true)
     try {
@@ -112,13 +120,11 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
     }
   }
 
-  // Mở modal comment - Ai cũng xem được, chỉ phụ huynh mới gửi được
   const handleOpenCommentModal = () => {
     setIsCommentModalVisible(true)
     fetchComments()
   }
 
-  // Xử lý submit comment
   const handleSubmitComment = async (values) => {
     if (!values.content || !values.content.trim()) {
       message.error('Vui lòng nhập nội dung bình luận')
@@ -130,9 +136,8 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
       await commentBlogPost(blog.blogId, values.content)
       message.success('Bình luận thành công')
       commentForm.resetFields()
-      setCommentCount(commentCount + 1)
+      setCommentCount(prev => prev + 1)
       fetchComments()
-      // Không gọi onBlogUpdate - chỉ cập nhật local state
     } catch (error) {
       console.error('Lỗi khi comment:', error)
       const errorMsg = error.response?.data?.message || 'Không thể bình luận bài viết này'
@@ -148,7 +153,6 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
         className="mb-4 shadow-sm hover:shadow-md transition-shadow rounded-lg border-gray-200"
         bodyStyle={{ padding: '12px 16px 4px 16px' }}
       >
-        {/* Header: Avatar + Tên + Ngày */}
         <div className="flex justify-between items-start mb-3">
           <div className="flex gap-3">
             <Avatar 
@@ -194,50 +198,42 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
           </Dropdown>
         </div>
 
-{/* Khóa học đính kèm – Highlight */}
-{blog.courseTitle && blog.courseId && (
-  <div className="mb-3 p-4 rounded-xl border border-blue-300 bg-gradient-to-r from-blue-50 to-white hover:shadow-md transition">
-    
-    {/* Header */}
-    <div className="flex items-center justify-between mb-2">
-      <div className="flex items-center">
-        <span className="text-lg"></span>
-        <Text strong className="text-sm text-blue-700">
-          Khóa học liên quan
-        </Text>
-      </div>
-      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-[2px] rounded-full">
-        Đang tuyển sinh
-      </span>
-    </div>
+        {blog.courseTitle && blog.courseId && (
+          <div className="mb-3 p-4 rounded-xl border border-blue-300 bg-gradient-to-r from-blue-50 to-white hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+                <Text strong className="text-sm text-blue-700">
+                  Khóa học liên quan
+                </Text>
+              </div>
+              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-[2px] rounded-full">
+                Đang tuyển sinh
+              </span>
+            </div>
 
-    {/* Course title */}
-    <div
-      className="text-base font-semibold text-gray-800 cursor-pointer hover:text-blue-600 leading-snug"
-      onClick={() => window.open(`/courses/${blog.courseId}`, '_blank')}
-    >
-      {blog.courseTitle}
-    </div>
+            <div
+              className="text-base font-semibold text-gray-800 cursor-pointer hover:text-blue-600 leading-snug"
+              onClick={() => window.open(`/courses/${blog.courseId}`, '_blank')}
+            >
+              {blog.courseTitle}
+            </div>
 
-    {/* CTA */}
-    <div className="mt-2 flex items-center justify-between">
-      <Text type="secondary" className="text-xs">
-        Nhấn để xem chi tiết khóa học
-      </Text>
-      <Button
-        type="primary"
-        size="small"
-        className="rounded-full"
-        onClick={() => window.open(`/courses/${blog.courseId}`, '_blank')}
-      >
-        Xem khóa học
-      </Button>
-    </div>
-  </div>
-)}
+            <div className="mt-2 flex items-center justify-between">
+              <Text type="secondary" className="text-xs">
+                Nhấn để xem chi tiết khóa học
+              </Text>
+              <Button
+                type="primary"
+                size="small"
+                className="rounded-full"
+                onClick={() => window.open(`/courses/${blog.courseId}`, '_blank')}
+              >
+                Xem khóa học
+              </Button>
+            </div>
+          </div>
+        )}
 
-
-        {/* Nội dung bài viết */}
         <div className="mb-3">
           {blog.title && (
             <Title level={5} className="!mb-2 !font-bold">
@@ -271,13 +267,10 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
           </div>
         </div>
 
-        {/* Hình ảnh và Video (Nếu có) */}
         {blog.images && blog.images.length > 0 ? (
           <div className="-mx-4 mb-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 p-4">
-              {/* Hiển thị ảnh và video từ mảng images */}
               {blog.images.map((item, index) => {
-                // Kiểm tra xem có phải video không (dựa vào URL hoặc tên file)
                 const isVideo = item.img_url?.includes('/video/upload/') || 
                                item.name?.toLowerCase().endsWith('.mp4') ||
                                item.name?.toLowerCase().endsWith('.webm') ||
@@ -323,21 +316,8 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
           </div>
         ) : null}
 
-        {/* Hiển thị số lượt thích và bình luận - Luôn hiển thị */}
-        <div className="px-4 py-2 text-sm text-gray-600 border-b">
-          <span className="mr-4">
-            <LikeFilled className="text-blue-500 mr-1" />
-            {likeCount} lượt thích
-          </span>
-          <span>
-            <MessageOutlined className="mr-1" />
-            {commentCount} bình luận
-          </span>
-        </div>
-
         <Divider className="!my-2" />
 
-        {/* Thanh hành động (Like/Comment) - Luôn hiển thị */}
         <div className="flex justify-around items-center py-1">
           <Button 
             type="text" 
@@ -345,7 +325,9 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
             className={`flex-1 font-medium hover:bg-gray-100 ${isLiked ? 'text-blue-500' : 'text-gray-600'}`}
             onClick={handleLike}
           >
-            Thích
+             <span className="ml-1">
+               {likeCount > 0 ? `${likeCount} Thích` : 'Thích'}
+             </span>
           </Button>
           <Button 
             type="text" 
@@ -353,12 +335,13 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
             className="flex-1 text-gray-600 font-medium hover:bg-gray-100"
             onClick={handleOpenCommentModal}
           >
-            Bình luận
+             <span className="ml-1">
+               {commentCount > 0 ? `${commentCount} Bình luận` : 'Bình luận'}
+             </span>
           </Button>
         </div>
       </Card>
 
-      {/* Modal Đăng nhập */}
       <Modal
         title="Vui lòng đăng nhập"
         open={isLoginModalVisible}
@@ -384,7 +367,6 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
         </p>
       </Modal>
 
-      {/* Modal Bình luận */}
       <Modal
         title={`Bình luận (${commentCount})`}
         open={isCommentModalVisible}
@@ -393,7 +375,6 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
         width={600}
       >
         <div className="space-y-4">
-          {/* Form gửi bình luận - Chỉ hiển thị cho phụ huynh */}
           {user?.role?.toLowerCase() === 'parent' ? (
             <Form
               form={commentForm}
@@ -431,7 +412,6 @@ const BlogPostCard = ({ blog, showCenterLink = true }) => {
 
           <Divider />
           
-          {/* Danh sách bình luận - Ai cũng xem được */}
           <div>
             <Text strong className="text-sm">Tất cả bình luận:</Text>
             <div className="max-h-96 overflow-y-auto mt-3">

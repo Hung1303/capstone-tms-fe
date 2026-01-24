@@ -1,10 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Card, Button, Spin, Empty, message, Divider, Typography, Avatar, Form, Input } from 'antd'
-import { ArrowLeftOutlined, UserOutlined } from '@ant-design/icons'
+import { Card, Button, Spin, Empty, message, Divider, Typography, Avatar, Form, Input, Image } from 'antd' // Thêm Image vào import
+import { 
+  ArrowLeftOutlined, 
+  UserOutlined, 
+  LikeOutlined, 
+  LikeFilled, 
+  MessageOutlined 
+} from '@ant-design/icons'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
-import { commentBlogPost, getBlogComments } from '../../services/blogService'
+import { commentBlogPost, getBlogComments, likeBlogPost, unlikeBlogPost } from '../../services/blogService'
 
 const { Title, Text } = Typography
 
@@ -12,15 +18,23 @@ const BlogDetail = () => {
   const { blogId } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  
   const [blog, setBlog] = useState(null)
   const [loading, setLoading] = useState(false)
   const [comments, setComments] = useState([])
-  const [commentsLoading, setCommentsLoading] = useState(false)
   const [otherBlogs, setOtherBlogs] = useState([])
+  
+  const [isLiked, setIsLiked] = useState(false)
+  const [likeCount, setLikeCount] = useState(0)
+  const [commentCount, setCommentCount] = useState(0)
+  const [isLiking, setIsLiking] = useState(false)
+  
+  const [commentsLoading, setCommentsLoading] = useState(false)
   const [commentForm] = Form.useForm()
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
 
-  // Xử lý ngày tháng an toàn
+  const commentInputRef = useRef(null)
+
   const formatDate = (dateString) => {
     if (!dateString) return 'Vừa xong'
     try {
@@ -33,12 +47,12 @@ const BlogDetail = () => {
         hour: '2-digit', 
         minute: '2-digit' 
       })
-    } catch (e) {
+    } catch (error) {
+      console.error("Lỗi format date:", error)
       return 'Vừa xong'
     }
   }
 
-  // Tạo màu ngẫu nhiên cho Avatar dựa trên tên
   const stringToColor = (string) => {
     let hash = 0
     for (let i = 0; i < string.length; i++) {
@@ -48,33 +62,7 @@ const BlogDetail = () => {
     return '#' + '00000'.substring(0, 6 - c.length) + c
   }
 
-  // Lấy chi tiết blog
-  const fetchBlogDetail = async () => {
-    if (!blogId) return
-    setLoading(true)
-    try {
-      const response = await api.get(`/BlogPost/${blogId}`)
-      // API trả về { success: true, message: {...} }
-      const blogData = response.data?.message || response.data?.data || response.data
-      setBlog(blogData)
-      
-      // Lấy comments
-      fetchComments()
-      
-      // Lấy các bài viết khác của trung tâm
-      if (blogData?.centerProfileId) {
-        fetchOtherBlogs(blogData.centerProfileId, blogId)
-      }
-    } catch (error) {
-      console.error('Lỗi khi tải chi tiết blog:', error)
-      message.error('Không thể tải bài viết')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Lấy danh sách comments
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     if (!blogId) return
     setCommentsLoading(true)
     try {
@@ -86,26 +74,92 @@ const BlogDetail = () => {
     } finally {
       setCommentsLoading(false)
     }
-  }
+  }, [blogId])
 
-  // Lấy các bài viết khác của trung tâm
-  const fetchOtherBlogs = async (centerProfileId, currentBlogId) => {
+  const fetchOtherBlogs = useCallback(async (centerProfileId, currentBlogId) => {
     try {
       const response = await api.get(`/BlogPost/Center/${centerProfileId}`)
       const blogData = response.data?.blogs || []
       
-      // Filter bài đã published và không phải bài hiện tại
       const otherBlogsList = Array.isArray(blogData)
         ? blogData.filter(b => b.status === 'Published' && b.blogId !== currentBlogId)
         : []
       
-      setOtherBlogs(otherBlogsList.slice(0, 1)) // Lấy 1 bài viết khác
+      setOtherBlogs(otherBlogsList.slice(0, 1))
     } catch (error) {
       console.error('Lỗi khi tải bài viết khác:', error)
     }
+  }, [])
+
+  const fetchBlogDetail = useCallback(async () => {
+    if (!blogId) return
+    setLoading(true)
+    try {
+      const response = await api.get(`/BlogPost/${blogId}`, {
+        params: user?.parentProfileId ? { parentProfileId: user.parentProfileId } : {}
+      })
+      const blogData = response.data?.message || response.data?.data || response.data
+      setBlog(blogData)
+      
+      setLikeCount(blogData.likeCount || 0)
+      setCommentCount(blogData.commentCount || 0)
+      setIsLiked(blogData.isLikedByCurrentUser || false)
+
+      fetchComments()
+      
+      if (blogData?.centerProfileId) {
+        fetchOtherBlogs(blogData.centerProfileId, blogId)
+      }
+    } catch (error) {
+      console.error('Lỗi khi tải chi tiết blog:', error)
+      message.error('Không thể tải bài viết')
+    } finally {
+      setLoading(false)
+    }
+  }, [blogId, fetchComments, fetchOtherBlogs, user?.parentProfileId])
+
+  const handleLike = async () => {
+    if (!user) {
+      message.error('Vui lòng đăng nhập để thực hiện hành động này')
+      navigate('/login')
+      return
+    }
+
+    if (user.role?.toLowerCase() !== 'parent') {
+      message.error('Chỉ phụ huynh mới có thể thực hiện hành động này')
+      return
+    }
+
+    if (isLiking) return
+
+    try {
+      setIsLiking(true)
+      if (isLiked) {
+        await unlikeBlogPost(blogId)
+        setIsLiked(false)
+        setLikeCount(prev => Math.max(0, prev - 1))
+        message.success('Bỏ thích bài viết')
+      } else {
+        await likeBlogPost(blogId)
+        setIsLiked(true)
+        setLikeCount(prev => prev + 1)
+        message.success('Thích bài viết')
+      }
+    } catch (error) {
+      console.error('Lỗi khi like/unlike blog:', error)
+      message.error('Không thể thực hiện hành động này')
+    } finally {
+      setIsLiking(false)
+    }
   }
 
-  // Xử lý submit comment
+  const handleScrollToComment = () => {
+    if (commentInputRef.current) {
+      commentInputRef.current.focus();
+      commentInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
   const handleSubmitComment = async (values) => {
     if (!user) {
       message.error('Vui lòng đăng nhập để bình luận')
@@ -123,6 +177,7 @@ const BlogDetail = () => {
       await commentBlogPost(blogId, values.content)
       message.success('Bình luận thành công')
       commentForm.resetFields()
+      setCommentCount(prev => prev + 1)
       fetchComments()
     } catch (error) {
       console.error('Lỗi khi comment:', error)
@@ -135,7 +190,7 @@ const BlogDetail = () => {
 
   useEffect(() => {
     fetchBlogDetail()
-  }, [blogId])
+  }, [fetchBlogDetail])
 
   if (loading) {
     return (
@@ -168,7 +223,6 @@ const BlogDetail = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-6">
       <div className="max-w-7xl mx-auto px-4">
-        {/* Nút quay lại */}
         <Button 
           type="text" 
           icon={<ArrowLeftOutlined />}
@@ -179,9 +233,7 @@ const BlogDetail = () => {
         </Button>
 
         <div className="grid grid-cols-3 gap-6">
-          {/* Cột trái: Chi tiết bài viết và bình luận (2/3) */}
           <div className="col-span-2">
-            {/* Thông tin bài viết */}
             <Card className="mb-6 shadow-sm rounded-lg border-gray-200">
               {/* Header */}
               <div className="flex gap-3 mb-4">
@@ -202,43 +254,95 @@ const BlogDetail = () => {
                 </div>
               </div>
 
-              {/* Tiêu đề */}
               {blog.title && (
                 <Title level={3} className="!mb-4 !font-bold">
                   {blog.title}
                 </Title>
               )}
 
-              {/* Hình ảnh */}
-              {blog.imageUrl && (
-                <div className="mb-4 -mx-6 -mt-4">
-                  <img
+              {/* Phần hiển thị Media (Ảnh/Video) - SỬA LẠI PHẦN NÀY */}
+              {blog.images && blog.images.length > 0 ? (
+                <div className="-mx-6 mb-4">
+                  <div className="grid grid-cols-1 gap-2 p-4">
+                    {blog.images.map((item, index) => {
+                      const isVideo = item.img_url?.includes('/video/upload/') || 
+                                     item.name?.toLowerCase().endsWith('.mp4') ||
+                                     item.name?.toLowerCase().endsWith('.webm') ||
+                                     item.name?.toLowerCase().endsWith('.mov')
+                      
+                      return (
+                        <div key={`media-${index}`} className="relative bg-gray-100 rounded overflow-hidden">
+                          {isVideo ? (
+                            <video
+                              width="100%"
+                              controls
+                              className="w-full max-h-[500px] object-contain"
+                              src={item.img_url}
+                            >
+                              Trình duyệt của bạn không hỗ trợ video
+                            </video>
+                          ) : (
+                            <Image
+                              width="100%"
+                              src={item.img_url}
+                              alt={item.name || `Image ${index + 1}`}
+                              className="object-contain max-h-[500px]"
+                              fallback="https://via.placeholder.com/600x400?text=No+Image"
+                            />
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : blog.imageUrl ? (
+                <div className="-mx-6 mb-4">
+                  <Image
+                    width="100%"
                     src={blog.imageUrl}
                     alt="Blog content"
-                    className="w-full h-96 object-cover"
+                    className="object-cover max-h-[500px]"
+                    fallback="https://via.placeholder.com/600x400?text=No+Image"
                   />
                 </div>
-              )}
+              ) : null}
 
-              {/* Nội dung */}
               <div className="text-gray-800 text-base whitespace-pre-wrap leading-relaxed mb-4">
                 {blog.content}
               </div>
 
-              <Divider />
+              <Divider className="!my-2" />
 
-              {/* Thống kê */}
-              <div className="flex gap-6 text-sm text-gray-600">
-                <span>👍 {blog.likeCount || 0} lượt thích</span>
-                <span>💬 {blog.commentCount || 0} bình luận</span>
+              <div className="flex justify-around items-center py-1">
+                <Button 
+                  type="text" 
+                  icon={isLiked ? <LikeFilled /> : <LikeOutlined />}
+                  className={`flex-1 font-medium hover:bg-gray-100 ${isLiked ? 'text-blue-500' : 'text-gray-600'}`}
+                  onClick={handleLike}
+                  size="large"
+                >
+                  <span className="ml-1">
+                     {likeCount > 0 ? `${likeCount} Thích` : 'Thích'}
+                  </span>
+                </Button>
+                
+                <Button 
+                  type="text" 
+                  icon={<MessageOutlined />} 
+                  className="flex-1 text-gray-600 font-medium hover:bg-gray-100"
+                  onClick={handleScrollToComment}
+                  size="large"
+                >
+                  <span className="ml-1">
+                    {commentCount > 0 ? `${commentCount} Bình luận` : 'Bình luận'}
+                  </span>
+                </Button>
               </div>
             </Card>
 
-            {/* Bình luận */}
             <Card className="shadow-sm rounded-lg border-gray-200">
               <Title level={4} className="!mb-4">Bình luận</Title>
 
-              {/* Form nhập bình luận */}
               {user ? (
                 <Form
                   form={commentForm}
@@ -251,6 +355,7 @@ const BlogDetail = () => {
                     rules={[{ required: true, message: 'Vui lòng nhập bình luận' }]}
                   >
                     <Input.TextArea
+                      ref={commentInputRef}
                       placeholder="Viết bình luận của bạn..."
                       rows={3}
                       maxLength={500}
@@ -276,7 +381,6 @@ const BlogDetail = () => {
 
               <Divider />
 
-              {/* Danh sách bình luận */}
               {commentsLoading ? (
                 <Spin />
               ) : comments.length === 0 ? (
@@ -303,7 +407,6 @@ const BlogDetail = () => {
             </Card>
           </div>
 
-          {/* Cột phải: Bài viết khác của trung tâm (1/3) */}
           <div className="col-span-1">
             <Card className="shadow-sm rounded-lg border-gray-200 sticky top-6">
               <Title level={5} className="!mb-4">Bài viết khác của trung tâm </Title>

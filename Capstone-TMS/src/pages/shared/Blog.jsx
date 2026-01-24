@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Input, Typography, Spin, Empty, message, Card, Tag, Button, Space } from 'antd'
-import { SearchOutlined, ShoppingCartOutlined, LockOutlined } from '@ant-design/icons'
+import { SearchOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import api from '../../config/axios'
 import BlogPostCard from '../../components/BlogPostCard'
-import { useCart } from '../../hooks/useCart'
 import { useAuth } from '../../contexts/AuthContext'
 
 const { Title, Text } = Typography
@@ -27,25 +26,25 @@ const Blog = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { addItem, cartItems } = useCart()
 
+  // Hàm tải danh sách Blog
   const fetchBlogs = async () => {
     setLoading(true)
     try {
-      const response = await api.get('/BlogPost', {
-        params: {
-          pageNumber: 1,
-          pageSize: 100,
-        }
-      })
-      const blogData = response.data?.blogs || response.data || []
+      // Cấu hình params: Thêm parentProfileId nếu user là phụ huynh để check trạng thái Like
+      const params = {
+        pageNumber: 1,
+        pageSize: 100,
+        ...(user?.parentProfileId && { parentProfileId: user.parentProfileId })
+      }
+
+      // SỬA: Dùng endpoint /published thay vì /BlogPost gốc
+      const response = await api.get('/BlogPost/published', { params })
       
-      // Filter bài đã published
-      const publishedBlogs = Array.isArray(blogData) 
-        ? blogData.filter(blog => blog.status === 'Published')
-        : []
-        
-      setBlogs(publishedBlogs)
+      // API /published trả về { totalCount, blogs: [] }
+      const blogData = response.data?.blogs || []
+      
+      setBlogs(blogData)
     } catch (error) {
       console.error('Lỗi khi tải blog:', error)
       message.error('Không thể tải bản tin')
@@ -54,6 +53,7 @@ const Blog = () => {
     }
   }
 
+  // Hàm tải khóa học gợi ý bên phải
   const fetchCourses = async () => {
     setCoursesLoading(true)
     try {
@@ -72,10 +72,12 @@ const Blog = () => {
     }
   }
 
+  // SỬA: Thêm [user] vào dependency để reload lại trạng thái Like khi login/logout
   useEffect(() => {
     fetchBlogs()
     fetchCourses()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   const filteredBlogs = blogs.filter(blog => {
     const searchLower = searchTerm.toLowerCase()
@@ -85,26 +87,6 @@ const Blog = () => {
       (blog.centerName && blog.centerName.toLowerCase().includes(searchLower))
     )
   })
-
-  const handleAddToCart = (course) => {
-    if (!user) {
-      message.error('Vui lòng đăng nhập để thêm khóa học vào giỏ hàng')
-      navigate('/login')
-      return
-    }
-
-    if (user.role !== 'Parent') {
-      message.error('Chỉ phụ huynh mới có thể thêm khóa học vào giỏ hàng')
-      return
-    }
-
-    const added = addItem(course)
-    if (added) {
-      message.success('Đã thêm vào giỏ hàng')
-    } else {
-      message.info('Khóa học đã có trong giỏ')
-    }
-  }
 
   return (
     <div className="min-h-screen bg-[#f0f2f5] py-6">
@@ -148,7 +130,12 @@ const Blog = () => {
             ) : (
               <div className="space-y-4">
                 {filteredBlogs.map((blog) => (
-                  <BlogPostCard key={blog.blogId} blog={blog} onBlogUpdate={fetchBlogs} showCenterLink={true} />
+                  // BlogPostCard đã được cập nhật logic xử lý Like nội bộ
+                  <BlogPostCard 
+                    key={blog.blogId} 
+                    blog={blog} 
+                    showCenterLink={true} 
+                  />
                 ))}
                 
                 <div className="text-center py-6">
@@ -171,7 +158,6 @@ const Blog = () => {
                 <div className="space-y-3">
                   {courses.map((course) => {
                     const status = statusLabel[course.status] || { text: "Không xác định", color: "default" }
-                    const inCart = cartItems.some((item) => item.id === course.id)
                     
                     return (
                       <div
@@ -212,7 +198,6 @@ const Blog = () => {
                           >
                             Xem chi tiết
                           </Button>
-                      
                         </Space>
                       </div>
                     )

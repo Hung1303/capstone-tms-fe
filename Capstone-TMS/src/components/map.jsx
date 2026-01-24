@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from "react-leaflet";
 import { Spin, Button, Space, Tag, Typography, List, Avatar, Input, Empty } from "antd";
-import { MenuFoldOutlined, MenuUnfoldOutlined, EnvironmentOutlined, PhoneOutlined, MailOutlined, UserOutlined, BookOutlined, SendOutlined, WarningOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import { MenuFoldOutlined, MenuUnfoldOutlined, EnvironmentOutlined, PhoneOutlined, UserOutlined, BookOutlined, SendOutlined, WarningOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import api from "../config/axios";
@@ -19,8 +19,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-// --- SUB-COMPONENT QUAN TRỌNG: XỬ LÝ MAP & POPUP ---
-// Component này thay thế cho FlyToLocation cũ
+// --- SUB-COMPONENT: XỬ LÝ MAP & POPUP ---
 const MapHandler = ({ selectedCenter, markerRefs }) => {
   const map = useMap();
 
@@ -30,26 +29,20 @@ const MapHandler = ({ selectedCenter, markerRefs }) => {
       const longitude = selectedCenter.longitude || 106.660172;
       const { id } = selectedCenter;
 
-      console.log('MapHandler - Flying to:', { latitude, longitude, id });
-
       // 1. Bay đến vị trí
       map.flyTo([latitude, longitude], 16, {
         duration: 1.5,
       });
 
       // 2. Tìm marker và mở popup
-      setTimeout(() => {
-        console.log('MapHandler - Looking for marker:', id);
-        console.log('MapHandler - Available markers:', Object.keys(markerRefs.current));
-        
+      const timer = setTimeout(() => {
         const marker = markerRefs.current[id];
         if (marker) {
-          console.log('MapHandler - Found marker, opening popup');
           marker.openPopup();
-        } else {
-          console.log('MapHandler - Marker not found');
         }
       }, 800);
+
+      return () => clearTimeout(timer);
     }
   }, [selectedCenter, map, markerRefs]);
 
@@ -160,22 +153,36 @@ const ParentCentersMap = () => {
   useEffect(() => {
     const initData = async () => {
       setLoading(true);
+      
+      // Lấy vị trí người dùng
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const userLoc = [pos.coords.latitude, pos.coords.longitude];
             setUserPos(userLoc);
-            setMapCenter(userLoc);
+            // Chỉ set map center theo user nếu chưa chọn trung tâm nào
+            if (!selectedCenter) setMapCenter(userLoc);
           },
           (err) => console.warn("Không lấy được vị trí", err)
         );
       }
 
       try {
-        const response = await api.get("/Users/Centers");
+        // --- SỬA LỖI QUAN TRỌNG ---
+        // Thêm params pageSize: 1000 để lấy toàn bộ dữ liệu, tránh bị phân trang ẩn mất active center
+        const response = await api.get("/Users/Centers", {
+            params: {
+                pageSize: 1000, 
+                pageNumber: 1
+            }
+        });
+
         const centersData = response.data?.centers || [];
+        
         // Chỉ lấy trung tâm Active
-        setCenters(centersData.filter(c => c.status === "Active"));
+        const activeCenters = centersData.filter(c => c.status === "Active");
+        setCenters(activeCenters);
+
       } catch (err) {
         console.error("Lỗi:", err);
       } finally {
@@ -183,7 +190,8 @@ const ParentCentersMap = () => {
       }
     };
     initData();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Chạy 1 lần khi mount
 
   const filteredCenters = useMemo(() => {
     return centers.filter((center) => {
@@ -197,14 +205,19 @@ const ParentCentersMap = () => {
   }, [centers, searchTerm]);
 
   const handleSelectCenter = (center) => {
-    // Clone object để đảm bảo useEffect trong MapHandler luôn chạy (kể cả khi click lại trung tâm cũ)
+    // Clone object để đảm bảo useEffect trong MapHandler luôn chạy
     setSelectedCenter({ ...center });
     
-    // Trên mobile thì đóng sidebar để xem map
+    // Trên mobile thì đóng sidebar
     if (window.innerWidth < 768) setIsSidebarOpen(false);
   };
 
-  const handleViewCourses = (center) => navigate(`/courses`);
+  // --- SỬA LỖI ĐỎ ESLINT ---
+  // Đã bỏ tham số (center) vì không sử dụng trong hàm navigate
+  const handleViewCourses = () => {
+      navigate(`/courses`);
+      // Nếu sau này cần ID: navigate(`/courses?centerId=${center.id}`);
+  };
 
   const handleGetDirection = async (center) => {
     if (!userPos) return alert("Cần bật định vị!");
@@ -279,9 +292,7 @@ const ParentCentersMap = () => {
               <Marker
                 key={center.id}
                 position={[lat, lng]}
-                // QUAN TRỌNG: Gán ref của marker vào object markerRefs
                 ref={(ref) => {
-                  console.log('Marker ref assigned for:', center.id, ref ? 'SUCCESS' : 'FAILED');
                   if (ref) {
                     markerRefs.current[center.id] = ref;
                   }
@@ -298,7 +309,7 @@ const ParentCentersMap = () => {
                       <Button block icon={<SendOutlined />} onClick={() => handleGetDirection(center)} disabled={!userPos}>
                         Chỉ đường
                       </Button>
-                      <Button type="primary" block icon={<BookOutlined />} onClick={() => handleViewCourses(center)}>
+                      <Button type="primary" block icon={<BookOutlined />} onClick={() => handleViewCourses()}>
                         Xem khóa học
                       </Button>
                     </Space>

@@ -33,15 +33,6 @@ export const getBlogPostById = async (blogId) => {
   }
 }
 
-// Tạo blog post mới với hỗ trợ nhiều ảnh/video
-// blogData: {
-//   title: string,
-//   content: string,
-//   courseId: string (optional),
-//   thumbnailUrl: string (optional - URL của ảnh/video được chọn làm thumbnail),
-//   images: File[] (array of image files),
-//   videos: File[] (array of video files)
-// }
 export const createBlogPost = async (centerProfileId, blogData) => {
   try {
     const formData = new FormData()
@@ -54,10 +45,6 @@ export const createBlogPost = async (centerProfileId, blogData) => {
       formData.append('CourseId', blogData.courseId)
     }
     
-    // Không gửi thumbnail nữa để tránh xung đột với images/videos
-    
-    // Gửi tất cả file (ảnh + video) vào cùng một field Images
-    // Backend sẽ tự phân biệt dựa vào MIME type
     const allFiles = []
     
     // Thêm các file ảnh
@@ -95,15 +82,6 @@ export const createBlogPost = async (centerProfileId, blogData) => {
   }
 }
 
-// Cập nhật blog post với hỗ trợ nhiều ảnh/video
-// blogData: {
-//   title: string,
-//   content: string,
-//   courseId: string (optional),
-//   thumbnailUrl: string (optional),
-//   images: File[] (array of image files),
-//   videos: File[] (array of video files)
-// }
 export const updateBlogPost = async (blogId, blogData) => {
   try {
     const formData = new FormData()
@@ -115,11 +93,7 @@ export const updateBlogPost = async (blogId, blogData) => {
     if (blogData.courseId) {
       formData.append('CourseId', blogData.courseId)
     }
-    
-    // Không gửi thumbnail nữa để tránh xung đột với images/videos
-    
-    // Gửi tất cả file (ảnh + video) vào cùng một field Images
-    // Backend sẽ tự phân biệt dựa vào MIME type
+
     const allFiles = []
     
     // Thêm các file ảnh
@@ -195,12 +169,12 @@ export const deleteBlogPost = async (blogId) => {
 // Like blog post
 export const likeBlogPost = async (blogId) => {
   try {
-    console.log('🔵 likeBlogPost called with blogId:', blogId)
+    console.log(' likeBlogPost called with blogId:', blogId)
     const response = await api.post(`/BlogPost/${blogId}/like`)
-    console.log('✅ Like response:', response.data)
+    console.log(' Like response:', response.data)
     return response.data
   } catch (error) {
-    console.error('❌ Lỗi khi like blog:', error.response?.data || error.message)
+    console.error(' Lỗi khi like blog:', error.response?.data || error.message)
     throw error
   }
 }
@@ -208,12 +182,12 @@ export const likeBlogPost = async (blogId) => {
 // Unlike blog post
 export const unlikeBlogPost = async (blogId) => {
   try {
-    console.log('🔵 unlikeBlogPost called with blogId:', blogId)
+    console.log(' unlikeBlogPost called with blogId:', blogId)
     const response = await api.delete(`/BlogPost/${blogId}/like`)
-    console.log('✅ Unlike response:', response.data)
+    console.log(' Unlike response:', response.data)
     return response.data
   } catch (error) {
-    console.error('❌ Lỗi khi unlike blog:', error.response?.data || error.message)
+    console.error(' Lỗi khi unlike blog:', error.response?.data || error.message)
     throw error
   }
 }
@@ -221,14 +195,14 @@ export const unlikeBlogPost = async (blogId) => {
 // Comment blog post
 export const commentBlogPost = async (blogId, content) => {
   try {
-    console.log('🔵 commentBlogPost called with blogId:', blogId, 'content:', content)
+    console.log(' commentBlogPost called with blogId:', blogId, 'content:', content)
     const response = await api.post(`/BlogPost/${blogId}/comment`, {
       content: content
     })
-    console.log('✅ Comment response:', response.data)
+    console.log(' Comment response:', response.data)
     return response.data
   } catch (error) {
-    console.error('❌ Lỗi khi comment blog:', error.response?.data || error.message)
+    console.error(' Lỗi khi comment blog:', error.response?.data || error.message)
     throw error
   }
 }

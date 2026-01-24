@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useConsultation } from '../../contexts/ConsultationContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { Button, Input, Empty, Spin, Alert, Avatar, Badge, Divider } from 'antd';
-import { SendOutlined, LoadingOutlined, CheckOutlined } from '@ant-design/icons';
+import { Button, Input, Empty, Spin, Alert, Avatar } from 'antd';
+import { SendOutlined, LoadingOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 
-dayjs.extend(relativeTime);
 dayjs.locale('vi');
 
 const CenterConsultation = () => {
@@ -16,7 +14,6 @@ const CenterConsultation = () => {
     sessions,
     currentSession,
     messages,
-    isConnected,
     loading,
     error,
     fetchSessions,
@@ -28,7 +25,6 @@ const CenterConsultation = () => {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Cuộn xuống tin nhắn mới nhất
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -37,15 +33,6 @@ const CenterConsultation = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Tải danh sách phiên khi component mount
-  useEffect(() => {
-    if (user?.id) {
-      // Tải danh sách phiên từ API
-      // Bạn có thể thêm API để lấy danh sách phiên của center
-    }
-  }, [user?.id]);
-
-  // Xử lý gửi tin nhắn
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !currentSession) {
       return;
@@ -62,7 +49,6 @@ const CenterConsultation = () => {
     }
   };
 
-  // Xử lý chọn phiên
   const handleSelectSession = async (session) => {
     selectSession(session);
     try {
@@ -74,12 +60,10 @@ const CenterConsultation = () => {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 p-4 shadow-sm">
         <h1 className="text-2xl font-bold text-gray-800">Tư vấn với Phụ huynh</h1>
       </div>
 
-      {/* Error Alert */}
       {error && (
         <Alert
           message="Lỗi"
@@ -90,7 +74,6 @@ const CenterConsultation = () => {
         />
       )}
 
-      {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sessions List */}
         <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
@@ -130,14 +113,10 @@ const CenterConsultation = () => {
                       <p className="font-medium text-gray-800 truncate">
                         {session.parentName || 'Phụ huynh'}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {session.lastMessage || 'Chưa có tin nhắn'}
-                      </p>
+                      {/* ĐÃ XÓA: dòng "Chưa có tin nhắn" ở đây */}
                     </div>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">
-                    {dayjs(session.createdAt).fromNow()}
-                  </p>
+                  {/* ĐÃ XÓA: dòng thời gian "vài giây trước" ở đây */}
                 </div>
               ))}
             </div>
@@ -161,9 +140,7 @@ const CenterConsultation = () => {
                     <p className="font-semibold text-gray-800">
                       {currentSession.parentName || 'Phụ huynh'}
                     </p>
-                    <p className="text-xs text-gray-500">
-                      {isConnected ? 'Đang hoạt động' : 'Ngoại tuyến'}
-                    </p>
+                    {/* ĐÃ XÓA: dòng trạng thái "Đang hoạt động" ở đây */}
                   </div>
                 </div>
               </div>

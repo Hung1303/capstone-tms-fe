@@ -51,28 +51,28 @@ class ConsultationService {
     await this.connection.start();
     this.isConnected = true;
 
-    console.log('✅ SignalR connected:', this.connection.connectionId);
+    console.log(' SignalR connected:', this.connection.connectionId);
   }
 
   setupEventListeners() {
     if (!this.connection) return;
 
     this.connection.on('ReceiveMessage', message => {
-      console.log('📩 Message received:', message);
+      console.log(' Message received:', message);
       this.emit('messageReceived', message);
     });
 
     this.connection.onreconnecting(error => {
-      console.warn('🔄 SignalR reconnecting...', error);
+      console.warn(' SignalR reconnecting...', error);
       this.isConnected = false;
       this.emit('reconnecting', error);
     });
 
     this.connection.onreconnected(async connectionId => {
-      console.log('✅ SignalR reconnected:', connectionId);
+      console.log(' SignalR reconnected:', connectionId);
       this.isConnected = true;
 
-      // 🔥 MUST rejoin group
+      //  MUST rejoin group
       if (this.currentSessionId) {
         await this.joinSession(this.currentSessionId);
       }
@@ -81,7 +81,7 @@ class ConsultationService {
     });
 
     this.connection.onclose(error => {
-      console.warn('❌ SignalR closed:', error);
+      console.warn(' SignalR closed:', error);
       this.isConnected = false;
       this.emit('disconnected', error);
     });
@@ -100,7 +100,7 @@ class ConsultationService {
 
   this.currentSessionId = sessionId;
 
-  // 🔥 ĐÚNG TÊN METHOD BACKEND
+  //  ĐÚNG TÊN METHOD BACKEND
   await this.connection.invoke('JoinGroup', sessionId);
 
   console.log('👥 Joined SignalR session:', sessionId);
@@ -114,36 +114,13 @@ class ConsultationService {
   if (!this.connection || !this.isConnected || !sessionId) return;
 
   await this.connection.invoke('LeaveSession', sessionId);
-  console.log('👋 Left SignalR session:', sessionId);
+  console.log(' Left SignalR session:', sessionId);
 
   if (this.currentSessionId === sessionId) {
     this.currentSessionId = null;
   }
   }
 
-
-  /* ===========================
-     CHAT (API-BASED)
-     =========================== */
-
-//   async sendMessageViaAPI(userId, sessionId, content) {
-//   if (!content || !content.trim()) {
-//     throw new Error('Message content is empty');
-//   }
-
-//   const response = await api.post(
-//     `/Consultation/Chat/${userId}`, // 👈 ĐÚNG ROUTE BACKEND
-//     content,                       // 👈 GỬI STRING THUẦN
-//     {
-//       params: { sessionId },
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//     }
-//   );
-
-//   return response.data;
-// }
 async sendMessageViaAPI(sessionId, content) {
   return api.post(
     `/Consultation/Chat`,

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { Link, useNavigate } from 'react-router-dom'
 import { DashboardOutlined, LogoutOutlined, ShoppingCartOutlined, UserOutlined, WalletOutlined } from '@ant-design/icons'
-import { useCart } from '../hooks/useCart'
 import { useAuth } from '../contexts/AuthContext'
 
 // ... (menuData và moreMenu giữ nguyên) ...
@@ -33,7 +32,6 @@ const NavBar = () => {
     const [openSubMenu, setOpenSubMenu] = useState(null)
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const navigate = useNavigate();
-    const { cartItems } = useCart()
     const { user, logout } = useAuth()
 
     const handleMenuEnter = (menu) => setOpenMenu(menu)
