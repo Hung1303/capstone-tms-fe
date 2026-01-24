@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { DashboardOutlined, UserOutlined, TeamOutlined, BookOutlined, CalendarOutlined, BarChartOutlined, LogoutOutlined, CheckCircleOutlined,
+import { DashboardOutlined, UserOutlined, TeamOutlined, BookOutlined, CalendarOutlined, LogoutOutlined, CheckCircleOutlined,
          FileTextOutlined, GiftOutlined, MessageOutlined, FileMarkdownOutlined, SafetyOutlined } from '@ant-design/icons'
 
 // Menu configuration cho từng role
@@ -54,44 +54,6 @@ const ROLE_MENUS = {
       label: 'Danh sách Feedback',
       path: '/admin/feedbacks'
     },
-  ],
-  Staff: [
-    {
-      key: '/staff',
-      icon: <DashboardOutlined />,
-      label: 'Dashboard',
-      path: '/staff'
-    },
-    {
-      key: '/staff/centers',
-      icon: <TeamOutlined />,
-      label: 'Xác thực trung tâm',
-      path: '/staff/centers'
-    },
-    {
-      key: '/staff/course-confirmation',
-      icon: <CheckCircleOutlined />,
-      label: 'Xác thực khóa học',
-      path: '/staff/course-confirmation'
-    },
-    {
-      key: '/staff/students',
-      icon: <UserOutlined />,
-      label: 'Xác thực học sinh',
-      path: '/staff/students'
-    },
-    {
-      key: '/staff/schedule',
-      icon: <CalendarOutlined />,
-      label: 'Lịch làm việc',
-      path: '/staff/schedule'
-    },
-    {
-      key: '/staff/reports',
-      icon: <BarChartOutlined />,
-      label: 'Báo cáo',
-      path: '/staff/reports'
-    }
   ],
   Inspector: [
     {
@@ -205,12 +167,6 @@ const ROLE_MENUS = {
       icon: <FileTextOutlined />,
       label: 'Chấm điểm',
       path: '/teacher/grading'
-    },
-    {
-      key: '/teacher/materials',
-      icon: <FileTextOutlined />,
-      label: 'Tài liệu',
-      path: '/teacher/materials'
     },
     {
       key: '/teacher/feedbacks',

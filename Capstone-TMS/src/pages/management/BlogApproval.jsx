@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Table, Button, Space, message, Tag, Drawer, Tabs } from 'antd'
-import { CheckCircleOutlined, CloseCircleOutlined, EyeOutlined } from '@ant-design/icons'
+import { Table, Button, Space, message, Tag, Drawer, Tabs, Card, Typography } from 'antd'
+import { CheckCircleOutlined, CloseCircleOutlined, EyeOutlined, FileMarkdownOutlined } from '@ant-design/icons'
 import { toast } from 'react-toastify'
 import api from '../../config/axios'
 import BlogPostCardAdmin from '../../components/BlogPostCardAdmin'
+
+const { Title, Text } = Typography
 
 const BlogApproval = () => {
   const [blogs, setBlogs] = useState([])
@@ -256,17 +258,24 @@ const BlogApproval = () => {
   ]
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Duyệt Blog</h1>
-        <p className="text-gray-600 mt-2">Quản lý và duyệt các bài blog từ các trung tâm</p>
-      </div>
+    <Space direction="vertical" style={{ width: '100%' }}>
+      {/* Header */}
+      <Card className="!bg-gradient-to-r !from-[#64cc24] !to-[#90f252] !rounded-xl shadow-xl">
+        <Title level={2} className="!text-white !m-0 !font-bold">
+              <FileMarkdownOutlined /> Duyệt Blog
+            </Title>
+            <Text className="!text-white/90 !text-base">
+              Quản lý và duyệt các bài blog từ các trung tâm.
+            </Text>
+      </Card>
 
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={tabItems}
-      />
+      <Card>
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={tabItems}
+        />
+      </Card>
 
       <Drawer
         title="Chi tiết Blog"
@@ -312,7 +321,7 @@ const BlogApproval = () => {
           </div>
         )}
       </Drawer>
-    </div>
+    </Space>
   )
 }
 

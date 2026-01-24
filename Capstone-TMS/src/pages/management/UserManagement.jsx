@@ -605,7 +605,7 @@ const UserManagement = () => {
               onChange: (page, pageSize) => fetchUsers(activeRole, page, pageSize),
               className: "!mr-2"
             }}
-            scroll={{ x: "max-content", y: 75 * 5 }}
+            scroll={{ x: "max-content", ...(filteredData.length > 5 ? {y: 75 * 5} : "") }}
           />
         </div>
       </Card>
