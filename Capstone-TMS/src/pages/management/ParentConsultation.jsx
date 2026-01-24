@@ -15,7 +15,6 @@ const ParentConsultation = () => {
     sessions,
     currentSession,
     messages,
-    isConnected,
     loading,
     error,
     fetchSessions,

@@ -15,7 +15,7 @@ import { useNavigate } from 'react-router-dom'
 
 const { Title, Text, Paragraph } = Typography
 
-const BlogPostCard = ({ blog, onBlogUpdate, showCenterLink = true }) => {
+const BlogPostCard = ({ blog, showCenterLink = true }) => {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [isExpanded, setIsExpanded] = useState(false)
@@ -67,6 +67,12 @@ const BlogPostCard = ({ blog, onBlogUpdate, showCenterLink = true }) => {
       return
     }
 
+    // Kiểm tra role - chỉ phụ huynh mới được like (role có thể là 'parent' hoặc 'Parent')
+    if (user.role?.toLowerCase() !== 'parent') {
+      message.error('Chỉ phụ huynh mới có thể thực hiện hành động này')
+      return
+    }
+
     if (isLiking) return
 
     try {
@@ -82,9 +88,7 @@ const BlogPostCard = ({ blog, onBlogUpdate, showCenterLink = true }) => {
         setLikeCount(likeCount + 1)
         message.success('Thích bài viết')
       }
-      if (onBlogUpdate) {
-        onBlogUpdate()
-      }
+      // Không gọi onBlogUpdate - chỉ cập nhật local state
     } catch (error) {
       console.error('Lỗi khi like/unlike blog:', error)
       message.error('Không thể thực hiện hành động này')
@@ -108,12 +112,8 @@ const BlogPostCard = ({ blog, onBlogUpdate, showCenterLink = true }) => {
     }
   }
 
-  // Mở modal comment
+  // Mở modal comment - Ai cũng xem được, chỉ phụ huynh mới gửi được
   const handleOpenCommentModal = () => {
-    if (!user) {
-      setIsLoginModalVisible(true)
-      return
-    }
     setIsCommentModalVisible(true)
     fetchComments()
   }
@@ -132,9 +132,7 @@ const BlogPostCard = ({ blog, onBlogUpdate, showCenterLink = true }) => {
       commentForm.resetFields()
       setCommentCount(commentCount + 1)
       fetchComments()
-      if (onBlogUpdate) {
-        onBlogUpdate()
-      }
+      // Không gọi onBlogUpdate - chỉ cập nhật local state
     } catch (error) {
       console.error('Lỗi khi comment:', error)
       const errorMsg = error.response?.data?.message || 'Không thể bình luận bài viết này'
@@ -273,9 +271,47 @@ const BlogPostCard = ({ blog, onBlogUpdate, showCenterLink = true }) => {
           </div>
         </div>
 
-        {/* Hình ảnh (Nếu có) */}
-        <div className="-mx-4 mb-2">
-          {blog.imageUrl ? (
+        {/* Hình ảnh và Video (Nếu có) */}
+        {blog.images && blog.images.length > 0 ? (
+          <div className="-mx-4 mb-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 p-4">
+              {/* Hiển thị ảnh và video từ mảng images */}
+              {blog.images.map((item, index) => {
+                // Kiểm tra xem có phải video không (dựa vào URL hoặc tên file)
+                const isVideo = item.img_url?.includes('/video/upload/') || 
+                               item.name?.toLowerCase().endsWith('.mp4') ||
+                               item.name?.toLowerCase().endsWith('.webm') ||
+                               item.name?.toLowerCase().endsWith('.mov')
+                
+                return (
+                  <div key={`media-${index}`} className="relative bg-gray-100 rounded overflow-hidden">
+                    {isVideo ? (
+                      <video
+                        width="100%"
+                        height={200}
+                        controls
+                        className="w-full h-[200px] object-cover"
+                        src={item.img_url}
+                      >
+                        Trình duyệt của bạn không hỗ trợ video
+                      </video>
+                    ) : (
+                      <Image
+                        width="100%"
+                        height={200}
+                        src={item.img_url}
+                        alt={item.name || `Image ${index + 1}`}
+                        className="object-cover"
+                        fallback="https://via.placeholder.com/300x200?text=No+Image"
+                      />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ) : blog.imageUrl ? (
+          <div className="-mx-4 mb-2">
             <Image
               width="100%"
               height={300}
@@ -284,26 +320,24 @@ const BlogPostCard = ({ blog, onBlogUpdate, showCenterLink = true }) => {
               className="object-cover"
               fallback="https://via.placeholder.com/600x300?text=TutorLink+Education"
             />
-          ) : null}
-        </div>
-
-        {/* Hiển thị số lượt thích và bình luận */}
-        {(likeCount > 0 || commentCount > 0) && (
-          <div className="px-4 py-2 text-sm text-gray-600 border-b">
-            <span className="mr-4">
-              <LikeFilled className="text-blue-500 mr-1" />
-              {likeCount} lượt thích
-            </span>
-            <span>
-              <MessageOutlined className="mr-1" />
-              {commentCount} bình luận
-            </span>
           </div>
-        )}
+        ) : null}
+
+        {/* Hiển thị số lượt thích và bình luận - Luôn hiển thị */}
+        <div className="px-4 py-2 text-sm text-gray-600 border-b">
+          <span className="mr-4">
+            <LikeFilled className="text-blue-500 mr-1" />
+            {likeCount} lượt thích
+          </span>
+          <span>
+            <MessageOutlined className="mr-1" />
+            {commentCount} bình luận
+          </span>
+        </div>
 
         <Divider className="!my-2" />
 
-        {/* Thanh hành động (Like/Comment) */}
+        {/* Thanh hành động (Like/Comment) - Luôn hiển thị */}
         <div className="flex justify-around items-center py-1">
           <Button 
             type="text" 
@@ -359,55 +393,69 @@ const BlogPostCard = ({ blog, onBlogUpdate, showCenterLink = true }) => {
         width={600}
       >
         <div className="space-y-4">
-          <Form
-            form={commentForm}
-            layout="vertical"
-            onFinish={handleSubmitComment}
-          >
-            <Form.Item
-              name="content"
-              rules={[{ required: true, message: 'Vui lòng nhập bình luận' }]}
+          {/* Form gửi bình luận - Chỉ hiển thị cho phụ huynh */}
+          {user?.role?.toLowerCase() === 'parent' ? (
+            <Form
+              form={commentForm}
+              layout="vertical"
+              onFinish={handleSubmitComment}
             >
-              <Input.TextArea
-                placeholder="Viết bình luận của bạn..."
-                rows={3}
-                maxLength={500}
-              />
-            </Form.Item>
-            <Form.Item>
-              <Button 
-                type="primary" 
-                htmlType="submit"
-                loading={isSubmittingComment}
-                block
+              <Form.Item
+                name="content"
+                rules={[{ required: true, message: 'Vui lòng nhập bình luận' }]}
               >
-                Gửi bình luận
-              </Button>
-            </Form.Item>
-          </Form>
+                <Input.TextArea
+                  placeholder="Viết bình luận của bạn..."
+                  rows={3}
+                  maxLength={500}
+                />
+              </Form.Item>
+              <Form.Item>
+                <Button 
+                  type="primary" 
+                  htmlType="submit"
+                  loading={isSubmittingComment}
+                  block
+                >
+                  Gửi bình luận
+                </Button>
+              </Form.Item>
+            </Form>
+          ) : (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+              <Text type="secondary">
+                {user ? 'Chỉ phụ huynh mới có thể gửi bình luận' : 'Vui lòng đăng nhập để gửi bình luận'}
+              </Text>
+            </div>
+          )}
 
           <Divider />
-          <div className="max-h-96 overflow-y-auto">
-            {commentsLoading ? (
-              <Spin />
-            ) : comments.length === 0 ? (
-              <Empty description="Chưa có bình luận nào" />
-            ) : (
-              <div className="space-y-3">
-                {comments.map((comment) => (
-                  <div key={comment.commentId || comment.id} className="border-l-2 border-gray-200 pl-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Avatar size={24} icon={<UserOutlined />} />
-                      <Text strong>{comment.parentName || comment.userName || comment.fullName || 'Người dùng'}</Text>
-                      <Text type="secondary" className="text-xs">
-                        {formatDate(comment.createdAt)}
-                      </Text>
+          
+          {/* Danh sách bình luận - Ai cũng xem được */}
+          <div>
+            <Text strong className="text-sm">Tất cả bình luận:</Text>
+            <div className="max-h-96 overflow-y-auto mt-3">
+              {commentsLoading ? (
+                <Spin />
+              ) : comments.length === 0 ? (
+                <Empty description="Chưa có bình luận nào" />
+              ) : (
+                <div className="space-y-3">
+                  {comments.map((comment) => (
+                    <div key={comment.commentId || comment.id} className="border-l-2 border-gray-200 pl-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Avatar size={24} icon={<UserOutlined />} />
+                        <Text strong>{comment.parentName || comment.userName || comment.fullName || 'Người dùng'}</Text>
+                        <Text type="secondary" className="text-xs">
+                          {formatDate(comment.createdAt)}
+                        </Text>
+                      </div>
+                      <Text>{comment.content}</Text>
                     </div>
-                    <Text>{comment.content}</Text>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </Modal>

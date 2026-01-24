@@ -73,6 +73,7 @@ import BlogApproval from "../pages/management/BlogApproval";
 import AdminVerification from "../pages/management/AdminVerification";
 import InspectorVerification from "../pages/management/InspectorVerification";
 import TeacherManagementMain from "../pages/management/TeacherManagementMain";
+import CenterManagementProfile from "../pages/management/CenterManagementProfile";
 
 export const router = createBrowserRouter([
 
@@ -184,6 +185,7 @@ export const router = createBrowserRouter([
         ),
         children: [
             { index: true, element: <CenterDashboard /> },
+            { path: "management", element: <CenterManagementProfile /> },
             { path: "courses", element: <CourseManagement /> },
             { path: "blog", element: <BlogManagement /> },
             { path: "subscription", element: <CenterSubscription /> },
