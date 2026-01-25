@@ -20,7 +20,7 @@ const TeacherCourses = () => {
 
   const [studentPagination, setStudentPagination] = useState({
     page: 1,
-    pageSize: 5,
+    pageSize: 1000,
     total: 0
   })
   
@@ -283,12 +283,15 @@ const TeacherCourses = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <Space direction="vertical" size="large" className="w-full">
-        
-        {/* Header & Stats */}
+    <Space direction="vertical" style={{ width: '100%' }}>
+      {/* Header */}
+      {/* <Card className="!bg-gradient-to-r !from-orange-500 !to-purple-600 !rounded-xl shadow-xl"> */}
         <div>
-          <Title level={2} className="!mb-4">Lịch giảng dạy</Title>
+          <Card className="!bg-gradient-to-r !from-[#2ecc8f] !to-[#44f3b0] !rounded-xl shadow-xl !mb-4">
+            <Title level={2} className="!text-white !m-0 !font-bold">
+              <BookOutlined /> Các khóa học
+            </Title>
+          </Card>
           <Row gutter={16}>
             <Col span={8}>
               <Card className="shadow-sm">
@@ -328,11 +331,13 @@ const TeacherCourses = () => {
           <Row gutter={16} align="middle">
             <Col xs={24} md={12}>
               <Input 
-                placeholder="Tìm kiếm khóa học hoặc môn học..." 
-                prefix={<SearchOutlined className="text-gray-400" />}
+                className="search-input"
                 size="large"
-                allowClear
+                placeholder="Tìm kiếm khóa học hoặc môn học..." 
+                prefix={<SearchOutlined className="search-icon" />}
+                value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
+                allowClear
               />
             </Col>
             <Col xs={24} md={6}>
@@ -370,7 +375,7 @@ const TeacherCourses = () => {
               position: ['bottomRight']
             }}
             locale={{ emptyText: <Empty description="Không tìm thấy khóa học nào" /> }}
-            scroll={{ x: 1000 }} // Đảm bảo scroll ngang trên mobile
+            scroll={{ x: "max-content", ...(filteredCourses.length > 5 ? {y: 75 * 5} : "") }}
           />
         </Card>
 
@@ -397,8 +402,8 @@ const TeacherCourses = () => {
             />
           </Card>
         )}
-      </Space>
-    </div>
+      {/* </Card> */}
+    </Space>
   )
 }
 

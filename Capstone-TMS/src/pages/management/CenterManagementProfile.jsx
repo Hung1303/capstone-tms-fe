@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Form, Input, Button, Card, Spin, message, Row, Col, Divider, Space } from 'antd'
-import { SaveOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Form, Input, Button, Card, Spin, message, Row, Col, Space, Typography } from 'antd'
+import { SaveOutlined, ReloadOutlined, HomeOutlined } from '@ant-design/icons'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../config/axios'
 
@@ -15,6 +15,8 @@ const numberInputStyle = `
     -moz-appearance: textfield;
   }
 `
+
+const { Title, Text } = Typography
 
 const CenterManagementProfile = () => {
   const { user } = useAuth()
@@ -129,14 +131,17 @@ const CenterManagementProfile = () => {
   }
 
   return (
-    <div className="p-6">
-      <style>{numberInputStyle}</style>
-      
+    <Space direction="vertical" style={{ width: '100%' }}>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Quản lý Trung Tâm</h1>
-        <p className="text-gray-600 mt-2">Xem và chỉnh sửa thông tin trung tâm của bạn</p>
-      </div>
+      <Card className="!bg-gradient-to-r !from-[#cbcb28] !to-[#e0e043] !rounded-xl shadow-xl">
+        <style>{numberInputStyle}</style>
+        <Title level={2} className="!text-white !m-0 !font-bold">
+          <HomeOutlined /> Quản lý Trung Tâm
+        </Title>
+        <Text className="!text-white/90 !text-base">
+          Xem và chỉnh sửa thông tin trung tâm của bạn
+        </Text>
+      </Card>
 
       <Form
         form={form}
@@ -145,14 +150,14 @@ const CenterManagementProfile = () => {
         className="max-w-4xl"
       >
         {/* Thông tin cá nhân */}
-        <Card className="mb-6" title="Thông tin cá nhân" bordered={false}>
+        <Card className="!mb-6" title="Thông tin cá nhân" bordered={false}>
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Form.Item
                 label="Họ và tên"
                 name="fullName"
               >
-                <Input disabled className="bg-blue-50 border-blue-200" />
+                <Input readOnly className="bg-blue-50 border-blue-200 hover:cursor-not-allowed" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
@@ -160,7 +165,7 @@ const CenterManagementProfile = () => {
                 label="Email"
                 name="email"
               >
-                <Input disabled className="bg-blue-50 border-blue-200" />
+                <Input readOnly className="bg-blue-50 border-blue-200 hover:cursor-not-allowed" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
@@ -168,7 +173,7 @@ const CenterManagementProfile = () => {
                 label="Số điện thoại"
                 name="phoneNumber"
               >
-                <Input disabled className="bg-blue-50 border-blue-200" />
+                <Input readOnly className="bg-blue-50 border-blue-200 hover:cursor-not-allowed" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
@@ -176,21 +181,21 @@ const CenterManagementProfile = () => {
                 label="Trạng thái"
                 name="status"
               >
-                <Input disabled className="bg-blue-50 border-blue-200" />
+                <Input readOnly className="bg-blue-50 border-blue-200 hover:cursor-not-allowed" />
               </Form.Item>
             </Col>
           </Row>
         </Card>
 
         {/* Thông tin trung tâm */}
-        <Card className="mb-6" title="Thông tin Trung Tâm" bordered={false}>
+        <Card className="!mb-6" title="Thông tin Trung Tâm" bordered={false}>
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Form.Item
                 label="Tên trung tâm"
                 name="centerName"
               >
-                <Input disabled className="bg-blue-50 border-blue-200" />
+                <Input readOnly className="bg-blue-50 border-blue-200 hover:cursor-not-allowed" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
@@ -198,7 +203,7 @@ const CenterManagementProfile = () => {
                 label="Chủ sở hữu"
                 name="ownerName"
               >
-                <Input disabled className="bg-blue-50 border-blue-200" />
+                <Input readOnly className="bg-blue-50 border-blue-200 hover:cursor-not-allowed" />
               </Form.Item>
             </Col>
             <Col xs={24}>
@@ -206,21 +211,21 @@ const CenterManagementProfile = () => {
                 label="Địa chỉ"
                 name="address"
               >
-                <Input.TextArea disabled className="bg-blue-50 border-blue-200" rows={3} />
+                <Input.TextArea readOnly className="bg-blue-50 border-blue-200 hover:cursor-not-allowed" rows={3} />
               </Form.Item>
             </Col>
           </Row>
         </Card>
 
         {/* Thông tin giấy phép */}
-        <Card className="mb-6" title="Thông tin Giấy Phép" bordered={false}>
+        <Card className="!mb-6" title="Thông tin Giấy Phép" bordered={false}>
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Form.Item
                 label="Số giấy phép"
                 name="licenseNumber"
               >
-                <Input disabled className="bg-blue-50 border-blue-200" />
+                <Input readOnly className="bg-blue-50 border-blue-200 hover:cursor-not-allowed" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
@@ -228,7 +233,7 @@ const CenterManagementProfile = () => {
                 label="Ngày cấp"
                 name="issueDate"
               >
-                <Input disabled className="bg-blue-50 border-blue-200" />
+                <Input readOnly className="bg-blue-50 border-blue-200 hover:cursor-not-allowed" />
               </Form.Item>
             </Col>
             <Col xs={24}>
@@ -236,21 +241,21 @@ const CenterManagementProfile = () => {
                 label="Cơ quan cấp phép"
                 name="licenseIssuedBy"
               >
-                <Input disabled className="bg-blue-50 border-blue-200" />
+                <Input readOnly className="bg-blue-50 border-blue-200 hover:cursor-not-allowed" />
               </Form.Item>
             </Col>
           </Row>
         </Card>
 
         {/* Thông tin liên hệ */}
-        <Card className="mb-6" title="Thông tin Liên Hệ" bordered={false}>
+        <Card className="!mb-6" title="Thông tin Liên Hệ" bordered={false}>
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Form.Item
                 label="Email liên hệ"
                 name="contactEmail"
               >
-                <Input disabled className="bg-blue-50 border-blue-200" />
+                <Input readOnly className="bg-blue-50 border-blue-200 hover:cursor-not-allowed" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
@@ -258,7 +263,7 @@ const CenterManagementProfile = () => {
                 label="Số điện thoại liên hệ"
                 name="contactPhone"
               >
-                <Input disabled className="bg-blue-50 border-blue-200" />
+                <Input readOnly className="bg-blue-50 border-blue-200 hover:cursor-not-allowed" />
               </Form.Item>
             </Col>
           </Row>
@@ -266,7 +271,7 @@ const CenterManagementProfile = () => {
 
         {/* Vị trí địa lý - Có thể chỉnh sửa */}
         <Card 
-          className="mb-6" 
+          className="!mb-6" 
           title="Vị Trí Địa Lý" 
           bordered={false}
           style={{ borderColor: '#ffa940', borderWidth: 2 }}
@@ -347,7 +352,7 @@ const CenterManagementProfile = () => {
           </Button>
         </div>
       </Form>
-    </div>
+    </Space>
   )
 }
 

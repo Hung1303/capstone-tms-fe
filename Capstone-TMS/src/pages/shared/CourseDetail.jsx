@@ -196,7 +196,7 @@ const CourseDetail = () => {
               <Divider />
 
               {/* Nút hành động */}
-              <Button 
+              {/* <Button 
                 type="primary" 
                 size="large"
                 block
@@ -207,12 +207,12 @@ const CourseDetail = () => {
                 className="h-auto whitespace-normal py-3 text-base"
               >
                 {inCart ? "Đã trong giỏ" : user?.role === "Parent" ? "Thêm vào giỏ hàng" : "Chỉ phụ huynh mới có thể thêm khóa học vào giỏ"}
-              </Button>
+              </Button> */}
             </Card>
           </div>
 
           {/* Cột phải: Giỏ hàng (1/3) */}
-          <div className="col-span-1">
+          {/* <div className="col-span-1">
             <Card className="shadow-sm rounded-lg border-gray-200 sticky top-6">
               <Title level={5} className="!mb-4">
                 <ShoppingCartOutlined className="mr-2" />
@@ -273,7 +273,7 @@ const CourseDetail = () => {
                 </div>
               )}
             </Card>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

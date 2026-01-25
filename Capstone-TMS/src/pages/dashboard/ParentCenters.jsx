@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { SearchOutlined, EnvironmentOutlined, PhoneOutlined, MailOutlined, BookOutlined, CheckCircleOutlined, ClockCircleOutlined,
          ArrowLeftOutlined, UserOutlined, FileTextOutlined, TeamOutlined, LoadingOutlined } from '@ant-design/icons'
-import { Spin, Modal, Select, message } from 'antd' 
+import { Spin, Modal, Select, message, Space, Typography, Card } from 'antd' 
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
+
+const { Text, Title } = Typography
 
 const ParentCenters = () => {
   const { user, logout } = useAuth()
@@ -468,12 +470,16 @@ const ParentCenters = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <Space direction="vertical" style={{ width: '100%' }}>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Danh sách trung tâm</h1>
-        <p className="text-gray-600 mt-2">Chọn trung tâm để xem khóa học</p>
-      </div>
+      <Card className="!bg-gradient-to-r !from-orange-500 !to-purple-600 !rounded-xl shadow-xl">
+        <Title level={2} className="!text-white !m-0 !font-bold">
+          <TeamOutlined /> Danh sách trung tâm
+        </Title>
+        <Text className="!text-white/90 !text-base">
+          Chọn trung tâm để xem khóa học.
+        </Text>
+      </Card>    
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -572,7 +578,7 @@ const ParentCenters = () => {
           ))
         )}
       </div>
-    </div>
+    </Space>
   )
 }
 

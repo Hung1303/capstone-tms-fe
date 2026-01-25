@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, ReloadOutlined, GiftOutlined } from '@ant-design/icons'
 import { toast } from 'react-toastify'
 import api from '../../config/axios'
-import { Button, Card, Input, Space, Typography, Table, Modal, Form, InputNumber, Switch } from 'antd'
+import { Button, Card, Input, Space, Typography, Table, Modal, Form, InputNumber, Switch, Tooltip } from 'antd'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 
 const { Title, Text } = Typography
@@ -251,24 +251,28 @@ const SubscriptionManagement = () => {
                 key: 'action',
                 render: (_, record) => (
                   <Space>
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => handleOpenModal(record)}
-                      className="cursor-pointer text-lg text-green-600 hover:text-green-700"
-                    >
-                      <EditOutlined />
-                    </motion.button>
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={(e) => handleDeleteClick(e, record.id)}
-                      className="cursor-pointer ml-1 text-lg text-red-600 hover:text-red-700"
-                    >
-                      <DeleteOutlined />
-                    </motion.button>
+                    <Tooltip title="Chỉnh sửa gói">
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleOpenModal(record)}
+                        className="cursor-pointer text-lg text-green-500 hover:text-green-600"
+                      >
+                        <EditOutlined />
+                      </motion.button>
+                    </Tooltip>
+                    <Tooltip title="Xóa gói">
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => handleDeleteClick(e, record.id)}
+                        className="cursor-pointer ml-1 text-lg text-red-500 hover:text-red-600"
+                      >
+                        <DeleteOutlined />
+                      </motion.button>
+                    </Tooltip>
                   </Space>
                 )
               }

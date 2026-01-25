@@ -5,8 +5,8 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import rrulePlugin from '@fullcalendar/rrule'
 import { RRule } from 'rrule'
-import { Modal, Form, Select, Input, Button, message, Card, Space, Tag, Popconfirm, DatePicker } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, BookOutlined, ClockCircleOutlined } from '@ant-design/icons'
+import { Modal, Form, Select, Input, Button, message, Card, Space, Tag, Popconfirm, DatePicker, Typography } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, BookOutlined, ClockCircleOutlined, CalendarOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { useAuth } from '../../contexts/AuthContext'
@@ -15,6 +15,7 @@ import { toast } from 'react-toastify'
 
 const { Option } = Select
 const { TextArea } = Input
+const { Title, Text } = Typography
 
 const CenterScheduleAssignment = () => {
   const [events, setEvents] = useState([])
@@ -150,7 +151,7 @@ const CenterScheduleAssignment = () => {
   const handleEventDrop = async (dropInfo) => {
     const originalEventId = dropInfo.event.extendedProps?.originalEventId
     const newDate = dayjs(dropInfo.event.start)
-    const newDayOfWeek = newDate.day() 
+    const newDayOfWeek = newDate.day()
     const startTime = newDate.format('HH:mm')
     const endTime = dayjs(dropInfo.event.end).format('HH:mm')
 
@@ -329,7 +330,7 @@ const CenterScheduleAssignment = () => {
       'Tiếng Anh': '#f59e0b',
       'Vật Lý': '#ef4444',
     }
-    return colors[subject] || '#6b7280' 
+    return colors[subject] || '#6b7280'
   }
 
   console.log("Events:", events);
@@ -413,11 +414,14 @@ const CenterScheduleAssignment = () => {
         <div>Loading...</div>
       ) : (
         <>
-          <Card>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Phân công lịch giảng dạy</h2>
-              <p className="text-gray-600">Quản lý và phân công thời gian giảng dạy cho giáo viên</p>
-            </div>
+          {/* Header */}
+          <Card className="!bg-gradient-to-br !from-[#e58231] !to-[#eb7a34] !rounded-xl shadow-xl">
+            <Title level={2} className="!text-white !m-0 !font-bold">
+              <CalendarOutlined /> Phân công lịch giảng dạy
+            </Title>
+            <Text className="!text-white/90 !text-base">
+              Quản lý và phân công thời gian giảng dạy cho giáo viên.
+            </Text>
           </Card>
 
           <Card className="shadow-sm">
@@ -552,7 +556,7 @@ const CenterScheduleAssignment = () => {
                     option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                   }
                 >
-                  
+
                   {courses.map(course => (
                     <Option key={course.id} value={course.id}>
                       {course.title} -|- {course.subject} ({course.gradeLevel}) -|- {course.teacherName}
@@ -569,10 +573,10 @@ const CenterScheduleAssignment = () => {
                   const courseId = getFieldValue('courseId')
                   const selectedCourse = courses.find(c => c.id === courseId)
                   const teacherProfileId = getFieldValue('teacherProfileId')
-                  
+
                   // Tìm giáo viên từ danh sách teachers dựa trên teacherProfileId
                   const selectedTeacher = teachers.find(t => t.profileId === teacherProfileId)
-                  
+
                   return (
                     <Form.Item
                       label={
@@ -598,7 +602,7 @@ const CenterScheduleAssignment = () => {
                     </Form.Item>
                   )
                 }}
-              </Form.Item>             
+              </Form.Item>
 
               <Form.Item
                 noStyle
@@ -607,11 +611,11 @@ const CenterScheduleAssignment = () => {
                 {({ getFieldValue }) => {
                   const courseId = getFieldValue('courseId')
                   const selectedCourse = courses.find(c => c.id === courseId)
-                  
+
                   // Lấy phạm vi ngày từ khóa học đã chọn hoặc từ event đang chỉnh sửa
                   let minDate = null
                   let maxDate = null
-                  
+
                   if (editingEvent && editingEvent.startDate && editingEvent.endDate) {
                     minDate = dayjs(editingEvent.startDate)
                     maxDate = dayjs(editingEvent.endDate)

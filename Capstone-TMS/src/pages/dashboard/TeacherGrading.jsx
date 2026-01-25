@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Table, Card, Select, Input, Button, Modal, Form, InputNumber, Tag, Space, Typography, Row, Col, Statistic, message, Empty } from 'antd'
+import { Table, Card, Select, Input, Button, Modal, Form, InputNumber, Space, Typography, Row, Col, Statistic, message, Empty } from 'antd'
 import { BookOutlined, UserOutlined, SearchOutlined, EditOutlined, CheckCircleOutlined, FileTextOutlined, TrophyOutlined, SaveOutlined } from '@ant-design/icons'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
@@ -50,7 +50,7 @@ const TeacherGrading = () => {
     }
 
     try {
-      const response = await api.get(`/Course/${teacherId}/Courses?pageNumber=1&pageSize=50`)
+      const response = await api.get(`/Course/${teacherId}/Courses?pageNumber=1&pageSize=1000`)
       console.log("response fetchCourses:", response)
       if (response.data && response.data.success) {
         const data = response.data.data || []
@@ -82,7 +82,11 @@ const TeacherGrading = () => {
       })
     } catch (err) {
       console.error('Error fetching students:', err)
-      toast.error('Không thể tải danh sách học sinh')
+      const message = err.response?.data.message || 'Lỗi khi tải danh sách học sinh'
+
+      if (message.includes('Không tìm thấy đăng kí khóa học.')) {
+        toast.error('khóa học này chưa có học sinh.')
+      }
     } finally {
       setLoading(false)
     }
@@ -193,9 +197,9 @@ const TeacherGrading = () => {
       render: (record) => {
         const studentMark = getMarkTotal(record.studentProfileId)
         if (!studentMark) return <Text type="secondary">Chưa có điểm</Text>
-        const scoreColor = parseFloat(studentMark.mark) >= 8 ? 'green' : parseFloat(studentMark.mark) >= 6.5 
-                                                             ? 'blue' : parseFloat(studentMark.mark) >= 5 
-                                                             ? 'orange' : 'red'
+        const scoreColor = parseFloat(studentMark.mark) >= 8 ? 'green' : parseFloat(studentMark.mark) >= 6.5
+          ? 'blue' : parseFloat(studentMark.mark) >= 5
+            ? 'orange' : 'red'
         return (
           <div className="flex items-center gap-2">
             <TrophyOutlined className={`!text-${scoreColor}-500`} />
@@ -239,213 +243,216 @@ const TeacherGrading = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <Space direction="vertical" size="large" className="w-full">
-        {/* Header */}
-        <div>
-          <Title level={2} className="!mb-2">Chấm điểm</Title>
-          <Text type="secondary">Quản lý và chấm điểm cho học sinh trong các khóa học</Text>
-        </div>
+    <Space direction="vertical" style={{ width: '100%' }}>
+      {/* Header */}
+      <Card className="!bg-gradient-to-r !from-[#3651e6] !to-[#4b65f8] !rounded-xl shadow-xl">
+        <Title level={2} className="!text-white !m-0 !font-bold">
+          <FileTextOutlined /> Xem lịch
+        </Title>
+        <Text className="!text-white/90 !text-base">
+          Quản lý và chấm điểm các học sinh trong khóa học.
+        </Text>
+      </Card>
 
-        {/* Chọn khóa học */}
-        <Card className="shadow-sm">
-          <Row gutter={16} align="middle">
-            <Col xs={24} md={8}>
-              <Text strong className="block mb-2">Chọn khóa học:</Text>
-              <Select
-                placeholder="Chọn khóa học để chấm điểm"
-                size="large"
-                className="w-full"
-                value={selectedCourse?.id}
-                onChange={(courseId) => {
-                  const course = courses.find(c => c.id === courseId)
-                  setSelectedCourse(course)
-                }}
-                loading={loading}
-              >
-                {courses.map(course => (
-                  <Option key={course.id} value={course.id}>
-                    {course.title} - {course.subject} (Lớp {course.gradeLevel})
-                  </Option>
-                ))}
-              </Select>
-            </Col>
-            {selectedCourse && (
-              <Col xs={24} md={16}>
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <BookOutlined className="text-2xl text-blue-600" />
-                    <div>
-                      <div className="font-semibold text-gray-900">{selectedCourse.title}</div>
-                      <div className="text-sm text-gray-600">
-                        {selectedCourse.subject} • Lớp {selectedCourse.gradeLevel}
-                      </div>
+      {/* Chọn khóa học */}
+      <Card className="shadow-sm">
+        <Row gutter={16} align="middle">
+          <Col xs={24} md={8}>
+            <Text strong className="block mb-2">Chọn khóa học:</Text>
+            <Select
+              placeholder="Chọn khóa học để chấm điểm"
+              size="large"
+              className="w-full"
+              value={selectedCourse?.id}
+              onChange={(courseId) => {
+                const course = courses.find(c => c.id === courseId)
+                setSelectedCourse(course)
+              }}
+              loading={loading}
+            >
+              {courses.map(course => (
+                <Option key={course.id} value={course.id}>
+                  {course.title} - {course.subject} (Lớp {course.gradeLevel})
+                </Option>
+              ))}
+            </Select>
+          </Col>
+          {selectedCourse && (
+            <Col xs={24} md={16}>
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <BookOutlined className="text-2xl text-blue-600" />
+                  <div>
+                    <div className="font-semibold text-gray-900">{selectedCourse.title}</div>
+                    <div className="text-sm text-gray-600">
+                      {selectedCourse.subject} • Lớp {selectedCourse.gradeLevel}
                     </div>
                   </div>
                 </div>
-              </Col>
-            )}
-          </Row>
-        </Card>
+              </div>
+            </Col>
+          )}
+        </Row>
+      </Card>
 
-        {!selectedCourse ? (
+      {!selectedCourse ? (
+        <Card className="shadow-sm">
+          <Empty
+            description="Vui lòng chọn khóa học để bắt đầu chấm điểm"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
+        </Card>
+      ) : (
+        <>
+          {/* Thống kê */}
+          <Row gutter={16}>
+            <Col xs={24} sm={12} md={6}>
+              <Card className="shadow-sm">
+                <Statistic
+                  title="Tổng học sinh"
+                  value={stats.totalStudents}
+                  prefix={<UserOutlined />}
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card className="shadow-sm">
+                <Statistic
+                  title="Đã chấm điểm"
+                  value={stats.gradedStudents}
+                  prefix={<CheckCircleOutlined />}
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Card className="shadow-sm">
+                <Statistic
+                  title="Tổng bài chấm"
+                  value={stats.totalGradings}
+                  prefix={<FileTextOutlined />}
+                  valueStyle={{ color: '#722ed1' }}
+                />
+              </Card>
+            </Col>
+          </Row>
+
           <Card className="shadow-sm">
-            <Empty
-              description="Vui lòng chọn khóa học để bắt đầu chấm điểm"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            <div className="mb-4">
+              <Input
+                className="search-input"
+                placeholder="Tìm kiếm học sinh..."
+                prefix={<SearchOutlined className="search-icon" />}
+                size="large"
+                allowClear
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
+            </div>
+            <Table
+              dataSource={filteredStudents}
+              columns={studentColumns}
+              rowKey="id"
+              loading={loading}
+              pagination={{
+                current: pagination.pageNumber,
+                pageSize: pagination.pageSize,
+                total: pagination.total,
+                showSizeChanger: true,
+                pageSizeOptions: ['5', '10', '50'],
+                showTotal: (total) => `Tổng ${total} học sinh`,
+                position: ['bottomRight'],
+                onChange: (page, pageSize) => {
+                  fetchStudentEnrollments(page, pageSize)
+                }
+              }}
+              locale={{
+                emptyText: <Empty description="Không có học sinh nào" />
+              }}
             />
           </Card>
-        ) : (
-          <>
-            {/* Thống kê */}
-            <Row gutter={16}>
-              <Col xs={24} sm={12} md={6}>
-                <Card className="shadow-sm">
-                  <Statistic
-                    title="Tổng học sinh"
-                    value={stats.totalStudents}
-                    prefix={<UserOutlined />}
-                    valueStyle={{ color: '#1890ff' }}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <Card className="shadow-sm">
-                  <Statistic
-                    title="Đã chấm điểm"
-                    value={stats.gradedStudents}
-                    prefix={<CheckCircleOutlined />}
-                    valueStyle={{ color: '#52c41a' }}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <Card className="shadow-sm">
-                  <Statistic
-                    title="Tổng bài chấm"
-                    value={stats.totalGradings}
-                    prefix={<FileTextOutlined />}
-                    valueStyle={{ color: '#722ed1' }}
-                  />
-                </Card>
-              </Col>
-            </Row>
+        </>
+      )}
 
-            <Card className="shadow-sm">
-              <div className="mb-4">
-                <Input
-                  placeholder="Tìm kiếm học sinh..."
-                  prefix={<SearchOutlined />}
-                  size="large"
-                  allowClear
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                />
-              </div>
-              <Table
-                dataSource={filteredStudents}
-                columns={studentColumns}
-                rowKey="id"
-                loading={loading}
-                  pagination={{
-                    current: pagination.pageNumber,
-                    pageSize: pagination.pageSize,
-                    total: pagination.total,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['5', '10', '50'],
-                    showTotal: (total) => `Tổng ${total} học sinh`,
-                    position: ['bottomRight'],
-                    onChange: (page, pageSize) => {
-                      fetchStudentEnrollments(page, pageSize)
-                    }
-                  }}
-                locale={{
-                  emptyText: <Empty description="Không có học sinh nào" />
-                }}
-              />
-            </Card>
-          </>
-        )}
-
-        {/* Modal chấm điểm */}
-        <Modal
-          title={
-            <div className="flex items-center gap-2 text-blue-600">
-              <EditOutlined />
-              <span>Chấm điểm cho học sinh</span>
-            </div>
-          }
-          open={gradingModalVisible}
-          onCancel={handleCancelGrading}
-          footer={[
-            <Button
-              key="ok"
-              type="primary"
-              onClick={form.submit}
-              icon={<SaveOutlined />}
-              size="large"
-              loading={loading}
-            >
-              Lưu điểm
-            </Button>,
-            <Button
-              key="cancel"
-              onClick={handleCancelGrading}
-              size="large"
-            >
-              Hủy
-            </Button>
-          ]}
-          width={600}
-        >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSaveGrading}
+      {/* Modal chấm điểm */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 text-blue-600">
+            <EditOutlined />
+            <span>Chấm điểm cho học sinh</span>
+          </div>
+        }
+        open={gradingModalVisible}
+        onCancel={handleCancelGrading}
+        footer={[
+          <Button
+            key="ok"
+            type="primary"
+            onClick={form.submit}
+            icon={<SaveOutlined />}
+            size="large"
+            loading={loading}
           >
-            <Form.Item label="Học sinh">
-              <Input
-                value={selectedStudent?.studentName}
-                readOnly
-                prefix={<UserOutlined />}
-              />
-            </Form.Item>
+            Lưu điểm
+          </Button>,
+          <Button
+            key="cancel"
+            onClick={handleCancelGrading}
+            size="large"
+          >
+            Hủy
+          </Button>
+        ]}
+        width={600}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSaveGrading}
+        >
+          <Form.Item label="Học sinh">
+            <Input
+              value={selectedStudent?.studentName}
+              readOnly
+              prefix={<UserOutlined />}
+            />
+          </Form.Item>
 
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  name="mark"
-                  label="Điểm số"
-                  rules={[
-                    { required: true, message: 'Vui lòng nhập điểm số' },
-                    { type: 'number', min: 0, message: 'Điểm số phải >= 0' }
-                  ]}
-                >
-                  <InputNumber
-                    placeholder="Điểm"
-                    size="large"
-                    className="w-full"
-                    min={0}
-                    step={0.1}
-                    precision={1}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="mark"
+                label="Điểm số"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập điểm số' },
+                  { type: 'number', min: 0, message: 'Điểm số phải >= 0' }
+                ]}
+              >
+                <InputNumber
+                  placeholder="Điểm"
+                  size="large"
+                  className="w-full"
+                  min={0}
+                  step={0.1}
+                  precision={1}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-            <Form.Item
-              name="comment"
-              label="Nhận xét"
-            >
-              <Input.TextArea
-                placeholder="Nhận xét về bài làm của học sinh..."
-                rows={4}
-              />
-            </Form.Item>
-          </Form>
-        </Modal>
-      </Space>
-    </div>
+          <Form.Item
+            name="comment"
+            label="Nhận xét"
+          >
+            <Input.TextArea
+              placeholder="Nhận xét về bài làm của học sinh..."
+              rows={4}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </Space>
   )
 }
 

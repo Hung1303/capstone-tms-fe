@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { CheckCircleOutlined, StopOutlined, ReloadOutlined, BookOutlined } from '@ant-design/icons'
-import { Button, Card, Space, Typography, Row, Col } from 'antd'
+import { CheckCircleOutlined, StopOutlined, BookOutlined } from '@ant-design/icons'
+import { Card, Space, Typography } from 'antd'
 import SuspendCourseTab from './SuspendCourseTab'
 import ApprovalCourseTab from './ApprovalCourseTab'
 
@@ -18,7 +18,7 @@ const AdminCourseManagement = () => {
           <span style={{ fontWeight: 600 }}>Thu hồi khóa học</span>
         </Space>
       ),
-      children: null,
+      children: <SuspendCourseTab />,
     },
     {
       key: 'approve',
@@ -28,7 +28,7 @@ const AdminCourseManagement = () => {
           <span style={{ fontWeight: 600 }}>Chấp nhận khóa học</span>
         </Space>
       ),
-      children: null,
+      children: <ApprovalCourseTab />,
     },
   ]
 
@@ -66,13 +66,7 @@ const AdminCourseManagement = () => {
           </div>
         </div>
         <div className='mt-6'>
-          {activeTab === 'suspend' && (
-            <SuspendCourseTab />
-          )}
-          
-          {activeTab === 'approve' && (
-            <ApprovalCourseTab />
-          )}
+          {tabItems.find(item => item.key === activeTab).children}
         </div>
       </Card>
     </Space>

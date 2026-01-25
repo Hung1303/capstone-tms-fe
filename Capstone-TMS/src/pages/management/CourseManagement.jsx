@@ -1,10 +1,17 @@
 import { useState, useEffect } from 'react'
 import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CloseOutlined, ExclamationCircleOutlined, CheckCircleOutlined, StopOutlined,
-        FileSyncOutlined, ClockCircleOutlined, SendOutlined, GlobalOutlined } from '@ant-design/icons'
+        FileSyncOutlined, ClockCircleOutlined, SendOutlined, GlobalOutlined, BookOutlined} from '@ant-design/icons'
 import { toast } from 'react-toastify'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
 import * as teacherService from '../../services/teacherService'
+import { Card, Input, Select, Space, Table, Tooltip, Typography } from 'antd'
+import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+
+dayjs.extend(utc);
+const { Title, Text } = Typography
 
 const CourseManagement = () => {
   const { user } = useAuth()
@@ -17,7 +24,7 @@ const CourseManagement = () => {
 
   const [pagination, setPagination] = useState({
     pageNumber: 1,
-    pageSize: 5,
+    pageSize: 1000,
     total: 0
   })
   
@@ -396,25 +403,140 @@ const CourseManagement = () => {
     label: `Lớp ${i + 1}`
   }))
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  const columns = [
+    { 
+      title: 'Tên khóa học',
+      dataIndex: 'title',
+      key: 'title',
+      render: (title, record) => (
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Quản lý khóa học</h2>
-          <p className="text-gray-600">Quản lý các khóa học trong hệ thống</p>
+          <div className="font-medium text-gray-900">{title}</div>
+          <div className="text-xs text-blue-600">GV: {record.teacherName || 'Chưa gán'}</div>
         </div>
-        <button 
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-        >
-          <PlusOutlined />
-          <span>Tạo khóa học</span>
-        </button>
-      </div>
+      )
+    },
+    {
+      title: 'Môn học',
+      dataIndex: 'subject',
+      key: 'subject',
+      align: 'center'
+    },
+    {
+      title: 'Thời gian',
+      key: 'time',
+      align: 'center',
+      render: (_, record) => (
+        <div className="text-center">
+          {record.startDate ? dayjs(record.startDate).format("DD/MM/YYYY") : 'N/A'} - {record.endDate ? dayjs(record.startDate).format("DD/MM/YYYY") : 'N/A'} 
+        </div>
+      )
+    },
+    {
+      title: 'Học phí',
+      dataIndex: 'tuitionFee',
+      key: 'tuitionFee',
+      align: 'center',
+      render: (tuitionFee) => (
+        <span className="font-medium text-gray-900">{tuitionFee.toLocaleString('vi-VN')} ₫</span>
+      )
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => getStatusBadge(status)
+    },
+    {
+      title: 'Hành động',
+      key: 'actions',
+      render: (_, record) => (
+        <Space size="middle">
+          {/* [MỚI] Nút Publish - Chỉ hiện khi khóa học Đã duyệt (Status 2) */}
+          {canPublish(record.status) && (
+            <Tooltip title={"Công khai khóa học"}>
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="cursor-pointer text-lg text-purple-500 hover:text-purple-600"
+                onClick={() => handlePublishClick(record.id)}
+              >
+                <GlobalOutlined />
+              </motion.button>
+            </Tooltip>
+          )}
+          {/* Các nút Draft/Sửa/Xóa - Chỉ hiện khi Draft hoặc Rejected */}
+          {canModify(record.status) ? (
+            <>
+              <Tooltip title={"Gửi duyệt"}>
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="cursor-pointer text-lg text-green-500 hover:text-green-600"
+                  onClick={() => handleRequestApprovalClick(record.id)}
+                >
+                  <SendOutlined />
+                </motion.button>
+              </Tooltip>
+              <Tooltip title={"Chỉnh sửa"}>
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="cursor-pointer text-lg text-blue-500 hover:text-blue-600"
+                  onClick={() => handleOpenModal(record)}
+                >
+                  <EditOutlined />
+                </motion.button>
+              </Tooltip>
+              <Tooltip title={"Xóa"}>
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="cursor-pointer text-lg text-red-500 hover:text-red-600"
+                  onClick={() => handleDeleteClick(record.id)}
+                >
+                  <DeleteOutlined />
+                </motion.button>
+              </Tooltip>
+            </>
+          ) : !canPublish(record.status) && (
+            // Nếu không phải Draft/Rejected VÀ cũng không phải Approved (để hiện nút Publish)
+            <span className="text-gray-400 text-xs italic">Đã khóa</span>
+          )}
+        </Space>
+      )
+    }
+  ]
 
-       {/* Stats */}
-       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+  return (
+    <Space direction="vertical" style={{ width: '100%' }}>
+      {/* Header */}
+      <Card className="!bg-gradient-to-r !from-[#938d8d] !to-[#c7c5c5] !rounded-xl shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <Title level={2} className="!text-white !m-0 !font-bold">
+              <BookOutlined /> Quản lý khóa học
+            </Title>
+            <Text className="!text-white/90 !text-base">
+              Quản lý các khóa học trong hệ thống.
+            </Text>
+          </div>
+          <motion.button 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleOpenModal(true)}
+            className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg shadow hover:shadow-xl transition-shadow"
+          >
+            <PlusOutlined />
+            <span>Tạo khóa học</span>
+          </motion.button>
+        </div>
+      </Card>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="text-2xl font-bold text-gray-900">{courses.length}</div>
           <div className="text-sm text-gray-600">Tổng khóa học</div>
@@ -440,136 +562,44 @@ const CourseManagement = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm theo tên hoặc môn học..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-          <select
+      <Card className="shadow-sm border border-gray-100">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <Input
+            className="search-input"
+            size="large"
+            placeholder="Tìm kiếm theo tên hoặc email..."
+            prefix={<SearchOutlined className="search-icon" />}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            allowClear
+          />
+          <Select
+            size="large"
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            onChange={(value) => setFilterStatus(value)}
+            className="min-w-[200px]"
           >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="Draft">Bản nháp</option>
-            <option value="PendingApproval">Chờ duyệt</option>
-            <option value="Approved">Đã duyệt</option>
-            <option value="Rejected">Bị từ chối</option>
-            <option value="Suspended">Tạm ngưng</option>
-            <option value="Archived">Lưu trữ</option>
-          </select>
+            <Select.Option value="all">Tất cả trạng thái</Select.Option>
+            <Select.Option value="Draft">Bản nháp</Select.Option>
+            <Select.Option value="PendingApproval">Chờ duyệt</Select.Option>
+            <Select.Option value="Approved">Đã duyệt</Select.Option>
+            <Select.Option value="Rejected">Bị từ chối</Select.Option>
+            <Select.Option value="Suspended">Tạm ngưng</Select.Option>
+            <Select.Option value="Archived">Lưu trữ</Select.Option>
+          </Select>
         </div>
-      </div>
+      </Card>
 
       {/* Courses table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên khóa học</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Môn học</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời gian</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Học phí</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCourses.length > 0 ? (
-                filteredCourses.map((course) => (
-                  <tr key={course.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{course.title}</div>
-                      {course.teacherProfileId ? (
-                          <div className="text-xs text-blue-600 mt-1">GV: {course.teacherName || 'Đã phân công'}</div>
-                      ) : (
-                          <div className="text-xs text-gray-400 mt-1 italic">Chưa có GV</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-600">{course.subject}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {course.startDate ? course.startDate.split('T')[0] : ''} - {course.endDate ? course.endDate.split('T')[0] : ''}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {course.tuitionFee?.toLocaleString('vi-VN')}đ
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getStatusBadge(course.status)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        
-                        {/* [MỚI] Nút Publish - Chỉ hiện khi khóa học Đã duyệt (Status 2) */}
-                        {canPublish(course.status) && (
-                           <button 
-                             onClick={() => handlePublishClick(course.id)}
-                             className="p-1 text-purple-600 hover:bg-purple-50 rounded"
-                             title="Công khai khóa học"
-                           >
-                             <GlobalOutlined />
-                           </button>
-                        )}
-
-                        {/* Các nút Draft/Sửa/Xóa - Chỉ hiện khi Draft hoặc Rejected */}
-                        {canModify(course.status) ? (
-                          <>
-                            <button 
-                              onClick={() => handleRequestApprovalClick(course.id)}
-                              className="p-1 text-green-600 hover:bg-green-50 rounded"
-                              title="Gửi duyệt"
-                            >
-                              <SendOutlined />
-                            </button>
-                            <button 
-                              onClick={() => handleOpenModal(course)}
-                              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                              title="Chỉnh sửa"
-                            >
-                              <EditOutlined />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteClick(course.id)}
-                              className="p-1 text-red-600 hover:bg-red-50 rounded"
-                              title="Xóa"
-                            >
-                              <DeleteOutlined />
-                            </button>
-                          </>
-                        ) : !canPublish(course.status) && (
-                           // Nếu không phải Draft/Rejected VÀ cũng không phải Approved (để hiện nút Publish)
-                           <span className="text-gray-400 text-xs italic">Đã khóa</span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                    Không có khóa học nào
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <Card>
+        <Table 
+          columns={columns}
+          dataSource={filteredCourses}
+          loading={loading}
+          rowKey="id"
+          pagination={{ pageSize: pagination.pageSize }}
+        />
+      </Card>
 
       {/* Modal Form: Tạo/Sửa */}
       {showModal && (
@@ -734,7 +764,7 @@ const CourseManagement = () => {
           </div>
         </div>
       )}
-    </div>
+    </Space>
   )
 }
 

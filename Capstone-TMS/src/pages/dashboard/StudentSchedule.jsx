@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { CalendarOutlined, ClockCircleOutlined, BookOutlined, EnvironmentOutlined, TeamOutlined, FilterOutlined,
-        ReloadOutlined } from '@ant-design/icons'
+import { CalendarOutlined, ClockCircleOutlined, BookOutlined, EnvironmentOutlined, TeamOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
-import { Select, Spin, Tag, Card, Modal, Descriptions, Divider } from 'antd'
+import { Select, Spin, Tag, Card, Modal, Descriptions, Divider, Space, Typography } from 'antd'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -21,6 +20,7 @@ dayjs.extend(timezone)
 dayjs.locale('vi')
 
 const { Option } = Select
+const { Title, Text } = Typography
 
 const StudentSchedule = () => {
   const { user } = useAuth()
@@ -70,19 +70,19 @@ const StudentSchedule = () => {
     try {
       let studentEnrollments = []
       const profileIdToUse = studentProfileId || user?.userId
-      
+
       if (!profileIdToUse) {
         toast.error('Không tìm thấy thông tin học sinh')
         setEnrollments([])
         setLoading(false)
         return
       }
-      
+
       try {
         const response = await api.get(`/Enrollments/Student/${profileIdToUse}/Enrollments?pageNumber=1&pageSize=100`)
         console.log("response fetchEnrollments:", response.data)
         studentEnrollments = response.data.data || response.data || []
-        
+
         // Nếu response có studentProfileId, cập nhật nó
         if (response.data?.data?.[0]?.studentProfileId && !studentProfileId) {
           setStudentProfileId(response.data.data[0].studentProfileId)
@@ -98,7 +98,7 @@ const StudentSchedule = () => {
         setLoading(false)
         return
       }
-      
+
       // Lấy thông tin course cho mỗi enrollment
       const enrollmentsWithCourses = []
       for (const enrollment of studentEnrollments) {
@@ -116,7 +116,7 @@ const StudentSchedule = () => {
           return status === 1 || status === 2 || status === 'Accepted' || status === 'Confirmed' || status === 'Active'
         }
       )
-      
+
       setEnrollments(activeEnrollments)
     } catch (error) {
       console.error('Error fetching enrollments:', error)
@@ -144,7 +144,7 @@ const StudentSchedule = () => {
         try {
           // Lấy schedules của course
           let courseSchedules = []
-          
+
           try {
             const response = await api.get(`/ClassSchedule/Course/${courseId}?pageNumber=${page}&pageSize=${pageSize}`)
             console.log("response of courseSchedules:", response)
@@ -152,10 +152,10 @@ const StudentSchedule = () => {
           } catch (error) {
             console.error(`Error fetching schedules for course ${courseId}:`, error)
           }
-          
+
           // Tìm enrollment tương ứng
           const enrollment = enrollments.find(e => e.courseId === courseId)
-          
+
           courseSchedules.forEach(schedule => {
             allSchedules.push({
               ...schedule,
@@ -173,7 +173,7 @@ const StudentSchedule = () => {
       // Chuyển đổi sang format cho FullCalendar
       const events = allSchedules.map(schedule => {
         const course = schedule.course || {}
-        
+
         console.log("schedule:", schedule)
 
         // Tính duration từ startTime đến endTime
@@ -306,7 +306,7 @@ const StudentSchedule = () => {
   const uniqueCourses = enrollments
     .filter(e => e.course)
     .map(e => ({ id: e.courseId, title: e.course.title, course: e.course }))
-    .filter((course, index, self) => 
+    .filter((course, index, self) =>
       index === self.findIndex(c => c.id === course.id)
     )
 
@@ -341,14 +341,19 @@ const StudentSchedule = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <Space direction="vertical" style={{ width: '100%' }}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Lịch học</h1>
-          <p className="text-gray-600 mt-2">Xem lịch học của các khóa học đã đăng ký</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <Card className="!bg-gradient-to-r !from-[#ce3030] !to-[#ee4545] !rounded-xl shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <Title level={2} className="!text-white !m-0 !font-bold">
+              <CalendarOutlined /> Lịch học
+            </Title>
+            <Text className="!text-white/90 !text-base">
+              Xem lịch học của các khóa học đã đăng ký.
+            </Text>
+          </div>
+          {/* <div className="flex items-center gap-2">
           <button
             onClick={() => {
               if (studentProfileId) {
@@ -361,8 +366,9 @@ const StudentSchedule = () => {
             <ReloadOutlined />
             <span>Làm mới</span>
           </button>
+        </div> */}
         </div>
-      </div>
+      </Card>
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -470,7 +476,7 @@ const StudentSchedule = () => {
           ) : (
             filteredSchedules.map((schedule, index) => {
               const course = schedule.course || {}
-              
+
               return (
                 <Card
                   key={schedule.id || index}
@@ -650,9 +656,9 @@ const StudentSchedule = () => {
                 {selectedSchedule.roomOrLink ? (
                   <div>
                     {selectedSchedule.roomOrLink.startsWith('http') ? (
-                      <a 
-                        href={selectedSchedule.roomOrLink} 
-                        target="_blank" 
+                      <a
+                        href={selectedSchedule.roomOrLink}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:underline"
                       >
@@ -728,7 +734,7 @@ const StudentSchedule = () => {
           </div>
         )}
       </Modal>
-    </div>
+    </Space>
   )
 }
 

@@ -31,7 +31,7 @@ const TeacherManagement = () => {
   const [uploadResults, setUploadResults] = useState({ success: 0, failed: 0, errors: [] })
   const [pagination, setPagination] = useState({
     pageNumber: 1,
-    pageSize: 5,
+    pageSize: 1000,
     total: 0
   })
 
@@ -661,6 +661,8 @@ const TeacherManagement = () => {
     },
   ];
 
+  // const data = 
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -745,70 +747,19 @@ const TeacherManagement = () => {
 
       {/* Teachers table */}
       <Card>
-        <Table
-          columns={columns}
-          dataSource={
-            searchTerm || filterSubject !== 'all' || filterStatus !== 'all'
-              ? filteredTeachers.slice(
-                  (pagination.pageNumber - 1) * pagination.pageSize,
-                  pagination.pageNumber * pagination.pageSize
-                )
-              : filteredTeachers
-          }
-          loading={loading}
-          rowKey={(record) => record.profileId || record.id}
-          pagination={
-            searchTerm || filterSubject !== 'all' || filterStatus !== 'all'
-              ? {
-                  current: pagination.pageNumber,
-                  pageSize: pagination.pageSize,
-                  total: filteredTeachers.length,
-                  showSizeChanger: true,
-                  showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} giáo viên`,
-                  onChange: (page, pageSize) => {
-                    setPagination(prev => ({
-                      ...prev,
-                      pageNumber: page,
-                      pageSize: pageSize
-                    }))
-                  },
-                  onShowSizeChange: (current, size) => {
-                    setPagination(prev => ({
-                      ...prev,
-                      pageNumber: 1,
-                      pageSize: size
-                    }))
-                  }
-                }
-              : {
-                  current: pagination.pageNumber,
-                  pageSize: pagination.pageSize,
-                  total: pagination.total,
-                  showSizeChanger: true,
-                  showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} giáo viên`,
-                  onChange: (page, pageSize) => {
-                    setPagination(prev => ({
-                      ...prev,
-                      pageNumber: page,
-                      pageSize: pageSize
-                    }))
-                    fetchTeachers(page, pageSize)
-                  },
-                  onShowSizeChange: (current, size) => {
-                    setPagination(prev => ({
-                      ...prev,
-                      pageNumber: 1,
-                      pageSize: size
-                    }))
-                    fetchTeachers(1, size)
-                  }
-                }
-          }
-          scroll={{ x: "max-content", y: pagination.pageSize === 5 ? undefined : 75 * 5 }}
-          locale={{
-            emptyText: 'Không tìm thấy giáo viên nào'
-          }}
-        />
+        <div className="rounded-lg shadow-sm">
+          <Table
+            columns={columns}
+            dataSource={filteredTeachers}
+            loading={loading}
+            rowKey={(record) => record.profileId || record.id}
+            pagination={{ pageSize: 10 }}
+            scroll={{ x: "max-content", ...(filteredTeachers.length > 5) ? { y: 75 * 5 } : "" }}
+            locale={{
+              emptyText: 'Không tìm thấy giáo viên nào'
+            }}
+          />
+        </div>
       </Card>
 
       {/* View Teacher Modal */}

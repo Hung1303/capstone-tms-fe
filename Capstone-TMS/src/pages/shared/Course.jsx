@@ -46,7 +46,7 @@ const Course = () => {
     fetchCourses(1, 8)
   }, [])
 
-  const handleAddToCart = (course) => {
+  const handleAddToCart = () => {
     // Kiểm tra nếu người dùng chưa đăng nhập
     if (!user) {
       Modal.confirm({
@@ -61,17 +61,8 @@ const Course = () => {
       return
     }
 
-    // Kiểm tra nếu người dùng không phải là Parent
-    if (user.role !== "Parent") {
-      message.error("Chỉ phụ huynh mới có thể thêm khóa học vào giỏ hàng")
-      return
-    }
-
-    const added = addItem(course)
-    if (added) {
-      message.success("Đã thêm vào giỏ hàng")
-    } else {
-      message.info("Khóa học đã có trong giỏ")
+    if (user.role === "Parent") {
+      navigate("/parent")
     }
   }
 
@@ -115,12 +106,12 @@ const Course = () => {
                   type="primary" 
                   block 
                   icon={user?.role === "Parent" ? <ShoppingCartOutlined /> : <LockOutlined />}
-                  onClick={() => handleAddToCart(course)} 
+                  onClick={() => handleAddToCart()} 
                   disabled={inCart || (user && user.role !== "Parent")}
                   danger={user && user.role !== "Parent"}
                   className="h-auto whitespace-normal py-2"
                 >
-                  {inCart ? "Đã trong giỏ" : user?.role === "Parent" ? "Thêm vào giỏ" : "Chỉ phụ huynh mới có thể\nthêm khóa học vào giỏ"}
+                  Chỉ phụ huynh mới có thể\nthêm khóa học vào giỏ
                 </Button>
               </Space>
             </Card>
@@ -134,15 +125,15 @@ const Course = () => {
     <div className="max-w-7xl mx-auto px-4 py-10">
       <Space direction="vertical" size={16} className="w-full">
         <Typography.Title level={2} className="!mb-0">Danh sách khóa học</Typography.Title>
-        <Typography.Text type="secondary">
+        {/* <Typography.Text type="secondary">
           Chọn khóa học, thêm vào giỏ và thanh toán/đăng ký một lần.
-        </Typography.Text>
+        </Typography.Text> */}
 
         {courses.length === 0 && !loading ? (
           <Empty description="Chưa có khóa học đang mở" />
         ) : courseCards}
 
-        <Card
+        {/* <Card
           title={<Space><ShoppingCartOutlined />Giỏ hàng</Space>}
           extra={<Tag color={cartItems.length ? "green" : "default"}>{cartItems.length} khóa</Tag>}
         >
@@ -188,9 +179,8 @@ const Course = () => {
               </Button>
             </Space>
           )}
-        </Card>
+        </Card> */}
       </Space>
-
     </div>
   )
 }

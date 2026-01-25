@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
-import { CalendarOutlined, ClockCircleOutlined, UserOutlined, BookOutlined, EnvironmentOutlined, TeamOutlined, FilterOutlined,
-        ReloadOutlined } from '@ant-design/icons'
+import {
+  CalendarOutlined, ClockCircleOutlined, UserOutlined, BookOutlined, EnvironmentOutlined, TeamOutlined, FilterOutlined,
+  ReloadOutlined
+} from '@ant-design/icons'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
-import { Select, Spin, Tag, Card } from 'antd'
+import { Select, Spin, Tag, Card, Typography, Space } from 'antd'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -21,6 +23,7 @@ dayjs.extend(timezone)
 dayjs.locale('vi')
 
 const { Option } = Select
+const { Text, Title } = Typography
 
 const ParentSchedule = () => {
   const { user } = useAuth()
@@ -93,12 +96,12 @@ const ParentSchedule = () => {
     try {
       // Lấy enrollments cho từng học sinh
       const allEnrollments = []
-      
+
       for (const student of students) {
         console.log("student in fetchEnrollments:", student)
         try {
           let studentEnrollments = []
-          
+
           try {
             const response = await api.get(`/Enrollments/Student/${student.profileId}/Enrollments?pageNumber=1&pageSize=100`)
             console.log("response in fetchEnrollments:", response.data)
@@ -106,7 +109,7 @@ const ParentSchedule = () => {
           } catch (error) {
             console.error("error response in fetchEnrollments:", error)
           }
-          
+
           // Lấy thông tin course cho mỗi enrollment
           for (const enrollment of studentEnrollments) {
             const course = await getCourse(enrollment.courseId)
@@ -128,7 +131,7 @@ const ParentSchedule = () => {
           return status === 1 || status === 2 || status === 'Accepted' || status === 'Confirmed' || status === 'Active'
         }
       )
-      
+
       setEnrollments(activeEnrollments)
     } catch (error) {
       console.error('Error fetching enrollments:', error)
@@ -158,7 +161,7 @@ const ParentSchedule = () => {
         try {
           // Lấy schedules của course
           let courseSchedules = []
-          
+
           try {
             const response = await api.get(`/ClassSchedule/Course/${courseId}?pageNumber=${page}&pageSize=${pageSize}`)
             console.log("response of courseSchedules:", response)
@@ -166,10 +169,10 @@ const ParentSchedule = () => {
           } catch (error) {
             console.error(`Error fetching schedules for course ${courseId}:`, error)
           }
-          
+
           // Tìm enrollment tương ứng
           const enrollment = enrollments.find(e => e.courseId === courseId)
-          
+
           courseSchedules.forEach(schedule => {
             allSchedules.push({
               ...schedule,
@@ -190,7 +193,7 @@ const ParentSchedule = () => {
       const events = allSchedules.map(schedule => {
         const enrollment = schedule.enrollment
         const course = schedule.course || {}
-        
+
         console.log("schedule:", schedule)
 
         // Tính duration từ startTime đến endTime
@@ -309,7 +312,7 @@ const ParentSchedule = () => {
   const uniqueCourses = enrollments
     .filter(e => e.course)
     .map(e => ({ id: e.courseId, title: e.course.title, course: e.course }))
-    .filter((course, index, self) => 
+    .filter((course, index, self) =>
       index === self.findIndex(c => c.id === course.id)
     )
 
@@ -340,27 +343,34 @@ const ParentSchedule = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <Space direction="vertical" style={{ width: '100%' }}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Lịch học</h1>
-          <p className="text-gray-600 mt-2">Xem lịch học của các khóa học đã đăng ký</p>
+      <Card className="!bg-gradient-to-r !from-orange-500 !to-purple-600 !rounded-xl shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <Title level={2} className="!text-white !m-0 !font-bold">
+              <CalendarOutlined /> Lịch học
+            </Title>
+            <Text className="!text-white/90 !text-base">
+              Xem lịch học của các khóa học đã đăng ký.
+            </Text>
+          </div>
+
+          {/* <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                fetchStudents()
+                fetchEnrollments()
+                fetchSchedules(1, 100)
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <ReloadOutlined />
+              <span>Làm mới</span>
+            </button>
+          </div> */}
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              fetchStudents()
-              fetchEnrollments()
-              fetchSchedules(1, 100)
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            <ReloadOutlined />
-            <span>Làm mới</span>
-          </button>
-        </div>
-      </div>
+      </Card>
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -482,7 +492,7 @@ const ParentSchedule = () => {
             filteredSchedules.map((schedule, index) => {
               const course = schedule.course || {}
               const enrollment = schedule.enrollment || {}
-              
+
               return (
                 <Card
                   key={schedule.id || index}
@@ -572,7 +582,7 @@ const ParentSchedule = () => {
           </Card>
         </div>
       )}
-    </div>
+    </Space>
   )
 }
 

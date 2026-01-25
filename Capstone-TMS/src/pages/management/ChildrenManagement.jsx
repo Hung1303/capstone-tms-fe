@@ -5,11 +5,13 @@ import {
   MailOutlined, TeamOutlined, LockOutlined, IdcardOutlined, 
   BankOutlined, UsergroupAddOutlined, EyeOutlined, EyeInvisibleOutlined 
 } from '@ant-design/icons'
-import { Card, Space, Tooltip, Modal, Select, Empty } from 'antd'
+import { Card, Space, Tooltip, Modal, Select, Empty, Typography, Input } from 'antd'
 import { motion } from 'framer-motion'
 import { toast } from 'react-toastify'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
+
+const { Title, Text } = Typography
 
 const ChildrenManagement = () => {
   const [children, setChildren] = useState([])
@@ -31,7 +33,7 @@ const ChildrenManagement = () => {
   })
   const [pagination, setPagination] = useState({
     pageNumber: 1,
-    pageSize: 100, // Lấy nhiều hơn để hiển thị danh sách
+    pageSize: 1000, // Lấy nhiều hơn để hiển thị danh sách
     total: 0,
   });
   const [formErrors, setFormErrors] = useState({})
@@ -206,14 +208,15 @@ const ChildrenManagement = () => {
   return (
     <Space direction="vertical" style={{ width: '100%' }} size="large">
       {/* Header */}
-      <Card>
+      <Card className="!bg-gradient-to-r !from-orange-500 !to-purple-600 !rounded-xl shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-purple-500 flex items-center gap-2">
-              <TeamOutlined />
-              Quản lý các con
-            </h2>
-            <p className="text-gray-600 mt-1">Danh sách thông tin học sinh</p>
+            <Title level={2} className="!text-white !m-0 !font-bold">
+              <UserOutlined /> Quản lý các con
+            </Title>
+            <Text className="!text-white/90 !text-base">
+              Danh sách thông tin học sinh.
+            </Text>
           </div>
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -229,27 +232,32 @@ const ChildrenManagement = () => {
 
       {/* Filters */}
       <Card>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm theo tên, email hoặc số điện thoại..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
-            />
-          </div>
-          <select
+        <div className="flex flex-col sm:flex-row gap-4 items-center">
+          <Input
+            className="search-input"
+            size="large"
+            placeholder="Tìm kiếm theo tên hoặc email..."
+            prefix={<SearchOutlined className="search-icon" />}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            allowClear
+          />
+          <Select
             value={filterGrade}
-            onChange={(e) => setFilterGrade(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+            onChange={(value) => setFilterGrade(value)}
+            placeholder="Tất cả các lớp"
+            style={{ width: 200 }}
+            allowClear
           >
-            <option value="all">Tất cả lớp</option>
-            <option value="10">Lớp 10</option>
-            <option value="11">Lớp 11</option>
-            <option value="12">Lớp 12</option>
-          </select>
+            <Select.Option value="all">Tất cả lớp</Select.Option>
+            <Select.Option value="6">Lớp 6</Select.Option>
+            <Select.Option value="7">Lớp 7</Select.Option>
+            <Select.Option value="8">Lớp 8</Select.Option>
+            <Select.Option value="9">Lớp 9</Select.Option>
+            <Select.Option value="10">Lớp 10</Select.Option>
+            <Select.Option value="11">Lớp 11</Select.Option>
+            <Select.Option value="12">Lớp 12</Select.Option>
+          </Select>
         </div>
       </Card>
 
