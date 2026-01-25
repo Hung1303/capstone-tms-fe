@@ -173,7 +173,7 @@ const UserManagement = () => {
                 type="button"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                className="cursor-pointer p-1 text-lg text-red-600 hover:bg-red-50 rounded"
+                className="cursor-pointer text-lg text-red-500 hover:text-red-600"
                 onClick={(e) => e.stopPropagation()}
               >
                 <DeleteOutlined />

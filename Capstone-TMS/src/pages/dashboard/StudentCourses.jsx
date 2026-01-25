@@ -1,21 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
-import { 
-  SearchOutlined, BookOutlined, CalendarOutlined, EnvironmentOutlined, 
-  CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined,
-  StopOutlined, TeamOutlined, DollarOutlined, ReloadOutlined,
-  FilterOutlined, EyeOutlined,
-  UserAddOutlined
-} from '@ant-design/icons'
+import { SearchOutlined, BookOutlined, CalendarOutlined, EnvironmentOutlined, CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined, TeamOutlined, DollarOutlined, ReloadOutlined,
+  FilterOutlined, EyeOutlined, UserAddOutlined } from '@ant-design/icons'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
-import { Select, Spin, Tag, Card, Modal, Descriptions, Divider, Input } from 'antd'
+import { Select, Spin, Tag, Card, Modal, Descriptions, Divider, Input, Space, Typography } from 'antd'
 import dayjs from 'dayjs'
 import 'dayjs/locale/vi'
 
 dayjs.locale('vi')
 
 const { Option } = Select
+const { Title, Text } = Typography
 
 const StudentCourses = () => {
   const { user } = useAuth()
@@ -268,27 +264,33 @@ const StudentCourses = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <Space direction="vertical" style={{ width: '100%' }}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Khóa học của tôi</h1>
-          <p className="text-gray-600 mt-2">Xem danh sách các khóa học đã đăng ký</p>
+      <Card className="!bg-gradient-to-r !from-[#e03db7] !to-[#fb58d2] !rounded-xl shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <Title level={2} className="!text-white !m-0 !font-bold">
+              <BookOutlined /> Khóa học của tôi
+            </Title>
+            <Text className="!text-white/90 !text-base">
+              Xem danh sách các khóa học đã đăng ký.
+            </Text>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (studentProfileId) {
+                  fetchEnrollments()
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <ReloadOutlined />
+              <span>Làm mới</span>
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              if (studentProfileId) {
-                fetchEnrollments()
-              }
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            <ReloadOutlined />
-            <span>Làm mới</span>
-          </button>
-        </div>
-      </div>
+      </Card>
 
       {/* Stats */}
       {enrollments.length > 0 && (
@@ -322,8 +324,9 @@ const StudentCourses = () => {
               Tìm kiếm
             </label>
             <Input
+              className="search-input"
               placeholder="Tìm kiếm theo tên khóa học, môn học..."
-              prefix={<SearchOutlined />}
+              prefix={<SearchOutlined className="search-icon"/>}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               allowClear
@@ -612,7 +615,7 @@ const StudentCourses = () => {
           </div>
         )}
       </Modal>
-    </div>
+    </Space>
   )
 }
 

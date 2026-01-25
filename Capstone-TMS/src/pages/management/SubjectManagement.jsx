@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, ReloadOutlined, BookOutlined } from '@ant-design/icons'
 import { toast } from 'react-toastify'
 import api from '../../config/axios'
-import { Button, Card, Input, Space, Typography, Table, Modal, Form, Popover } from 'antd'
+import { Button, Card, Input, Space, Typography, Table, Modal, Form, Popover, Tooltip } from 'antd'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 
 const { Title, Text } = Typography
@@ -335,26 +335,30 @@ const SubjectManagement = () => {
                 title: 'Thao tác',
                 key: 'action',
                 render: (_, record) => (
-                  <div className="flex items-center gap-2">
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => handleOpenModal(record)}
-                      className="cursor-pointer text-lg text-green-600 hover:text-green-700"
-                    >
-                      <EditOutlined />
-                    </motion.button>
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => handleDeleteClick(record.subjectId)}
-                      className="cursor-pointer ml-1 text-lg text-red-600 hover:text-red-700"
-                    >
-                      <DeleteOutlined />
-                    </motion.button>
-                  </div>
+                  <Space>
+                    <Tooltip title="Chỉnh sửa môn học">
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleOpenModal(record)}
+                        className="cursor-pointer text-lg text-green-600 hover:text-green-700"
+                      >
+                        <EditOutlined />
+                      </motion.button>
+                    </Tooltip>
+                    <Tooltip title="Xóa môn học">
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleDeleteClick(record.subjectId)}
+                        className="cursor-pointer ml-1 text-lg text-red-600 hover:text-red-700"
+                      >
+                        <DeleteOutlined />
+                      </motion.button>
+                    </Tooltip>
+                  </Space>
                 )
               }
             ]}
@@ -444,6 +448,7 @@ const SubjectManagement = () => {
         okText="Xóa"
         okButtonProps={{ danger: true }}
         cancelText="Hủy"
+        width={450}
       >
         <p className="text-gray-600">
           Bạn có chắc chắn muốn xóa môn học này? Hành động này không thể hoàn tác.

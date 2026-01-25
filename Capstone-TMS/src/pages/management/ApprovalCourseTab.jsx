@@ -3,6 +3,7 @@ import { Table, Button, Modal, Space, Empty, Alert, Popconfirm, message, Input, 
 import { BookOutlined, CheckOutlined, CloseOutlined, DeleteOutlined, ReloadOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
+import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 
 const { Text } = Typography
 
@@ -131,7 +132,7 @@ const ApprovalCourseTab = () => {
     : approvals
 
   // Client-side pagination for search results
-  const paginatedApprovals = searchTerm 
+  const dataApprovals = searchTerm 
     ? filteredApprovals.slice(
         (pagination.current - 1) * pagination.pageSize,
         pagination.current * pagination.pageSize
@@ -329,13 +330,15 @@ const ApprovalCourseTab = () => {
                 okText="Xóa"
                 cancelText="Hủy"
                 okButtonProps={{ danger: true }}
+                placement="topLeft"
             >
-                <Button 
-                    type="text" 
-                    danger 
-                    icon={<DeleteOutlined />} 
-                    size="small"
-                />
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="cursor-pointer text-red-500 hover:text-red-600"
+              >
+                <DeleteOutlined /> Xóa
+              </motion.button>
             </Popconfirm>
           </Space>
         )
@@ -383,7 +386,7 @@ const ApprovalCourseTab = () => {
       <div className="mt-6 rounded-lg shadow-sm">
         <Table
           columns={columns}
-          dataSource={paginatedApprovals}
+          dataSource={dataApprovals}
           loading={loading}
           rowKey="id"
           pagination={{
@@ -397,18 +400,7 @@ const ApprovalCourseTab = () => {
             className: "!mr-2"
           }}
           onChange={handleTableChange}
-          scroll={{ x: 1000 }}
-          locale={{ 
-            emptyText: (
-              <Empty 
-                description={
-                  searchTerm 
-                    ? 'Không tìm thấy kết quả nào' 
-                    : 'Không có dữ liệu'
-                } 
-              />
-            ) 
-          }}
+          scroll={{ x: "max-content", ...(dataApprovals.length > 5 ? {y: 75 * 5} : "") }}
         />
       </div>
 

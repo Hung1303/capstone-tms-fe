@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { CalendarOutlined, ClockCircleOutlined, BookOutlined, EnvironmentOutlined, TeamOutlined, FilterOutlined,
-        ReloadOutlined } from '@ant-design/icons'
+import { CalendarOutlined, ClockCircleOutlined, BookOutlined, EnvironmentOutlined, TeamOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
-import { Select, Spin, Tag, Card, Modal, Descriptions, Divider } from 'antd'
+import { Select, Spin, Tag, Card, Modal, Descriptions, Divider, Space, Typography } from 'antd'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -21,6 +20,7 @@ dayjs.extend(timezone)
 dayjs.locale('vi')
 
 const { Option } = Select
+const { Title, Text } = Typography
 
 const TeacherSchedule = () => {
   const { user } = useAuth()
@@ -270,26 +270,32 @@ const TeacherSchedule = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <Space direction="vertical" style={{ width: '100%' }}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Lịch dạy</h1>
-          <p className="text-gray-600 mt-2">Xem lịch dạy của các khóa học được phân công</p>
+      <Card className="!bg-gradient-to-r !from-orange-500 !to-purple-600 !rounded-xl shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <Title level={2} className="!text-white !m-0 !font-bold">
+              <CalendarOutlined /> Xem lịch
+            </Title>
+            <Text className="!text-white/90 !text-base">
+              Xem lịch dạy của các khóa học được phân công.
+            </Text>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                fetchCourses()
+                fetchSchedules(pagination.pageNumber, pagination.pageSize)
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <ReloadOutlined />
+              <span>Làm mới</span>
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              fetchCourses()
-              fetchSchedules(pagination.pageNumber, pagination.pageSize)
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            <ReloadOutlined />
-            <span>Làm mới</span>
-          </button>
-        </div>
-      </div>
+      </Card>
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -643,7 +649,7 @@ const TeacherSchedule = () => {
           </div>
         )}
       </Modal>
-    </div>
+    </Space>
   )
 }
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { TrophyOutlined, StarOutlined, MessageOutlined, BookOutlined, UserOutlined, ReloadOutlined, SearchOutlined, TeamOutlined } from '@ant-design/icons'
-import { Card, Table, Tag, Button, Modal, Form, Input, Rate, Spin, Empty, Select } from 'antd'
+import { Card, Table, Tag, Button, Modal, Form, Input, Rate, Spin, Empty, Select, Typography, Space } from 'antd'
 import dayjs from 'dayjs'
 import 'dayjs/locale/vi'
 import { toast } from 'react-toastify'
@@ -11,6 +11,7 @@ dayjs.locale('vi')
 
 const { TextArea } = Input
 const { Option } = Select
+const { Title, Text } = Typography
 
 const ParentGrades = () => {
   const { user } = useAuth()
@@ -395,25 +396,27 @@ const ParentGrades = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <TrophyOutlined className="text-orange-500" />
-            Kết quả học tập của con
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Phụ huynh xem điểm từng con và gửi feedback về khóa học, giáo viên
-          </p>
+    <Space direction="vertical" style={{ width: '100%' }}>
+      {/* Header */}
+      <Card className="!bg-gradient-to-r !from-orange-500 !to-purple-600 !rounded-xl shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <Title level={2} className="!text-white !m-0 !font-bold">
+              <TrophyOutlined /> Kết quả học tập của con
+            </Title>
+            <Text className="!text-white/90 !text-base">
+              Phụ huynh xem điểm từng con và gửi feedback về khóa học, giáo viên.
+            </Text>
+          </div>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={handleRefresh}
+            loading={loading}
+          >
+            Làm mới
+          </Button>
         </div>
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={handleRefresh}
-          loading={loading}
-        >
-          Làm mới
-        </Button>
-      </div>
+      </Card> 
 
       {children.length > 0 && filteredResults.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -450,8 +453,9 @@ const ParentGrades = () => {
               <h3 className="text-lg font-semibold text-gray-900">Tìm kiếm</h3>
             </div>
             <Input
+              className="search-input"
               placeholder="Tìm theo khóa học, môn, giáo viên, học sinh..."
-              prefix={<SearchOutlined />}
+              prefix={<SearchOutlined className="search-icon" />}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               allowClear
@@ -643,7 +647,7 @@ const ParentGrades = () => {
           </div>
         )}
       </Modal>
-    </div>
+    </Space>
   )
 }
 

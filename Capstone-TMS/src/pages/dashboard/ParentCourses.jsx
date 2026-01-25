@@ -4,8 +4,10 @@ import { SearchOutlined, BookOutlined, CalendarOutlined, EnvironmentOutlined, Ch
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
-import { Modal, Select, Spin } from 'antd'
+import { Card, Modal, Select, Space, Spin, Typography } from 'antd'
 import { useNavigate } from 'react-router-dom'
+
+const { Text, Title } = Typography
 
 const ParentCourses = () => {
   const [courses, setCourses] = useState([])
@@ -225,12 +227,16 @@ const ParentCourses = () => {
   }, [navigate]);
 
   return (
-    <div className="space-y-6">
+    <Space direction="vertical" style={{ width: '100%' }}>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Danh sách khóa học</h1>
-        <p className="text-gray-600 mt-2">Tìm và đăng ký khóa học phù hợp cho con bạn</p>
-      </div>
+      <Card className="!bg-gradient-to-r !from-orange-500 !to-purple-600 !rounded-xl shadow-xl">
+        <Title level={2} className="!text-white !m-0 !font-bold">
+          <BookOutlined /> Danh sách khóa học
+        </Title>
+        <Text className="!text-white/90 !text-base">
+          Tìm và đăng ký khóa học phù hợp cho con bạn.
+        </Text>
+      </Card>  
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -477,7 +483,7 @@ const ParentCourses = () => {
             </div>
           </div>
         </Modal>
-    </div>
+    </Space>
   )
 }
 

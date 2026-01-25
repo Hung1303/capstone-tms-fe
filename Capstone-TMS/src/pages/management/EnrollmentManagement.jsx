@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../config/axios'
-import { SearchOutlined, BookOutlined, CheckCircleOutlined } from '@ant-design/icons'
-import { Button, Card, Space, Table, Tag, Tooltip, Modal, Spin, Descriptions, Input, Select } from 'antd'
+import { SearchOutlined, BookOutlined, CheckCircleOutlined, UserOutlined } from '@ant-design/icons'
+import { Button, Card, Space, Table, Tag, Tooltip, Modal, Spin, Descriptions, Input, Select, Typography } from 'antd'
 import { toast } from 'react-toastify'
+
+const { Title, Text } = Typography
 
 const EnrollmentManagement = () => {
   const { user } = useAuth()
@@ -20,7 +22,7 @@ const EnrollmentManagement = () => {
 
   const [pagination, setPagination] = useState({
     pageNumber: 1,
-    pageSize: 5,
+    pageSize: 1000,
     total: 0
   })
 
@@ -114,6 +116,12 @@ const EnrollmentManagement = () => {
       );
 
       setEnrollments(enrollments)
+      setPagination(prev => ({
+        ...prev,
+        pageNumber: apiResponse.data.pagination.pageNumber || pageNumber,
+        pageSize: apiResponse.data.pagination.pageSize || pageSize,
+        total: apiResponse.data.pagination.totalItems || 0
+      }))
     } catch (error) {
       console.log("error:", error)
     } finally {
@@ -334,14 +342,16 @@ const EnrollmentManagement = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <Space direction="vertical" style={{ width: '100%' }}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Quản lý học sinh</h2>
-          <p className="text-gray-600">Quản lý khóa học tham gia</p>
-        </div>
-      </div>
+      <Card className="!bg-gradient-to-br !from-[#d92736] !to-[#f04b4b] !rounded-xl shadow-xl">
+        <Title level={2} className="!text-white !m-0 !font-bold">
+          <UserOutlined /> Quản lý học sinh
+        </Title>
+        <Text className="!text-white/90 !text-base">
+          Quản lý học sinh tham gia.
+        </Text>
+      </Card>
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -511,70 +521,38 @@ const EnrollmentManagement = () => {
       <Card>
         <Table
           columns={columns}
-          dataSource={
-            searchTerm || filterSubject !== 'all'
-              ? filteredTeachers.slice(
-                (pagination.pageNumber - 1) * pagination.pageSize,
-                pagination.pageNumber * pagination.pageSize
-              )
-              : filteredTeachers
-          }
+          dataSource={filteredTeachers}
           loading={loading}
           rowKey={(record) => record.profileId || record.id}
-          pagination={
-            searchTerm || filterSubject !== 'all'
-              ? {
-                current: pagination.pageNumber,
-                pageSize: pagination.pageSize,
-                total: filteredTeachers.length,
-                showSizeChanger: true,
-                showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} giáo viên`,
-                onChange: (page, pageSize) => {
-                  setPagination(prev => ({
-                    ...prev,
-                    pageNumber: page,
-                    pageSize: pageSize
-                  }))
-                },
-                onShowSizeChange: (current, size) => {
-                  setPagination(prev => ({
-                    ...prev,
-                    pageNumber: 1,
-                    pageSize: size
-                  }))
-                }
-              }
-              : {
-                current: pagination.pageNumber,
-                pageSize: pagination.pageSize,
-                total: pagination.total,
-                showSizeChanger: true,
-                showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} giáo viên`,
-                onChange: (page, pageSize) => {
-                  setPagination(prev => ({
-                    ...prev,
-                    pageNumber: page,
-                    pageSize: pageSize
-                  }))
-                  fetchEnrollments(page, pageSize)
-                },
-                onShowSizeChange: (current, size) => {
-                  setPagination(prev => ({
-                    ...prev,
-                    pageNumber: 1,
-                    pageSize: size
-                  }))
-                  fetchEnrollments(1, size)
-                }
-              }
-          }
-          scroll={{ x: "max-content", y: pagination.pageSize === 5 ? undefined : 75 * 5 }}
+          pagination={{ pageSize: 10 }}
+          // pagination={{
+          //   current: pagination.pageNumber,
+          //   pageSize: pagination.pageSize,
+          //   total: searchTerm || filterSubject !== 'all' || filterStatus !== 'all' 
+          //     ? filteredTeachers.length 
+          //     : pagination.total,
+          //   showSizeChanger: true,
+          //   showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} giáo viên`,
+          //   onChange: (page, pageSize) => {
+          //     setPagination(prev => ({ ...prev, pageNumber: page, pageSize }))
+          //     if (!searchTerm && filterSubject === 'all' && filterStatus === 'all') {
+          //       fetchEnrollments(page, pageSize)
+          //     }
+          //   },
+          //   onShowSizeChange: (current, size) => {
+          //     setPagination(prev => ({ ...prev, pageNumber: 1, pageSize: size }))
+          //     if (!searchTerm && filterSubject === 'all' && filterStatus === 'all') {
+          //       fetchEnrollments(1, size)
+          //     }
+          //   }
+          // }}
+          scroll={{ x: "max-content", ...(filteredTeachers.length > 5) ? { y: 75 * 5 } : "" }}
           locale={{
             emptyText: 'Không tìm thấy giáo viên nào'
           }}
         />
       </Card>
-    </div>
+    </Space>
   )
 }
 

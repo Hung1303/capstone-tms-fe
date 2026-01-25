@@ -88,8 +88,9 @@ const AdminTeacherVerificationTab = () => {
       }))
     } catch (error) {
       console.error('Error fetching teachers:', error)
+      
       if (error.code === 'ERR_NETWORK') {
-        logout()
+        toast.error('Không thể kết nối đến máy chủ. Vui lòng thử lại.')
       } else {
         toast.error('Không thể tải danh sách giáo viên')
       }
@@ -159,9 +160,25 @@ const AdminTeacherVerificationTab = () => {
         toast.error('Không thể kết nối đến máy chủ. Vui lòng thử lại.')
         return
       }
+
+      if (errorMessage.includes('Không tìm thấy giáo viên.')) {
+        toast.error(errorMessage)
+        return
+      }
+
+      if (errorMessage.includes('Giáo viên này đã được xác minh.')) {
+        toast.error(errorMessage)
+        return
+      }
+      
+      if (errorMessage.includes('Tài khoản đã được kích hoạt. Không cần phải xác minh.')) {
+        toast.error('Tài khoản đã được kích hoạt.')
+        return
+      }
       
       if (errorMessage.includes('Đã có yêu cầu xác minh đang chờ duyệt') ) {
         toast.error("Bạn đã tạo yêu cầu rồi.")
+        return
       }
       
     } finally {

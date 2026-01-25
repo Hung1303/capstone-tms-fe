@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { DashboardOutlined, UserOutlined, TeamOutlined, BookOutlined, CalendarOutlined, LogoutOutlined, CheckCircleOutlined,
-         FileTextOutlined, GiftOutlined, MessageOutlined, FileMarkdownOutlined, SafetyOutlined } from '@ant-design/icons'
+         FileTextOutlined, GiftOutlined, MessageOutlined, FileMarkdownOutlined, SafetyOutlined, HomeOutlined} from '@ant-design/icons'
 
 // Menu configuration cho từng role
 const ROLE_MENUS = {
@@ -56,12 +56,12 @@ const ROLE_MENUS = {
     },
   ],
   Inspector: [
-    {
-      key: '/inspector',
-      icon: <DashboardOutlined />,
-      label: 'Dashboard',
-      path: '/inspector'
-    },
+    // {
+    //   key: '/inspector',
+    //   icon: <DashboardOutlined />,
+    //   label: 'Dashboard',
+    //   path: '/inspector'
+    // },
     {
       key: '/inspector/verify',
       icon: <SafetyOutlined />,
@@ -82,15 +82,15 @@ const ROLE_MENUS = {
     },
   ],
   Center: [
-    {
-      key: '/center',
-      icon: <DashboardOutlined />,
-      label: 'Dashboard',
-      path: '/center'
-    },
+    // {
+    //   key: '/center',
+    //   icon: <DashboardOutlined />,
+    //   label: 'Dashboard',
+    //   path: '/center'
+    // },
     {
       key: '/center/management',
-      icon: <SafetyOutlined />,
+      icon: <HomeOutlined />,
       label: 'Quản lý trung tâm',
       path: '/center/management'
     },
@@ -144,12 +144,12 @@ const ROLE_MENUS = {
     }
   ],
   Teacher: [
-    {
-      key: '/teacher',
-      icon: <DashboardOutlined />,
-      label: 'Dashboard',
-      path: '/teacher'
-    },
+    // {
+    //   key: '/teacher',
+    //   icon: <DashboardOutlined />,
+    //   label: 'Dashboard',
+    //   path: '/teacher'
+    // },
     {
       key: '/teacher/courses',
       icon: <BookOutlined />,
@@ -176,12 +176,12 @@ const ROLE_MENUS = {
     }
   ],
   Parent: [
-    {
-      key: '/parent',
-      icon: <DashboardOutlined />,
-      label: 'Dashboard',
-      path: '/parent'
-    },
+    // {
+    //   key: '/parent',
+    //   icon: <DashboardOutlined />,
+    //   label: 'Dashboard',
+    //   path: '/parent'
+    // },
     {
       key: '/parent/children',
       icon: <UserOutlined />,
@@ -220,12 +220,12 @@ const ROLE_MENUS = {
     }
   ],
   Student: [
-    {
-      key: '/student',
-      icon: <DashboardOutlined />,
-      label: 'Dashboard',
-      path: '/student'
-    },
+    // {
+    //   key: '/student',
+    //   icon: <DashboardOutlined />,
+    //   label: 'Dashboard',
+    //   path: '/student'
+    // },
     {
       key: '/student/courses',
       icon: <BookOutlined />,

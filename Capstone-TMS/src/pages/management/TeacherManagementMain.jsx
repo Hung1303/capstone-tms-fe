@@ -1,7 +1,6 @@
 import { SafetyOutlined, TeamOutlined } from "@ant-design/icons"
 import { Card, Space, Typography } from "antd"
 import { useState } from "react"
-import { MdOutlineBusinessCenter, MdOutlineHomeWork } from "react-icons/md"
 import TeacherManagement from "./TeacherManagement"
 import TeacherVerificationManagement from "./TeacherVerificationManagement"
 

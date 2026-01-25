@@ -137,24 +137,6 @@ export const router = createBrowserRouter([
     },
 
     // ========================
-    // STAFF ROUTES
-    // ========================
-    {
-        path: "/staff",
-        element: (
-            <ProtectedRoute requiredRole="Staff">
-                <AdminLayout />
-            </ProtectedRoute>
-        ),
-        children: [
-            { index: true, element: <StaffDashboard /> },
-            { path: "students", element: <StudentManagement /> },
-            { path: "schedule", element: <ScheduleManagement /> },
-            { path: "course-confirmation", element: <StaffCourseConfirmation /> },
-        ],
-    },
-
-    // ========================
     // INSPECTOR ROUTES
     // ========================
     {

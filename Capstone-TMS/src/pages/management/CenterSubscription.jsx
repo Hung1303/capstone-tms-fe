@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
-import { SearchOutlined, CheckCircleOutlined, ExclamationCircleOutlined, ArrowUpOutlined, DeleteOutlined } from '@ant-design/icons'
+import { SearchOutlined, CheckCircleOutlined, ExclamationCircleOutlined, ArrowUpOutlined, DeleteOutlined, GiftOutlined } from '@ant-design/icons'
 import { toast } from 'react-toastify'
 import api from '../../config/axios'
 import { useAuth } from '../../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { Card, Input, Space, Typography } from 'antd'
+
+const { Title, Text } = Typography
 
 const CenterSubscription = () => {
   const { user } = useAuth()
@@ -194,12 +197,16 @@ const CenterSubscription = () => {
   })
 
   return (
-    <div className="space-y-6">
+    <Space direction="vertical" style={{ width: '100%' }}>
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Gói dịch vụ</h2>
-        <p className="text-gray-600">Quản lý gói subscription của trung tâm</p>
-      </div>
+      <Card className="!bg-gradient-to-r !from-[#e1852f] !to-[#f49741] !rounded-xl shadow-xl">
+        <Title level={2} className="!text-white !m-0 !font-bold">
+          <GiftOutlined /> Gói dịch vụ
+        </Title>
+        <Text className="!text-white/90 !text-base">
+          Quản lý gói subscription của trung tâm.
+        </Text>
+      </Card>
 
       {/* Current Subscription Info */}
       {currentSubscription && (
@@ -244,103 +251,98 @@ const CenterSubscription = () => {
         </div>
       )}
 
-      {/* Search */}
-      {filteredPackages.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm gói..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                />
-              </div>
+      <Card>
+        {/* Search */}
+        {filteredPackages.length > 0 && (
+          <Input
+            className="search-input"
+            size="large"
+            placeholder="Tìm kiếm theo tên hoặc email..."
+            prefix={<SearchOutlined className="search-icon" />}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            allowClear
+          />
+        )}
+
+        {/* Packages Grid */}
+        <div>
+          {currentSubscription && filteredPackages.length > 0 && (
+            <h3 className="text-lg font-semibold text-gray-900 my-4">
+              Nâng cấp gói ({filteredPackages.length} gói có sẵn)
+            </h3>
+          )}
+
+          {filteredPackages.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPackages.map((pkg) => (
+                <div
+                  key={pkg.id}
+                  className="rounded-lg shadow-sm border-2 border-gray-200 bg-white hover:shadow-md transition-all"
+                >
+                  {/* Package Header */}
+                  <div className="p-6 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{pkg.packageName}</h3>
+                    <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-bold text-gray-900">
+                        {getPriceDisplay(pkg.monthlyPrice)}
+                      </span>
+                      <span className="text-gray-600">đ/tháng</span>
+                    </div>
+                  </div>
+
+                  {/* Package Features */}
+                  <div className="p-6 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <CheckCircleOutlined className="text-green-600 text-lg" />
+                      <span className="text-sm text-gray-700">
+                        {pkg.maxCoursePosts} bài đăng khóa học/tháng
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <CheckCircleOutlined className="text-green-600 text-lg" />
+                      <span className="text-sm text-gray-700">
+                        Tier: {getTierLabel(pkg.tier)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Package Actions */}
+                  <div className="p-6 border-t border-gray-200">
+                    {currentSubscription ? (
+                      <button
+                        onClick={() => handleUpgrade(pkg)}
+                        disabled={loading}
+                        className="cursor-pointer w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        <ArrowUpOutlined />
+                        <span>Nâng cấp</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleSubscribe(pkg)}
+                        disabled={loading}
+                        className="cursor-pointer w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
+                      >
+                        Đăng ký ngay
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+              {currentSubscription ? (
+                <p className="text-gray-500">Bạn đã có gói cao nhất. Không có gói nâng cấp.</p>
+              ) : (
+                <p className="text-gray-500">Không tìm thấy gói nào</p>
+              )}
+            </div>
+          )}
         </div>
-      )}
-
-      {/* Packages Grid */}
-      <div>
-        {currentSubscription && filteredPackages.length > 0 && (
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Nâng cấp gói ({filteredPackages.length} gói có sẵn)
-          </h3>
-        )}
-        
-        {filteredPackages.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPackages.map((pkg) => (
-              <div
-                key={pkg.id}
-                className="rounded-lg shadow-sm border-2 border-gray-200 bg-white hover:shadow-md transition-all"
-              >
-                {/* Package Header */}
-                <div className="p-6 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{pkg.packageName}</h3>
-                  <p className="text-sm text-gray-600 mb-3">{pkg.description}</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-gray-900">
-                      {getPriceDisplay(pkg.monthlyPrice)}
-                    </span>
-                    <span className="text-gray-600">đ/tháng</span>
-                  </div>
-                </div>
-
-                {/* Package Features */}
-                <div className="p-6 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <CheckCircleOutlined className="text-green-600 text-lg" />
-                    <span className="text-sm text-gray-700">
-                      {pkg.maxCoursePosts} bài đăng khóa học/tháng
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircleOutlined className="text-green-600 text-lg" />
-                    <span className="text-sm text-gray-700">
-                      Tier: {getTierLabel(pkg.tier)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Package Actions */}
-                <div className="p-6 border-t border-gray-200">
-                  {currentSubscription ? (
-                    <button
-                      onClick={() => handleUpgrade(pkg)}
-                      disabled={loading}
-                      className="cursor-pointer w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      <ArrowUpOutlined />
-                      <span>Nâng cấp</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleSubscribe(pkg)}
-                      disabled={loading}
-                      className="cursor-pointer w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
-                    >
-                      Đăng ký ngay
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-            {currentSubscription ? (
-              <p className="text-gray-500">Bạn đã có gói cao nhất. Không có gói nâng cấp.</p>
-            ) : (
-              <p className="text-gray-500">Không tìm thấy gói nào</p>
-            )}
-          </div>
-        )}
-      </div>
+      </Card>
 
       {/* Confirm Modal */}
       {showConfirmModal && (
@@ -413,7 +415,7 @@ const CenterSubscription = () => {
           </div>
         </div>
       )}
-    </div>
+    </Space>
   )
 }
 

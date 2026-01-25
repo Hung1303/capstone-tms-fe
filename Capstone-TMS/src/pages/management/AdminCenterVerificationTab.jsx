@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { SearchOutlined, EditOutlined, DeleteOutlined, EyeOutlined, CheckCircleOutlined, ClockCircleOutlined, WarningOutlined, StopOutlined, ReloadOutlined, TeamOutlined } from '@ant-design/icons'
-import { Card, DatePicker, Input, Modal, Select, Space, Table, Tooltip, Divider, Typography, Button } from 'antd'
+import { Card, DatePicker, Input, Modal, Select, Space, Table, Tooltip, Divider, Typography, Button, Image } from 'antd'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import api from '../../config/axios'
 import dayjs from 'dayjs'
@@ -211,13 +211,7 @@ const AdminCenterVerificationTab = () => {
       key: "status",
       width: 200,
       render: (status) => getStatusBadge(status)
-    },
-    {
-      title: "Đánh giá",
-      dataIndex: "evaluation",
-      key: "evaluation",
-      width: 100,
-    },
+    }
   ]
 
   // column for table pending status
@@ -260,9 +254,10 @@ const AdminCenterVerificationTab = () => {
         <div className="flex items-center gap-2">
           <Tooltip title="Xem chi tiết">
             <motion.button
+              type='button'
               whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-1 text-lg text-blue-600 hover:bg-blue-50 rounded cursor-pointer"
+              whileTap={{ scale: 0.9 }}
+              className="cursor-pointer text-lg text-blue-500 hover:text-blue-600"
               onClick={() => handleViewAppraisal(center)}
             >
               <EyeOutlined />
@@ -270,9 +265,10 @@ const AdminCenterVerificationTab = () => {
           </Tooltip>
           <Tooltip title="Tạo giám định">
             <motion.button
+              type='button'
               whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-1 text-lg text-yellow-600 hover:bg-yellow-50 rounded cursor-pointer"
+              whileTap={{ scale: 0.9 }}
+              className="cursor-pointer text-lg text-yellow-500 hover:text-yellow-600"
               onClick={() => handleCreateAppraisal(center)}
             >
               <EditOutlined />
@@ -336,8 +332,8 @@ const AdminCenterVerificationTab = () => {
           <Tooltip title="Xem chi tiết">
             <motion.button
               whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-1 text-lg text-blue-600 hover:bg-blue-50 rounded cursor-pointer"
+              whileTap={{ scale: 0.9 }}
+              className="cursor-pointer text-lg text-blue-500 hover:text-blue-600"
               onClick={() => handleViewAppraisal(center)}
             >
               <EyeOutlined />
@@ -390,47 +386,22 @@ const AdminCenterVerificationTab = () => {
       width: 200,
     },
     {
-      title: "Đánh giá",
-      dataIndex: "evaluation",
-      key: "evaluation",
-      width: 100,
-    },
-    {
       title: "Thao tác",
       dataIndex: "action",
       key: "action",
       width: 100,
       render: (center) => (
-        <div className="flex items-center gap-2">
-          <Tooltip title="Chỉnh sửa">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-1 text-lg text-blue-600 hover:bg-blue-50 rounded"
-              onClick={() => handleViewAppraisal(center)}
-            >
-              <EyeOutlined />
-            </motion.button>
-          </Tooltip>
-          <Tooltip title="Tạo giám định">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-1 text-lg text-yellow-600 hover:bg-blue-50 rounded"
-            >
-              <EditOutlined />
-            </motion.button>
-          </Tooltip>
-          <Tooltip title="Xóa">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-1 text-lg text-red-600 hover:bg-blue-50 rounded"
-            >
-              <DeleteOutlined />
-            </motion.button>
-          </Tooltip>
-        </div>
+        <Tooltip title="Xem chi tiết">
+          <motion.button
+           type='button'
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="cursor-pointer text-lg text-blue-500 hover:text-blue-600"
+            onClick={() => handleViewAppraisal(center)}
+          >
+            <EyeOutlined />
+          </motion.button>
+        </Tooltip>
       )
     }
   ]
@@ -1438,22 +1409,33 @@ const AdminCenterVerificationTab = () => {
                       </h4>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {formViewData.verificationPhotos.map((photo, index) => (
-                          <div key={index} className="relative aspect-square bg-gray-100 rounded-lg border border-gray-200 overflow-hidden group">
-                            {typeof photo === 'string' && (photo.startsWith('http') || photo.startsWith('/')) ? (
-                              <img
-                                src={photo}
-                                alt={`Verification ${index + 1}`}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.nextSibling.style.display = 'flex';
-                                }}
-                              />
-                            ) : null}
-                            <div className="hidden w-full h-full items-center justify-center text-gray-400 text-xs">
-                              {photo}
-                            </div>
-                          </div>
+                          console.log("photo:", photo),
+                          // const image = typeof photo === 'string' ? { url: photo, name: `Image ${index + 1}` } : photo;
+
+                          <Image
+                            width="100%"
+                            height={150}
+                            src={photo.url || photo}
+                            alt={photo.name || `Image ${index + 1}`}
+                            className="object-cover rounded"
+                            fallback="https://via.placeholder.com/300x150?text=No+Image"
+                          />
+                          // <div key={index} className="relative aspect-square bg-gray-100 rounded-lg border border-gray-200 overflow-hidden group">
+                          //   {typeof photo === 'string' && (photo.startsWith('http') || photo.startsWith('/')) ? (
+                          //     <img
+                          //       src={photo}
+                          //       alt={`Verification ${index + 1}`}
+                          //       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          //       onError={(e) => {
+                          //         e.target.style.display = 'none';
+                          //         e.target.nextSibling.style.display = 'flex';
+                          //       }}
+                          //     />
+                          //   ) : null}
+                          //   <div className="hidden w-full h-full items-center justify-center text-gray-400 text-xs">
+                          //     {photo}
+                          //   </div>
+                          // </div>
                         ))}
                       </div>
                     </div>

@@ -17,7 +17,7 @@ const TeacherVerificationManagement = () => {
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({
     pageNumber: 1,
-    pageSize: 5,
+    pageSize: 10,
     total: 0
   })
 
@@ -266,22 +266,25 @@ const TeacherVerificationManagement = () => {
               </Button>
             </div>
 
-            <Table
-              columns={columns}
-              dataSource={tableData}
-              rowKey="key"
-              loading={loading}
-              pagination={{
-                current: pagination.pageNumber,
-                pageSize: pagination.pageSize,
-                total: pagination.total,
-                showSizeChanger: true,
-                pageSizeOptions: ['5', '10', '20', '50'],
-                showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} yêu cầu`,
-                onChange: handlePaginationChange
-              }}
-              scroll={{ x: 'max-content' }}
-            />
+            <div className="rounded-lg shadow-sm">
+              <Table
+                columns={columns}
+                dataSource={tableData}
+                rowKey="key"
+                loading={loading}
+                pagination={{
+                  current: pagination.pageNumber,
+                  pageSize: pagination.pageSize,
+                  total: pagination.total,
+                  showSizeChanger: true,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                  showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} yêu cầu`,
+                  onChange: handlePaginationChange,
+                  className: '!mr-4'
+                }}
+                scroll={{ x: 'max-content' }}
+              />
+            </div>
           </Card>
 
           <Modal
