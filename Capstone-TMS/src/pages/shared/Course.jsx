@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react"
-import { Button, Card, Col, Divider, Empty, List, Row, Space, Tag, Typography, message, Modal } from "antd"
-import { DeleteOutlined, ShoppingCartOutlined, LockOutlined } from "@ant-design/icons"
+import { Card, Col, Empty, Row, Space, Tag, Typography, message } from "antd"
 import { useNavigate } from "react-router-dom"
 import dayjs from "dayjs"
 import api from "../../config/axios"
-import { useCart } from "../../hooks/useCart"
-import { useAuth } from "../../contexts/AuthContext"
 
 const teachingMethodLabel = {
   1: "Offline",
@@ -25,9 +22,7 @@ const formatCurrency = (value) => new Intl.NumberFormat("vi-VN", { style: "curre
 const Course = () => {
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(false)
-  const { cartItems, addItem, removeItem, totalTuition } = useCart()
   const navigate = useNavigate()
-  const { user } = useAuth()
 
   const fetchCourses = async (pageNumber = 1, pageSize = 8) => {
     setLoading(true)
@@ -46,31 +41,11 @@ const Course = () => {
     fetchCourses(1, 8)
   }, [])
 
-  const handleAddToCart = () => {
-    // Kiểm tra nếu người dùng chưa đăng nhập
-    if (!user) {
-      Modal.confirm({
-        title: "Yêu cầu đăng nhập",
-        content: "Bạn cần đăng nhập để thêm khóa học vào giỏ hàng. Bạn có muốn đăng nhập ngay không?",
-        okText: "Đăng nhập",
-        cancelText: "Hủy",
-        onOk() {
-          navigate("/login")
-        },
-      })
-      return
-    }
-
-    if (user.role === "Parent") {
-      navigate("/parent")
-    }
-  }
-
   const courseCards = (
     <Row gutter={[24, 24]}>
       {courses.map((course) => {
         const status = statusLabel[course.status] || { text: "Không xác định", color: "default" }
-        const inCart = cartItems.some((item) => item.id === course.id)
+        
         return (
           <Col key={course.id} xs={24} sm={12} lg={8}>
             <Card
@@ -102,17 +77,7 @@ const Course = () => {
                   <div><Typography.Text strong>Học phí:</Typography.Text> {formatCurrency(course.tuitionFee)}</div>
                   <div><Typography.Text strong>Sĩ số:</Typography.Text> {course.capacity} học viên</div>
                 </Space>
-                <Button 
-                  type="primary" 
-                  block 
-                  icon={user?.role === "Parent" ? <ShoppingCartOutlined /> : <LockOutlined />}
-                  onClick={() => handleAddToCart()} 
-                  disabled={inCart || (user && user.role !== "Parent")}
-                  danger={user && user.role !== "Parent"}
-                  className="h-auto whitespace-normal py-2"
-                >
-                  Chỉ phụ huynh mới có thể\nthêm khóa học vào giỏ
-                </Button>
+                {/* Đã xóa nút "Thêm vào giỏ / Chỉ phụ huynh..." tại đây */}
               </Space>
             </Card>
           </Col>
@@ -125,61 +90,11 @@ const Course = () => {
     <div className="max-w-7xl mx-auto px-4 py-10">
       <Space direction="vertical" size={16} className="w-full">
         <Typography.Title level={2} className="!mb-0">Danh sách khóa học</Typography.Title>
-        {/* <Typography.Text type="secondary">
-          Chọn khóa học, thêm vào giỏ và thanh toán/đăng ký một lần.
-        </Typography.Text> */}
-
+        
         {courses.length === 0 && !loading ? (
           <Empty description="Chưa có khóa học đang mở" />
         ) : courseCards}
-
-        {/* <Card
-          title={<Space><ShoppingCartOutlined />Giỏ hàng</Space>}
-          extra={<Tag color={cartItems.length ? "green" : "default"}>{cartItems.length} khóa</Tag>}
-        >
-          {cartItems.length === 0 ? (
-            <Empty description="Chưa có khóa học trong giỏ" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-          ) : (
-            <Space direction="vertical" className="w-full">
-              <List
-                dataSource={cartItems}
-                renderItem={(item) => (
-                  <List.Item
-                    actions={[
-                      <Button
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => removeItem(item.id)}
-                        key="remove"
-                      >
-                        Xóa
-                      </Button>
-                    ]}
-                  >
-                    <List.Item.Meta
-                      title={<span className="font-medium">{item.title}</span>}
-                      description={
-                        <Space direction="vertical" size={2}>
-                          <span>Môn: {item.subject}</span>
-                          <span>Học phí: {formatCurrency(item.tuitionFee)}</span>
-                        </Space>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-              <Divider className="!my-2" />
-              <Space align="center" className="justify-between w-full">
-                <Typography.Text strong>Tổng học phí</Typography.Text>
-                <Typography.Title level={4} className="!mb-0">{formatCurrency(totalTuition)}</Typography.Title>
-              </Space>
-              <Button type="primary" size="large" block onClick={() => navigate("/cart")}>
-                Đến trang giỏ hàng
-              </Button>
-            </Space>
-          )}
-        </Card> */}
+        
       </Space>
     </div>
   )

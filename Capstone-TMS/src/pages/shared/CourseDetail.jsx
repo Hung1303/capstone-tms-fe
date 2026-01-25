@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Card, Button, Spin, Empty, message, Divider, Typography, Space, Tag, List, Modal } from 'antd'
-import { ArrowLeftOutlined, ShoppingCartOutlined, LockOutlined } from '@ant-design/icons'
+// Import message để dùng hook useMessage
+import { Card, Button, Spin, Empty, message, Divider, Typography, Tag, List, Rate, Avatar } from 'antd'
+import { ArrowLeftOutlined, UserOutlined, ClockCircleOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import api from '../../config/axios'
-import { useCart } from '../../hooks/useCart'
 import { useAuth } from '../../contexts/AuthContext'
 
 const { Title, Text, Paragraph } = Typography
@@ -25,63 +25,90 @@ const statusLabel = {
 const formatCurrency = (value) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value)
 
 const CourseDetail = () => {
-  const { courseId } = useParams()
+  const { courseId } = useParams() 
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { addItem, cartItems, removeItem, totalTuition } = useCart()
-  const [course, setCourse] = useState(null)
-  const [loading, setLoading] = useState(false)
+  
+  // --- THAY ĐỔI 1: Khởi tạo message hook ---
+  const [messageApi, contextHolder] = message.useMessage();
 
-  // Lấy chi tiết khóa học
+  const [course, setCourse] = useState(null)
+  const [loadingCourse, setLoadingCourse] = useState(false)
+
+  const [feedbacks, setFeedbacks] = useState([])
+  const [loadingFeedback, setLoadingFeedback] = useState(false)
+  const [feedbackPagination, setFeedbackPagination] = useState({
+    current: 1,
+    pageSize: 5,
+    total: 0
+  })
+
+  // 1. Lấy chi tiết khóa học
   const fetchCourseDetail = async () => {
     if (!courseId) return
-    setLoading(true)
+    setLoadingCourse(true)
     try {
       const response = await api.get(`/Course/${courseId}`)
       const courseData = response.data?.data || response.data
       setCourse(courseData)
     } catch (error) {
       console.error('Lỗi khi tải chi tiết khóa học:', error)
-      message.error('Không thể tải thông tin khóa học')
+      // Dùng messageApi thay vì message thường
+      messageApi.error('Không thể tải thông tin khóa học') 
     } finally {
-      setLoading(false)
+      setLoadingCourse(false)
+    }
+  }
+
+  // 2. Lấy danh sách Feedback
+  const fetchFeedbacks = async (pageNumber = 1) => {
+    if (!courseId) return
+    setLoadingFeedback(true)
+    try {
+      const response = await api.get(`/CourseFeedbacks/course/${courseId}`, {
+        params: {
+          pageNumber: pageNumber,
+          pageSize: feedbackPagination.pageSize,
+        }
+      })
+      const { data, totalCount } = response.data
+      setFeedbacks(data || [])
+      setFeedbackPagination(prev => ({
+        ...prev,
+        current: pageNumber,
+        total: totalCount
+      }))
+    } catch (error) {
+      console.error("Lỗi tải feedback:", error)
+    } finally {
+      setLoadingFeedback(false)
     }
   }
 
   useEffect(() => {
     fetchCourseDetail()
+    fetchFeedbacks(1)
   }, [courseId])
 
-  const handleAddToCart = (course) => {
-    if (!user) {
-      Modal.confirm({
-        title: "Yêu cầu đăng nhập",
-        content: "Bạn cần đăng nhập để thêm khóa học vào giỏ hàng. Bạn có muốn đăng nhập ngay không?",
-        okText: "Đăng nhập",
-        cancelText: "Hủy",
-        onOk() {
-          navigate("/login")
-        },
-      })
-      return
-    }
-
-    if (user.role !== "Parent") {
-      message.error("Chỉ phụ huynh mới có thể thêm khóa học vào giỏ hàng")
-      return
-    }
-
-    const added = addItem(course)
-    if (added) {
-      message.success("Đã thêm vào giỏ hàng")
+  // --- XỬ LÝ NÚT THANH TOÁN ---
+  const handlePaymentClick = () => {
+    if (user && user.role === "Parent") {
+      navigate("/parent/courses")
     } else {
-      message.info("Khóa học đã có trong giỏ")
+      // --- THAY ĐỔI 2: Dùng messageApi để hiện thông báo ---
+      messageApi.warning("Vui lòng đăng nhập tài khoản Phụ huynh để thanh toán!");
     }
   }
 
-  if (loading) {
+  const handleFeedbackPageChange = (page) => {
+    fetchFeedbacks(page)
+  }
+
+  if (loadingCourse) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        {/* Nhớ chèn contextHolder vào cả màn hình loading để đề phòng lỗi */}
+        {contextHolder}
         <Spin size="large" tip="Đang tải thông tin khóa học..." />
       </div>
     )
@@ -90,6 +117,7 @@ const CourseDetail = () => {
   if (!course) {
     return (
       <div className="min-h-screen bg-gray-50 py-6">
+        {contextHolder}
         <div className="max-w-7xl mx-auto px-4">
           <Button 
             type="text" 
@@ -106,178 +134,152 @@ const CourseDetail = () => {
   }
 
   const status = statusLabel[course.status] || { text: "Không xác định", color: "default" }
-  const inCart = cartItems.some((item) => item.id === course.id)
 
   return (
     <div className="min-h-screen bg-gray-50 py-6">
+      {/* --- THAY ĐỔI 3: Đặt contextHolder ở đây để hiển thị Toast --- */}
+      {contextHolder}
+
       <div className="max-w-7xl mx-auto px-4">
-        {/* Nút quay lại */}
         <Button 
           type="text" 
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate('/courses')}
           className="mb-4"
         >
-          Quay lại
+          Quay lại danh sách
         </Button>
 
-        <div className="grid grid-cols-3 gap-6">
-          {/* Cột trái: Chi tiết khóa học (2/3) */}
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* CỘT TRÁI */}
+          <div className="lg:col-span-2 space-y-6">
             <Card className="shadow-sm rounded-lg border-gray-200">
-              {/* Header */}
               <div className="mb-6">
                 <div className="flex justify-between items-start gap-4 mb-4">
                   <div>
-                    <Title level={2} className="!mb-2">
-                      {course.title}
-                    </Title>
-                    <Text type="secondary" className="text-lg">
-                      {course.subject}
-                    </Text>
+                    <Title level={2} className="!mb-2">{course.title}</Title>
+                    <Text type="secondary" className="text-lg">{course.subject}</Text>
                   </div>
                   <Tag color={status.color} className="text-base px-3 py-1">
                     {status.text}
                   </Tag>
                 </div>
               </div>
-
               <Divider />
-
-              {/* Mô tả */}
               {course.description && (
                 <div className="mb-6">
-                  <Title level={4}>Mô tả</Title>
-                  <Paragraph className="text-base leading-relaxed">
+                  <Title level={4}>Mô tả khóa học</Title>
+                  <Paragraph className="text-base leading-relaxed text-gray-700">
                     {course.description}
                   </Paragraph>
                 </div>
               )}
-
-              {/* Thông tin chi tiết */}
               <div className="mb-6">
-                <Title level={4}>Thông tin chi tiết</Title>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="border rounded-lg p-4">
-                    <Text type="secondary" className="block mb-2">Địa điểm</Text>
-                    <Text strong className="text-base">{course.location}</Text>
-                  </div>
-                  <div className="border rounded-lg p-4">
-                    <Text type="secondary" className="block mb-2">Khối lớp</Text>
-                    <Text strong className="text-base">Lớp {course.gradeLevel}</Text>
-                  </div>
-                  <div className="border rounded-lg p-4">
-                    <Text type="secondary" className="block mb-2">Học kỳ</Text>
-                    <Text strong className="text-base">{course.semester}</Text>
-                  </div>
-                  <div className="border rounded-lg p-4">
-                    <Text type="secondary" className="block mb-2">Hình thức dạy</Text>
-                    <Text strong className="text-base">{teachingMethodLabel[course.teachingMethod] || "Khác"}</Text>
-                  </div>
-                  <div className="border rounded-lg p-4">
-                    <Text type="secondary" className="block mb-2">Ngày bắt đầu</Text>
-                    <Text strong className="text-base">{dayjs(course.startDate).format("DD/MM/YYYY")}</Text>
-                  </div>
-                  <div className="border rounded-lg p-4">
-                    <Text type="secondary" className="block mb-2">Ngày kết thúc</Text>
-                    <Text strong className="text-base">{dayjs(course.endDate).format("DD/MM/YYYY")}</Text>
-                  </div>
-                  <div className="border rounded-lg p-4">
-                    <Text type="secondary" className="block mb-2">Sĩ số</Text>
-                    <Text strong className="text-base">{course.capacity} học viên</Text>
-                  </div>
-                  <div className="border rounded-lg p-4">
-                    <Text type="secondary" className="block mb-2">Học phí</Text>
-                    <Text strong className="text-base text-green-600">{formatCurrency(course.tuitionFee)}</Text>
-                  </div>
+                <Title level={4} className="mb-4">Thông tin chi tiết</Title>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <InfoBox label="Địa điểm" value={course.location} />
+                  <InfoBox label="Khối lớp" value={`Lớp ${course.gradeLevel}`} />
+                  <InfoBox label="Học kỳ" value={course.semester} />
+                  <InfoBox label="Hình thức" value={teachingMethodLabel[course.teachingMethod]} />
+                  <InfoBox label="Ngày bắt đầu" value={dayjs(course.startDate).format("DD/MM/YYYY")} />
+                  <InfoBox label="Ngày kết thúc" value={dayjs(course.endDate).format("DD/MM/YYYY")} />
+                  <InfoBox label="Sĩ số" value={`${course.capacity} học viên`} />
                 </div>
               </div>
+            </Card>
 
-              <Divider />
-
-              {/* Nút hành động */}
-              {/* <Button 
-                type="primary" 
-                size="large"
-                block
-                icon={user?.role === "Parent" ? <ShoppingCartOutlined /> : <LockOutlined />}
-                onClick={() => handleAddToCart(course)} 
-                disabled={inCart || (user && user.role !== "Parent")}
-                danger={user && user.role !== "Parent"}
-                className="h-auto whitespace-normal py-3 text-base"
-              >
-                {inCart ? "Đã trong giỏ" : user?.role === "Parent" ? "Thêm vào giỏ hàng" : "Chỉ phụ huynh mới có thể thêm khóa học vào giỏ"}
-              </Button> */}
+            <Card className="shadow-sm rounded-lg border-gray-200" title={`Đánh giá từ học viên (${feedbackPagination.total})`}>
+              <List
+                loading={loadingFeedback}
+                itemLayout="vertical"
+                dataSource={feedbacks}
+                locale={{ emptyText: <Empty description="Chưa có đánh giá nào" /> }}
+                pagination={feedbackPagination.total > feedbackPagination.pageSize ? {
+                  onChange: handleFeedbackPageChange,
+                  current: feedbackPagination.current,
+                  pageSize: feedbackPagination.pageSize,
+                  total: feedbackPagination.total,
+                  align: 'center'
+                } : false}
+                renderItem={(item) => (
+                  <List.Item key={item.id} className="border-b last:border-0">
+                    <List.Item.Meta
+                      avatar={
+                        <Avatar 
+                          src={item.studentAvatar} 
+                          icon={<UserOutlined />} 
+                          size="large" 
+                          className="bg-blue-100 text-blue-600"
+                        />
+                      }
+                      title={
+                        <div className="flex justify-between items-start flex-wrap gap-2">
+                          <div>
+                            <Text strong className="text-base mr-2 block">
+                              {item.studentName || "Học viên ẩn danh"}
+                            </Text>
+                            <Rate disabled allowHalf defaultValue={item.rating} className="text-sm text-yellow-500" />
+                          </div>
+                          <Text type="secondary" className="text-xs flex items-center">
+                            <ClockCircleOutlined className="mr-1" />
+                            {dayjs(item.createdAt).format("DD/MM/YYYY HH:mm")}
+                          </Text>
+                        </div>
+                      }
+                      description={
+                        <Paragraph className="text-gray-700 mt-2 mb-0 text-base">
+                          {item.comment}
+                        </Paragraph>
+                      }
+                    />
+                  </List.Item>
+                )}
+              />
             </Card>
           </div>
 
-          {/* Cột phải: Giỏ hàng (1/3) */}
-          {/* <div className="col-span-1">
+          {/* CỘT PHẢI */}
+          <div className="lg:col-span-1">
             <Card className="shadow-sm rounded-lg border-gray-200 sticky top-6">
-              <Title level={5} className="!mb-4">
-                <ShoppingCartOutlined className="mr-2" />
-                Giỏ hàng
-              </Title>
+              <div className="text-center p-4 bg-blue-50 rounded-lg mb-6">
+                <Text type="secondary" className="block mb-1 text-gray-500">Học phí trọn gói</Text>
+                <Title level={2} className="!mb-0 text-blue-600">
+                  {formatCurrency(course.tuitionFee)}
+                </Title>
+              </div>
 
-              {cartItems.length === 0 ? (
-                <Empty description="Chưa có khóa học trong giỏ" size="small" />
-              ) : (
-                <div className="space-y-3">
-                  <List
-                    dataSource={cartItems}
-                    renderItem={(item) => (
-                      <List.Item
-                        className="!px-0 !py-2 border-b"
-                        actions={[
-                          <Button
-                            type="text"
-                            danger
-                            size="small"
-                            onClick={() => removeItem(item.id)}
-                            key="remove"
-                          >
-                            Xóa
-                          </Button>
-                        ]}
-                      >
-                        <List.Item.Meta
-                          title={<span className="font-medium text-sm">{item.title}</span>}
-                          description={
-                            <Space direction="vertical" size={0} className="text-xs">
-                              <span>Môn: {item.subject}</span>
-                              <span className="text-green-600 font-medium">{formatCurrency(item.tuitionFee)}</span>
-                            </Space>
-                          }
-                        />
-                      </List.Item>
-                    )}
-                  />
-
-                  <Divider className="!my-3" />
-
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <Text strong>Tổng học phí</Text>
-                      <Title level={4} className="!mb-0 text-green-600">
-                        {formatCurrency(totalTuition)}
-                      </Title>
-                    </div>
-                    <Button 
-                      type="primary" 
-                      block 
-                      onClick={() => navigate("/cart")}
-                    >
-                      Đến trang giỏ hàng
-                    </Button>
-                  </div>
+              <div className="space-y-4">
+                <Button 
+                  type="primary" 
+                  size="large" 
+                  block 
+                  className="h-12 text-lg font-semibold shadow-md"
+                  onClick={handlePaymentClick}
+                >
+                  Đăng ký & Thanh toán
+                </Button>
+                
+                <div className="text-center">
+                  <Text type="secondary" className="text-xs">
+                    * Chỉ tài khoản <strong>Phụ huynh</strong> mới có thể thực hiện thanh toán.
+                  </Text>
                 </div>
-              )}
+              </div>
             </Card>
-          </div> */}
+          </div>
+
         </div>
       </div>
     </div>
   )
 }
+
+const InfoBox = ({ label, value }) => (
+  <div className="border border-gray-100 bg-gray-50 rounded-lg p-3">
+    <Text type="secondary" className="block mb-1 text-xs uppercase font-medium">{label}</Text>
+    <Text strong className="text-sm md:text-base text-gray-800">{value || "---"}</Text>
+  </div>
+)
 
 export default CourseDetail
