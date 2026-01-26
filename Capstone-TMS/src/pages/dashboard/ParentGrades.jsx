@@ -181,31 +181,30 @@ const ParentGrades = () => {
     const errors = []
 
     try {
+      const submissionId = crypto.randomUUID();
+
       const courseFeedbackPayload = {
         rating: Number(values.courseRating),
         comment: values.courseFeedback || ''
       }
 
-      const courseParams = { reviewerId: user?.userId }
+      const courseParams = { 
+        reviewerId: user?.userId, 
+        submissionId 
+      }
 
       try {
-        await api.post(
-          `/CourseFeedbacks/${selectedResult.courseId}`,
-          courseFeedbackPayload,
-          { params: courseParams }
-        )
+        const res = await api.post(`/CourseFeedbacks/${selectedResult.courseId}`, courseFeedbackPayload, { params: courseParams })
+        console.log('Course feedback submitted successfully:', res)
       } catch (error) {
         console.error('Error submitting course feedback:', error)
         errors.push('Không thể gửi feedback khóa học')
-        if (error.response?.data?.message) {
-          errors[errors.length - 1] += `: ${error.response.data.message}`
+        if (error.response?.data) {
+          errors[errors.length - 1] += `: ${error.response.data}`
         }
       }
 
-      const teacherProfileId =
-        selectedResult.teacherProfileId ||
-        selectedResult.course?.teacherProfileId ||
-        selectedResult.course?.teacherId
+      const teacherProfileId = selectedResult.teacherProfileId || selectedResult.course?.teacherProfileId || selectedResult.course?.teacherId
 
       if (teacherProfileId) {
         const teacherFeedbackPayload = {
@@ -215,24 +214,26 @@ const ParentGrades = () => {
 
         const teacherParams = {
           teacherProfileId,
-          reviewerId: user?.userId
+          reviewerId: user?.userId,
+          submissionId
         }
 
         try {
-          await api.post('/TeacherFeedbacks', teacherFeedbackPayload, {
-            params: teacherParams
-          })
+          const res = await api.post('/TeacherFeedbacks', teacherFeedbackPayload, { params: teacherParams })
+          console.log('Teacher feedback submitted successfully:', res)
         } catch (error) {
           console.error('Error submitting teacher feedback:', error)
           errors.push('Không thể gửi feedback giáo viên')
-          if (error.response?.data?.message) {
-            errors[errors.length - 1] += `: ${error.response.data.message}`
+          if (error.response?.data) {
+            errors[errors.length - 1] += `: ${error.response.data}`
           }
         }
       } else {
+        console.warn('TeacherProfileId không thấy, bỏ qua teacher feedback')
         errors.push('Không tìm thấy thông tin giáo viên')
       }
 
+      // Hiển thị kết quả
       if (errors.length === 0) {
         toast.success('Gửi feedback thành công!')
         setFeedbackModalVisible(false)
@@ -240,8 +241,11 @@ const ParentGrades = () => {
         setSelectedResult(null)
         await fetchCourseResults()
       } else if (errors.length === 2) {
+        // Cả 2 đều lỗi
         toast.error('Không thể gửi feedback. Vui lòng thử lại.')
+        console.error('All feedback submissions failed:', errors)
       } else {
+        // Một trong hai thành công
         toast.warning(`Đã gửi một phần feedback. ${errors.join('. ')}`)
         setFeedbackModalVisible(false)
         form.resetFields()

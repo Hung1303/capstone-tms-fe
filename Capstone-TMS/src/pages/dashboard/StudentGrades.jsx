@@ -213,7 +213,7 @@ const StudentGrades = () => {
           }
         }
       } else {
-        console.warn('TeacherProfileId not found, skipping teacher feedback')
+        console.warn('TeacherProfileId không thấy, bỏ qua teacher feedback')
         errors.push('Không tìm thấy thông tin giáo viên')
       }
 

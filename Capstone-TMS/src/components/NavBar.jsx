@@ -51,19 +51,17 @@ const NavBar = () => {
         
         switch (user.role) {
             case 'Admin':
-                return "/admin";
+                return "/admin/users";
             case 'Center':
-                return "/center";
+                return "/center/management";
             case 'Teacher':
-                return "/teacher";
+                return "/teacher/courses";
             case 'Student':
-                return "/student";
+                return "/student/courses";
             case 'Parent':
-                return "/parent";
-            case 'Staff':
-                return "/staff";
+                return "/parent/children";
             case 'Inspector':
-                return "/inspector";
+                return "/inspector/verify";
             default:
                 return "/";
         }

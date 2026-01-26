@@ -75,13 +75,12 @@ const LoginPage = ({ switchTo }) => {
       login(userData, token)
 
       const roleRoutes = {
-        Admin: '/admin',
-        Staff: '/staff',
-        Center: '/center',
-        Teacher: '/teacher',
+        Admin: '/admin/users',
+        Center: '/center/management',
+        Teacher: '/teacher/courses',
         Parent: '/',
-        Student: '/student',
-        Inspector: '/inspector'
+        Student: '/student/courses',
+        Inspector: '/inspector/verify'
       }
       navigate(roleRoutes[decoded.Role] || '/')
       
@@ -299,15 +298,7 @@ const LoginPage = ({ switchTo }) => {
           </div>
           {loginErrors.password && <p className="mt-1 text-sm text-red-600">{loginErrors.password}</p>}
         </div>
-        <div className="flex items-center justify-between">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              className="rounded border-slate-300 text-orange-500 focus:ring-orange-500"
-            />
-            <span className="ml-2 text-sm text-slate-600">Ghi nhớ đăng nhập</span>
-          </label>
-          
+        <div className="flex items-center justify-end">
           {/* Nút chuyển sang màn hình Quên mật khẩu */}
           <button 
             type="button"

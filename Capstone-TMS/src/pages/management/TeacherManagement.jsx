@@ -394,7 +394,7 @@ const TeacherManagement = () => {
             return {
               email: row['Email'] || row['email'] || '',
               userName: row['Tên đăng nhập'] || row['UserName'] || row['userName'] || row['Tên tài khoản'] || '',
-              password: String(row['Mật khẩu'] || row['Password'] || row['password'] || 'Default123!'),
+              password: String(row['Mật khẩu'] || row['Password'] || row['password'] || 'string123'),
               fullName: row['Họ và tên'] || row['FullName'] || row['fullName'] || row['Tên'] || '',
               phoneNumber: String(row['Số điện thoại'] || row['PhoneNumber'] || row['phoneNumber'] || row['SĐT'] || '').replace(/\s/g, ''),
               yearOfExperience: parseInt(row['Số năm kinh nghiệm'] || row['YearOfExperience'] || row['yearOfExperience'] || row['Kinh nghiệm'] || 0) || 0,

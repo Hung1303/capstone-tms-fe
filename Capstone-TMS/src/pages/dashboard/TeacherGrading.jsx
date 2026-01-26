@@ -113,7 +113,10 @@ const TeacherGrading = () => {
     console.log("student:", student)
     const markTotal = getMarkTotal(student.studentProfileId)
 
-    setSelectedStudent(student)
+    setSelectedStudent({
+      ...student,
+      gradingRecord: markTotal || null
+    })
     setGradingModalVisible(true)
 
     if (markTotal) {
@@ -131,22 +134,31 @@ const TeacherGrading = () => {
 
     try {
       const payload = {
-        ...values,
+        mark: values.mark,
+        comment: values.comment,
         studentId: selectedStudent.studentProfileId,
         teacherId: selectedCourse.teacherProfileId,
         courseId: selectedCourse.id
       }
       console.log("payload:", payload)
+      console.log("selectedStudent:", selectedStudent)
 
-      const res = await api.post("/CourseResult", payload)
+      const gradingRecordId = selectedStudent?.gradingRecord?.id
+
+      let res
+      if (gradingRecordId) {
+        res = await api.put(`/CourseResult/${gradingRecordId}`, payload)
+      } else {
+        res = await api.post('/CourseResult', payload)
+      }
       console.log("api response handleSaveGrading:", res)
 
-      toast.success('Chấm điểm thành công!')
+      toast.success(gradingRecordId ? 'Cập nhật điểm thành công!' : 'Chấm điểm thành công!')
       setGradingModalVisible(false)
       form.resetFields()
     } catch (error) {
       console.error('Error saving grading:', error)
-      toast.error(error.response.data)
+      toast.error(error.response.data || 'Lỗi khi lưu điểm')
     } finally {
       setLoading(false)
       fetchStudentEnrollments(pagination.pageNumber, pagination.pageSize)
@@ -155,6 +167,7 @@ const TeacherGrading = () => {
   }
 
   const getMarkTotal = (studentId) => {
+    console.log("gradingRecords in getMarkTotal:", gradingRecords)
     return gradingRecords.find(r => r.studentId === studentId)
   }
 
