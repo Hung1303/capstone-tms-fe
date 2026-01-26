@@ -160,7 +160,7 @@ const InspectCenterVerificaitonTab = () => {
   const getVerificationStatusBadge = (status) => {
     const statusConfig = {
       Pending: {
-        label: 'Chờ duyệt',
+        label: 'Chờ xử lý',
         className: 'bg-yellow-100 text-yellow-800',
         icon: <ClockCircleOutlined />
       },
@@ -203,7 +203,7 @@ const InspectCenterVerificaitonTab = () => {
         icon: <CheckCircleOutlined />
       },
       Pending: {
-        label: "Chờ duyệt",
+        label: "Chờ xác minh",
         className: "bg-yellow-100 text-yellow-800",
         icon: <ClockCircleOutlined />
       },
@@ -663,7 +663,14 @@ const InspectCenterVerificaitonTab = () => {
       inspectorNotes: editForm.inspectorNotes,
       verificationPhotos: Array.isArray(editForm.verificationFiles)
         ? editForm.verificationFiles
-          .map(file => file.url.img_url)
+          .map(file => {
+            // Nếu file.url là string (ảnh đã có sẵn hoặc đã upload), dùng trực tiếp
+            if (typeof file.url === 'string') {
+              return file.url
+            }
+            // Nếu file.url là object, lấy img_url hoặc url
+            return file.url?.img_url || file.url?.url || file.thumbUrl || null
+          })
           .filter(Boolean)
         : [],
       documentChecklist: editForm.documentChecklistText
@@ -801,7 +808,7 @@ const InspectCenterVerificaitonTab = () => {
             cancelText="Hủy"
             confirmLoading={modalLoading}
             width={720}
-            okButtonProps={{ disabled: !!editForm.scheduledDate?.isAfter(dayjs()) }}
+            okButtonProps={{ disabled: !!editForm.scheduledDate?.isAfter(dayjs(), "day") }}
           >
             <div className="space-y-5 py-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -812,10 +819,10 @@ const InspectCenterVerificaitonTab = () => {
                     value={editForm.completedDate}
                     onChange={(value) => handleEditFormChange("completedDate", value)}
                     format="DD/MM/YYYY"
-                    disabledDate={(current) => current && current < editForm.scheduledDate}
-                    disabled={editForm.scheduledDate && editForm.scheduledDate.isAfter(dayjs())}
+                    disabledDate={(current) => current && current.isBefore(editForm.scheduledDate, 'day')}
+                    disabled={editForm.scheduledDate && editForm.scheduledDate.isAfter(dayjs(), "day")}
                   />
-                  {editForm.scheduledDate && editForm.scheduledDate.isAfter(dayjs()) && (
+                  {editForm.scheduledDate && editForm.scheduledDate.isAfter(dayjs(), "day") && (
                     <p className="mt-1 text-xs text-gray-500">
                       Chưa tới ngày giám định ({editForm.scheduledDate.format('DD/MM/YYYY')}).
                     </p>

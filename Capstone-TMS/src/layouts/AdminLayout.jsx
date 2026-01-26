@@ -247,6 +247,18 @@ const ROLE_MENUS = {
   ]
 }
 
+const getRole = (role) => {
+  const roleMap = {
+    Admin: 'Admin',
+    Inspector: 'Kiểm duyệt viên',
+    Center: 'Trung tâm',
+    Teacher: 'Giáo viên',
+    Parent: 'Phụ huynh',
+    Student: 'Học sinh'
+  }
+  return roleMap[role] || 'Người dùng'
+}
+
 const AdminLayout = () => {
   const { user, logout } = useAuth()
   const location = useLocation()
@@ -306,7 +318,7 @@ const AdminLayout = () => {
 
             <div>
               <p className="text-sm font-medium text-gray-800">{user?.fullName}</p>
-              <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+              <p className="text-xs text-gray-500 capitalize">{getRole(user?.role)}</p>
             </div>
           </div>
           <button

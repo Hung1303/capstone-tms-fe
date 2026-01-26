@@ -32,19 +32,19 @@ const PaymentSuccess = () => {
                 </Typography.Text>
               </Space>
             }
-            extra={
-              <Space direction="vertical" size={16} className="w-full">
-                <Space size="middle" className="w-full justify-center flex-wrap">
-                  <Button
-                    size="large"
-                    icon={<HomeOutlined />}
-                    onClick={() => navigate(-1)}
-                  >
-                    Quay về
-                  </Button>
-                </Space>
-              </Space>
-            }
+            // extra={
+            //   <Space direction="vertical" size={16} className="w-full">
+            //     <Space size="middle" className="w-full justify-center flex-wrap">
+            //       <Button
+            //         size="large"
+            //         icon={<HomeOutlined />}
+            //         onClick={() => navigate(-1)}
+            //       >
+            //         Quay về
+            //       </Button>
+            //     </Space>
+            //   </Space>
+            // }
           />
         </Card>
       </div>

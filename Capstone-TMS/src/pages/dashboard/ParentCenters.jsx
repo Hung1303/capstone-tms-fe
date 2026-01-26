@@ -186,9 +186,11 @@ const ParentCenters = () => {
       const apiSuccess = apiResponse.status
       if (apiSuccess === 200) {
         console.log("selectedCourse:", selectedCourse)
+        const rawDescription = selectedCourse?.title || 'Thanh toan hoc phi'
+
         const payload = {
           amount: selectedCourse.tuitionFee,
-          description: `${selectedCourse.title} - ${selectedCourse.centerName}`,
+          description: rawDescription.length > 25 ? rawDescription.slice(0, 22) + '...' : rawDescription,
           userId: user.userId,
           centerSubscriptionId: null,
           enrollmentId: apiResponse.data.data.id
@@ -203,14 +205,14 @@ const ParentCenters = () => {
             console.log("paymentId:", paymentId)
 
             try {
-              const apiResponse = await api.get(`Payment/VNPAY?paymentId=${paymentId}`)
+              const apiResponse = await api.get(`Payment/PayOS?PaymentId=${paymentId}`)
               console.log("apiResponse:", apiResponse)
 
-              const paymentUrl = apiResponse.data.data
+              const paymentUrl = apiResponse.data.data.checkoutUrl
               window.open(paymentUrl, "_blank")
 
             } catch (error) {
-              console.log("lỗi Payment/VNPAY:", error)
+              console.log("lỗi Payment/PayOS:", error)
             }
           }
         } catch (error) {
@@ -223,7 +225,7 @@ const ParentCenters = () => {
     } catch (error) {
       console.error('Error registering course:', error)
 
-      if (error.response.data.message.includes("Student is already enrolled or pending payment for this course")) {
+      if (error.response.data.message.includes("Học sinh đã đăng kí hoặc đang chờ thanh toán cho khóa học")) {
         toast.error('Đã đăng ký khóa học này rồi.')
       }
     } finally {
