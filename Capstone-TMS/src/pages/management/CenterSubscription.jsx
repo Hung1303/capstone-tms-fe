@@ -44,7 +44,9 @@ const CenterSubscription = () => {
 
   const fetchCurrentSubscription = async () => {
     try {
+      console.log("user?.centerProfileId:", user?.centerProfileId)
       const response = await api.get(`/Subscription/center/${user?.centerProfileId}/active`)
+      console.log("fetchCurrentSubscription response:", response)
       const data = response.data.data
       if (data) {
         setCurrentSubscription(data)
@@ -107,14 +109,14 @@ const CenterSubscription = () => {
               console.log("paymentId:", paymentId)
 
               try {
-                const apiResponse = await api.get(`Payment/VNPAY?paymentId=${paymentId}`)
+                const apiResponse = await api.get(`Payment/PayOS?PaymentId=${paymentId}`)
                 console.log("apiResponse:", apiResponse)
 
-                const paymentUrl = apiResponse.data.data
+                const paymentUrl = apiResponse.data.data.checkoutUrl
                 window.open(paymentUrl, "_blank")
 
               } catch (error) {
-                console.log("lỗi Payment/VNPAY:", error)
+                console.log("lỗi Payment/PayOS:", error)
               }
             }
           } catch (error) {
@@ -274,7 +276,7 @@ const CenterSubscription = () => {
           )}
 
           {filteredPackages.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
               {filteredPackages.map((pkg) => (
                 <div
                   key={pkg.id}

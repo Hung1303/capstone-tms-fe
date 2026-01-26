@@ -162,7 +162,7 @@ const CourseManagement = () => {
     const center = await fetchCenterDetail(user.userId)
     console.log("center in handleOpenModal", center)
 
-    if (course) {
+    if (course?.id) {
       setEditingId(course.id)
       setFormData({
         title: course.title || '',
@@ -398,10 +398,13 @@ const CourseManagement = () => {
     { value: 3, label: 'Kết hợp' }
   ]
 
-  const gradeLevels = Array.from({ length: 13 }, (_, i) => ({
-    value: i + 1,
-    label: `Lớp ${i + 1}`
-  }))
+  const gradeLevels = Array.from({ length: 7 }, (_, i) => {
+    const grade = i + 6
+    return {
+      value: grade,
+      label: `Lớp ${grade}`
+    }
+  })
 
   const columns = [
     { 
@@ -526,7 +529,7 @@ const CourseManagement = () => {
           </div>
           <motion.button 
             whileTap={{ scale: 0.95 }}
-            onClick={() => handleOpenModal(true)}
+            onClick={() => handleOpenModal()}
             className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg shadow hover:shadow-xl transition-shadow"
           >
             <PlusOutlined />
@@ -601,6 +604,7 @@ const CourseManagement = () => {
         />
       </Card>
 
+      {console.log("render formData:", formData)}
       {/* Modal Form: Tạo/Sửa */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

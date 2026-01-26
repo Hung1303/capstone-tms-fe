@@ -139,7 +139,7 @@ const UserManagement = () => {
             value={record.status}
             onChange={(val) => handleChangeStatus(record.key, val)}
             style={{ width: 155, textAlign: "center" }}
-            disabled={record.role === "Center" || record.role === "Teacher" ? true : false}
+            // disabled={record.role === "Center" || record.role === "Teacher" ? true : false}
             options={[
               { value: 'Pending', label: 'Chờ duyệt', disabled: true },
               { value: 'Active', label: 'Hoạt động' },
@@ -150,39 +150,39 @@ const UserManagement = () => {
         )
       }
     },
-    {
-      title: 'Thao tác',
-      key: 'actions',
-      width: 100,
-      align: 'center',
-      render: (_, record) => {
-        if (record.role !== "Admin") {
+    // {
+    //   title: 'Thao tác',
+    //   key: 'actions',
+    //   width: 100,
+    //   align: 'center',
+    //   render: (_, record) => {
+    //     if (record.role !== "Admin") {
 
-          return (
-            <Popconfirm
-              title="Xác nhận xóa"
-              description={`Bạn có chắc chắn muốn xóa người dùng "${record.account.fullName}"?`}
-              onConfirm={() => handleDeleteUser(record.key)}
-              okText="Xóa"
-              cancelText="Hủy"
-              okType="danger"
-              icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />}
-              placement='topLeft'
-            >
-              <motion.button
-                type="button"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="cursor-pointer text-lg text-red-500 hover:text-red-600"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <DeleteOutlined />
-              </motion.button>
-            </Popconfirm>
-          )
-        }
-      }
-    }
+    //       return (
+    //         <Popconfirm
+    //           title="Xác nhận xóa"
+    //           description={`Bạn có chắc chắn muốn xóa người dùng "${record.account.fullName}"?`}
+    //           onConfirm={() => handleDeleteUser(record.key)}
+    //           okText="Xóa"
+    //           cancelText="Hủy"
+    //           okType="danger"
+    //           icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />}
+    //           placement='topLeft'
+    //         >
+    //           <motion.button
+    //             type="button"
+    //             whileHover={{ scale: 1.1 }}
+    //             whileTap={{ scale: 0.95 }}
+    //             className="cursor-pointer text-lg text-red-500 hover:text-red-600"
+    //             onClick={(e) => e.stopPropagation()}
+    //           >
+    //             <DeleteOutlined />
+    //           </motion.button>
+    //         </Popconfirm>
+    //       )
+    //     }
+    //   }
+    // }
   ]
 
   // ===== Datas =====

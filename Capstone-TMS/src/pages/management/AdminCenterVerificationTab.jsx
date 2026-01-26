@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { SearchOutlined, EditOutlined, DeleteOutlined, EyeOutlined, CheckCircleOutlined, ClockCircleOutlined, WarningOutlined, StopOutlined, ReloadOutlined, TeamOutlined } from '@ant-design/icons'
-import { Card, DatePicker, Input, Modal, Select, Space, Table, Tooltip, Divider, Typography, Button, Image } from 'antd'
+import { Card, DatePicker, Input, Modal, Select, Space, Table, Tooltip, Divider, Typography, Button, Image, Popconfirm } from 'antd'
 import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import api from '../../config/axios'
 import dayjs from 'dayjs'
@@ -411,7 +411,12 @@ const AdminCenterVerificationTab = () => {
   const data = centers.map(center => ({
     key: center.id,
     centerInfo: { centerName: center.centerName, address: center.address, licenseNumber: center.licenseNumber },
-    informtion: { contactEmail: center.contactEmail, contactPhone: center.contactPhone, ownerName: center.ownerName },
+    informtion: { 
+      contactEmail: center.contactEmail, 
+      contactPhone: center.contactPhone, 
+      ownerName: center.ownerName, 
+      userId: center.userId 
+    },
     status: center.status,
     action: { status: center.status, id: center.id }
   }))
@@ -690,6 +695,18 @@ const AdminCenterVerificationTab = () => {
         {config.label}
       </span>
     )
+  }
+  
+  const handleDeleteCenter = async (id) => {
+    console.log("Deleting center with id:", id)
+    try {
+      const res = await api.delete(`/Users/${id}`)
+      console.log("api response delete:", res)
+      toast.success("Đã xóa thành công.")
+    } catch (error) {
+      console.error("error api delete teacher:", error)
+      toast.error("Xóa thất bại.")
+    }
   }
 
   const getVerificationStatusBadge = (status) => {

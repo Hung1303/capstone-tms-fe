@@ -632,30 +632,6 @@ const TeacherManagement = () => {
               onClick={() => handleEditTeacher(record)}
             />
           </Tooltip>
-          {/* <Tooltip title="Tạo yêu cầu kiểm định">
-            <motion.button
-              type="button"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.8 }}
-              onClick={() => handleCreateVerification(record)}
-              className="cursor-pointer text-lg text-green-500 hover:text-green-600"
-            >
-            <SendOutlined />
-          </motion.button>
-        </Tooltip> */}
-          {/* <Popconfirm
-            title="Bạn có chắc chắn muốn xóa giáo viên này?"
-            onConfirm={() => handleDeleteTeacher(teacher.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Button
-              type="link"
-              danger
-              icon={<DeleteOutlined className="!text-lg"/>}
-            />
-          </Popconfirm> */}
         </Space>
       ),
     },
@@ -1129,8 +1105,6 @@ const TeacherManagement = () => {
             <h4 className="font-semibold text-blue-900 mb-2">Hướng dẫn:</h4>
             <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
               <li>File Excel phải có định dạng .xlsx hoặc .xls</li>
-              <li>Các cột bắt buộc: Email, Họ và tên (hoặc FullName), Tên đăng nhập (hoặc UserName)</li>
-              <li>Các cột tùy chọn: Số điện thoại, Môn học, Số năm kinh nghiệm, Bằng cấp, v.v.</li>
               <li>Nếu không có mật khẩu, hệ thống sẽ tự động tạo mật khẩu mặc định</li>
             </ul>
           </div>
