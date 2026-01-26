@@ -6,12 +6,12 @@ import { DashboardOutlined, UserOutlined, TeamOutlined, BookOutlined, CalendarOu
 // Menu configuration cho từng role
 const ROLE_MENUS = {
   Admin: [
-    {
-      key: '/admin',
-      icon: <DashboardOutlined />,
-      label: 'Dashboard',
-      path: '/admin'
-    },
+    // {
+    //   key: '/admin',
+    //   icon: <DashboardOutlined />,
+    //   label: 'Dashboard',
+    //   path: '/admin'
+    // },
     {
       key: '/admin/users',
       icon: <UserOutlined />,
