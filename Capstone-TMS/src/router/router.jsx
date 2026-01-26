@@ -17,8 +17,10 @@ import CenterBlog from "../pages/shared/CenterBlog";
 import BlogDetail from "../pages/shared/BlogDetail";
 import CourseDetail from "../pages/shared/CourseDetail";
 import FAQ from "../pages/shared/FAQ";
+import TermsPage from "../pages/shared/TermsPage"; 
+import PrivacyPage from "../pages/shared/PrivacyPage";
 import RegisterCenter from "../pages/shared/RegisterCenter";
-
+import PlatformPolicy from "../pages/shared/PlatformPolicy";
 // Dashboard pages
 import AdminDashboard from "../pages/dashboard/AdminDashboard";
 import StaffDashboard from "../pages/dashboard/StaffDashboard";
@@ -107,6 +109,9 @@ export const router = createBrowserRouter([
             { path: "courses", element: <Course /> },
             { path: "courses/:courseId", element: <CourseDetail /> },
             { path: "faq", element: <FAQ /> },
+            { path: "terms", element: <TermsPage /> },
+            { path: "policy", element: <PlatformPolicy /> },
+            { path: "privacy", element: <PrivacyPage /> },
         ],
     },
 

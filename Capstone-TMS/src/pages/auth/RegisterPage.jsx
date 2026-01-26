@@ -26,7 +26,7 @@ const RegisterPage = ({ switchTo }) => {
       ...formData,
       [e.target.name]: e.target.value
     })
-    // Clear error when user starts typing
+
     if (errors[e.target.name]) {
       setErrors({
         ...errors,
@@ -254,16 +254,35 @@ const RegisterPage = ({ switchTo }) => {
             <p className="mt-1 text-sm text-red-600">{errors.password}</p>
           }
         </div>
+        
+        {/* Phần Checkbox với Link mở Tab mới */}
         <div className="flex items-start">
           <input 
+            id="terms-checkbox"
             type="checkbox" 
             required 
-            className="mt-1 rounded border-gray-300 text-orange-500 focus:ring-orange-500 focus:outline-none" 
+            className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500 focus:outline-none cursor-pointer" 
           />
-          <label className="ml-2 text-sm text-slate-600">
-            Tôi đồng ý với{" "}<Link to="/terms" className="text-blue-600 hover:text-blue-700">Điều khoản sử dụng</Link>{" "}và{" "}<Link to="/privacy" className="text-blue-600 hover:text-blue-700">Chính sách bảo mật</Link>
+          <label htmlFor="terms-checkbox" className="ml-2 text-sm text-slate-600 select-none cursor-pointer">
+            Tôi đồng ý với{" "}
+            <Link 
+              to="/terms" 
+              target="_blank" 
+              className="text-orange-600 hover:text-orange-700 font-medium hover:underline"
+            >
+              Điều khoản sử dụng
+            </Link>
+            {" "}và{" "}
+            <Link 
+              to="/privacy" 
+              target="_blank" 
+              className="text-orange-600 hover:text-orange-700 font-medium hover:underline"
+            >
+              Chính sách bảo mật
+            </Link>
           </label>
         </div>
+
         <motion.button
           type="submit"
           disabled={isLoading}

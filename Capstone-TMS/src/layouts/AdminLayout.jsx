@@ -278,12 +278,12 @@ const AdminLayout = () => {
       <div className="fixed left-0 top-0 h-full bg-white shadow-lg transition-all duration-300 z-30 w-64">
         {/* Logo */}
         <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">T</span>
             </div>
             <span className="text-lg font-semibold text-gray-800">TutorLink</span>
-          </div>
+          </Link>
         </div>
 
         {/* Navigation */}
