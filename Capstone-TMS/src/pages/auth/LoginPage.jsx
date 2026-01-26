@@ -87,13 +87,12 @@ const LoginPage = ({ switchTo }) => {
       login(userData, token)
 
       const roleRoutes = {
-        Admin: '/admin',
-        Staff: '/staff',
-        Center: '/center',
-        Teacher: '/teacher',
+        Admin: '/admin/users',
+        Center: '/center/management',
+        Teacher: '/teacher/courses',
         Parent: '/',
-        Student: '/student',
-        Inspector: '/inspector'
+        Student: '/student/courses',
+        Inspector: '/inspector/verify'
       }
 
       navigate(roleRoutes[Role] || '/')

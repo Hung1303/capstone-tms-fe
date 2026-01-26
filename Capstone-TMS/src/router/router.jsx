@@ -38,11 +38,8 @@ import FeedbackList from "../pages/dashboard/FeedbackList";
 // Management pages
 import UserManagement from "../pages/management/UserManagement";
 import ClassManagement from "../pages/management/ClassManagement";
-import StudentManagement from "../pages/management/StudentManagement";
-import ScheduleManagement from "../pages/management/ScheduleManagement";
 import SubjectManagement from "../pages/management/SubjectManagement";
 import CourseManagement from "../pages/management/CourseManagement";
-import StaffCourseConfirmation from "../pages/management/StaffCourseConfirmation";
 import SubscriptionManagement from "../pages/management/SubscriptionManagement";
 import CenterSubscription from "../pages/management/CenterSubscription";
 import CenterScheduleAssignment from "../pages/management/CenterScheduleAssignment";

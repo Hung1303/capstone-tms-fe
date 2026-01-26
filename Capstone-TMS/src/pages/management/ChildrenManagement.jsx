@@ -212,7 +212,7 @@ const ChildrenManagement = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <Title level={2} className="!text-white !m-0 !font-bold">
-              <UserOutlined /> Quản lý các con
+              <UserOutlined /> Quản lý con
             </Title>
             <Text className="!text-white/90 !text-base">
               Danh sách thông tin học sinh.
