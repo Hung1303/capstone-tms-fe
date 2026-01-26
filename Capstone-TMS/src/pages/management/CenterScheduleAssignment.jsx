@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -77,15 +77,77 @@ const CenterScheduleAssignment = () => {
     }
   }
 
-  const fetchAllScheduledClass = async (page, pageSize) => {
-    const apiResponse = await api.get(`/ClassSchedule?pageNumber=${page}&pageSize=${pageSize}`)
-    console.log("apiResponse schedule:", apiResponse.data);
-    // while (true) {
-    //   const apiResponse = await api.get(`/ClassSchedule?pageNumber=${page}&pageSize=${pageSize}`)
-    //   ...
-    // }
-    setEvents(apiResponse.data.data)
-  }
+  const fetchAllScheduledClass = useCallback(async (page, pageSize) => {
+    // Kiểm tra nếu courses chưa được tải
+    if (!courses || courses.length === 0) {
+      setEvents([])
+      return
+    }
+
+    try {
+      setIsLoading(true)
+
+      const fetchSchedulesForCourse = async (courseId) => {
+        if (!courseId) return []
+
+        const courseSchedules = []
+        let pageNum = 1
+        let hasMore = true
+        let courseEventsCount = 0
+        let totalCountForCourse = 0
+
+        while (hasMore) {
+          try {
+            const response = await api.get(`/ClassSchedule/Course/${courseId}?pageNumber=${pageNum}&pageSize=${pageSize}`)
+            
+            if (response.data && response.data.data) {
+              const schedules = response.data.data
+              courseSchedules.push(...schedules)
+              courseEventsCount += schedules.length
+
+              // Lấy totalCount từ response đầu tiên
+              if (pageNum === 1) {
+                totalCountForCourse = response.data.totalCount || 0
+              }
+
+              // Kiểm tra xem còn trang nào không
+              if (schedules.length < pageSize || (totalCountForCourse > 0 && courseEventsCount >= totalCountForCourse)) {
+                hasMore = false
+              } else {
+                pageNum++
+              }
+            } else {
+              hasMore = false
+            }
+          } catch (error) {
+            console.error(`Error fetching schedules for course ${courseId} at page ${pageNum}:`, error)
+            hasMore = false
+          }
+        }
+
+        return courseSchedules
+      }
+
+      // Lọc và tạo mảng các promises để fetch schedules cho tất cả courses song song
+      const validCourses = courses.filter(course => course.id)
+      const coursePromises = validCourses.map(course => fetchSchedulesForCourse(course.id))
+
+      // Dùng Promise.all để fetch tất cả courses song song
+      const results = await Promise.all(coursePromises)
+
+      // Gộp tất cả schedules từ các courses
+      const allEvents = results.flatMap(schedules => schedules)
+
+      console.log("All scheduled events:", allEvents)
+      setEvents(allEvents)
+    } catch (error) {
+      console.error('Error fetching scheduled classes:', error)
+      toast.error('Không thể tải lịch học, vui lòng thử lại')
+      setEvents([])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [courses])
 
   useEffect(() => {
     fetchAllTeacherOfCenter(user.centerProfileId);
@@ -100,8 +162,10 @@ const CenterScheduleAssignment = () => {
   }, [])
 
   useEffect(() => {
-    fetchAllScheduledClass(1, 50);
-  }, [])
+    if (courses && courses.length > 0) {
+      fetchAllScheduledClass(1, 50);
+    }
+  }, [courses, fetchAllScheduledClass])
 
   // Xử lý khi click vào một khoảng thời gian trên calendar
   const handleDateSelect = (selectInfo) => {
