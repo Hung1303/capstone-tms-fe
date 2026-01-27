@@ -230,11 +230,14 @@ const CourseManagement = () => {
         teacherProfileId: formData.teacherProfileId || null 
       }
       
+      let res
       if (editingId) {
-        await api.put(`/Course/${editingId}`, payload)
+        res = await api.put(`/Course/${editingId}`, payload)
+        console.log("response update course:", res)
         toast.success('Cập nhật khóa học thành công!')
       } else {
-        await api.post('/Course', payload)
+        res = await api.post('/Course', payload)
+        console.log("response create course:", res)
         toast.success('Tạo bản nháp thành công! Vui lòng gửi duyệt.')
       }
       await fetchCourses(pagination.pageNumber, pagination.pageSize)
@@ -627,7 +630,7 @@ const CourseManagement = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Môn học *</label>
                   <select name="subject" value={formData.subject} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
                     <option value="">-- Chọn môn học --</option>
-                    {subjects.map(subject => (<option key={subject.id} value={subject.subjectName}>{subject.subjectName}</option>))}
+                    {subjects.map(subject => (<option key={subject.subjectId} value={subject.subjectName}>{subject.subjectName}</option>))}
                   </select>
                 </div>
               </div>
