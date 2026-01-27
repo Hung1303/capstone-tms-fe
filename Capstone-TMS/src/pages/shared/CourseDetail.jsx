@@ -72,7 +72,11 @@ const CourseDetail = () => {
         }
       })
       const { data, totalCount } = response.data
-      setFeedbacks(data || [])
+      console.log("Feedback data:", data)
+      const approvedFeedbacks = data.filter(
+        feedback => feedback.status === 1
+      )
+      setFeedbacks(approvedFeedbacks || [])
       setFeedbackPagination(prev => ({
         ...prev,
         current: pageNumber,
@@ -189,7 +193,7 @@ const CourseDetail = () => {
               </div>
             </Card>
 
-            <Card className="shadow-sm rounded-lg border-gray-200" title={`Đánh giá từ học viên (${feedbackPagination.total})`}>
+            <Card className="shadow-sm rounded-lg border-gray-200" title={`Đánh giá từ học viên (${feedbacks.length})`}>
               <List
                 loading={loadingFeedback}
                 itemLayout="vertical"

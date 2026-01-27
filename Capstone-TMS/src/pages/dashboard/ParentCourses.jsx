@@ -205,10 +205,19 @@ const ParentCourses = () => {
       handleCloseModal()
     } catch (error) {
       console.error('Error registering course:', error)
+      const errorMessage = error.response?.data?.message || 'Đăng ký khóa học thất bại.'
 
-      if (error.response.data.message.includes("Học sinh đã đăng kí hoặc đang chờ thanh toán cho khóa học")) {
-        toast.error('Đã đăng ký khóa học này rồi.')
+      if (errorMessage.includes("Không thể đăng kí. Giáo viên dạy cùng trường cùng lớp với học sinh")) {
+        toast.error(errorMessage)
+        return
       }
+
+      if (errorMessage.includes("Học sinh đã đăng kí hoặc đang chờ thanh toán cho khóa học")) {
+        toast.error('Đã đăng ký khóa học này rồi.')
+        return
+      }
+
+      toast.error(errorMessage)
     } finally {
       setSubmitting(false)
     }
